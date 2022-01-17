@@ -1,2 +1,9 @@
-# JyunrcaeaFramework
-New C# Framework
+<p align="center">
+  <img width="250px" src="https://lh3.googleusercontent.com/j5W0OcxgYdRzxSnwtmd6-Aolk0J0V52SOGgv_D09gy8vuJf7jm23t0iiq_yCjHrJ2rwJfxZ3-cxDm6-dmcMSYT2-hskI9PMMUYVvuZAsQ75Tr8AbXr4Hy3hs4jaUmJk-fiyk3P0eroq7fBLc1HRqzoW_OJANcP_Lbxhc2w00PnGjrqjDTgTlkMHGjW1Qxgd3NmcLEBKvVtST-KNlpcPfpmtDHY2QE1L2pd_BMizNTcNSB7ehzRMhAlERfuvMtQ4MXYjzwO3x4Xy-h1g2dJ_YPbKvJhT_s-EPTTorMaz5_VW7sr1sVyPrCjuey4Sr2Pl6BU9ykKCTeG-mfJeMAKtszNiaqKuqCEX9W-QUqYN3kbYcHM7rkr54YUudun3h2ExrS96rqXM1dGPiqjHqVroAMMUa1yHYtNMRlQlvvlTR9aWI_Y-0qj8JjYPIPDdvymvtkU6WKRnauLNb2GNo7liMWP__Lan20lC5NI0r8H7xkBomb8D34bZfUzcn9I6F6OmKvfHIlgQ2NzN8xeZIhoAz3jP5qmavi9UoU4ZNNfeVrctfEasMOX9OJ1IcvT3zYZNaaG-_vxwnz3nVBumJJn1AEQzSTyCCIUy7auVT-xmjPs_oZO1fLJ684XIKSXjYBHw03I4LVISMmfpQ2IWNIyeUnL4oDR3iDDf_vufTpIhNhAeXz5fgdRC3rNP6cvKMOFdKzdm8GSRm-uq-bbLur7wnmSo8=s328-no?authuser=0">
+</p>
+
+# Jyunrcaea! Framework
+C#을 이용하는 새로운 프레임워크입니다.
+
+편리하게 게임 개발할려고 만들었으며, 그게 다입니다.
+뭐.
