@@ -19,8 +19,46 @@ C# 으로 2D 게임 또는 앱을 쉽게 개발할수 있도록 도와주는 프
 * 비디오를 지원하지 않습니다.
 * 두개 이상의 창을 생성해 관리할수 없습니다.
 
-## 기타
-사용법 및 기여는 위키를 참고해주세요.
+## 사용법
+(Visual Studio 2022 기준)<br>
+Visual Studio 에서 C# 프로젝트를 생성합니다.<br>
+그리고 릴리즈에서 제공하는 압축파일을 받고 압축해제 한뒤,<br>
+그 파일 안에 있던 Jyunrcaea! Framework.dll 프로젝트에 참조하세요,<br>
+그리고 나머지 파일들은 프로젝트에 복사 후 속성에서 '항상 복사'로 설정하신뒤<br>
+코딩하시고 디버깅 하면 끝!
+
+## 기여
+### 이름
+public으로 설정된 변수/함수명은 언더바 없이 지어야 하며,<br>
+단어의 첫글자는 대문자여야 합니다.<br>
+(예시: ThisIsVariableName)
+### 변수
+접근성과 관련된 이유를 제외하고는 Get/Set 함수를 생성하는 대신에 프로퍼티를 사용해주세요.<br>
+<br>
+접근성과 관련된 이유를 제외하고는 숨겨진 변수와 그 변수를 접근하게 해줄 공개 프로퍼티를 생성하는 대신에<br>
+변수 자체를 프로터리로 생성해주세요.<br>
+#### 잘못된 예
+``` c#
+class my_phone_is_samsung_galaxy_note_9 {
+	int ram;
+	public GetRam() => ram;
+	public SetRam(int gb) => ram = value * 1024 * 1024 * 1024;
+
+	internal storage;
+	public Memory => storage;
+}
+```
+#### 잘된 예
+```c#
+class MyPhoneIsSamsungGalaxyNote9 {
+	int ram;
+	public Ram { get => ram; set => ram = value * 1024 * 1024 * 1024 }
+
+	public Memory { get; internal set; };
+}
+```
+___
+기여는 언제나 환영합니다.
 
 ## 라이선스
 이 프로젝트 및 코드들은 MIT License가 적용됩니다.<br><br>
