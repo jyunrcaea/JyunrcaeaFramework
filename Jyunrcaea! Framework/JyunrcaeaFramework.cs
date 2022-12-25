@@ -1,11 +1,5 @@
 ﻿#define WINDOWS
 using SDL2;
-using System.Diagnostics.SymbolStore;
-using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Transactions;
 
 namespace JyunrcaeaFramework
 {
@@ -2103,7 +2097,7 @@ namespace JyunrcaeaFramework
 
         internal override void Ready() {
             if (filedata == null) throw new JyunrcaeaFrameworkException("null 값이 입력되었습니다.");
-            GCHandle gCHandle = GCHandle.Alloc(filedata, GCHandleType.Pinned);
+            System.Runtime.InteropServices.GCHandle gCHandle = System.Runtime.InteropServices.GCHandle.Alloc(filedata, System.Runtime.InteropServices.GCHandleType.Pinned);
             IntPtr srw = SDL.SDL_RWFromConstMem(gCHandle.AddrOfPinnedObject(), filedata.Length * sizeof(byte));
             if (srw == IntPtr.Zero) { gCHandle.Free(); throw new JyunrcaeaFrameworkException("SDL Error: " + SDL.SDL_GetError()); }
             else SDL.SDL_FreeRW(srw);

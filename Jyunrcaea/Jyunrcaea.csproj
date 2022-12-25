@@ -19,7 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Jyunrcaea_FrameworkIcon.ico" />
+    <Content Include="Jyunrcaea_FrameworkIcon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
