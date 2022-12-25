@@ -40,21 +40,21 @@ public으로 설정된 변수/함수명은 언더바 없이 지어야 하며,<br
 #### 잘못된 예
 ``` c#
 class my_phone_is_samsung_galaxy_note_9 {
-	int ram;
-	public get_ram() => ram;
-	public setram(int gb) => ram = value * 1024 * 1024 * 1024;
+	int storage = 512;
+	public get_memory() => memory;
+	public setmemory(int gb) => memory = gb * 1024 * 1024 * 1024;
 
-	internal storage;
-	public memory => storage;
+	internal phoneram = 8;
+	public ram => phoneram;
 }
 ```
 #### 잘된 예
 ```c#
 class MyPhoneIsSamsungGalaxyNote9 {
-	int ram;
-	public Ram { get => ram; set => ram = value * 1024 * 1024 * 1024 }
+	int storage = 128;
+	public Memory { get => storage; set => storage = value * 1024 * 1024 * 1024 }
 
-	public Memory { get; internal set; };
+	public Ram { get; internal set; } = 6;
 }
 ```
 ___
