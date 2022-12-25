@@ -1,0 +1,30 @@
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\Jyunrcaea.exe
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\libfreetype-6.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\libjpeg-9.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\libpng16-16.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\libtiff-5.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\libwebp-7.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\zlib1.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\Jyunrcaea.deps.json
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\Jyunrcaea.runtimeconfig.json
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\Jyunrcaea.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\Jyunrcaea.pdb
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\Jyunrcaea! Framework.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\Jyunrcaea! Framework.pdb
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\Jyunrcaea.csproj.AssemblyReference.cache
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\Jyunrcaea.GeneratedMSBuildEditorConfig.editorconfig
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\Jyunrcaea.AssemblyInfoInputs.cache
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\Jyunrcaea.AssemblyInfo.cs
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\Jyunrcaea.csproj.CoreCompileInputs.cache
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\Jyunrcaea.csproj.CopyComplete
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\Jyunrcaea.dll
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\refint\Jyunrcaea.dll
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\Jyunrcaea.pdb
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\Jyunrcaea.genruntimeconfig.cache
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\ref\Jyunrcaea.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\dll\SDL2.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\dll\SDL2_image.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\dll\SDL2_mixer.dll
+E:\쥰르케아\Jyunrcaea\bin\Release\net6.0\dll\SDL2_ttf.dll
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\Jyunrcaea.Properties.Resources.resources
+E:\쥰르케아\Jyunrcaea\obj\Release\net6.0\Jyunrcaea.csproj.GenerateResource.cache
