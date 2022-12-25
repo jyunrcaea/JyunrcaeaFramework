@@ -41,8 +41,8 @@ public으로 설정된 변수/함수명은 언더바 없이 지어야 하며,<br
 ``` c#
 class my_phone_is_samsung_galaxy_note_9 {
 	int storage = 512;
-	public get_memory() => memory;
-	public setmemory(int gb) => memory = gb * 1024 * 1024 * 1024;
+	public get_memory() => storage;
+	public setmemory(int gb) => storage = gb * 1024 * 1024 * 1024;
 
 	internal phoneram = 8;
 	public ram => phoneram;
