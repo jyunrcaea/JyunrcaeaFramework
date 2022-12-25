@@ -8,6 +8,7 @@ public class Program
         Framework.Init("Jyunrcaea! Framework Test", 720, 480, null, null, new(true, false, false, false, true));
         Framework.function = new CustomFrameworkFunction();
         Display.AddScene(new MainScene());
+        Window.Icon("Jyunrcaea!FrameworkIcon.png");
         Framework.Run();
     }
 }
