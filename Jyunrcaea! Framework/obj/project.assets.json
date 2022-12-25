@@ -14,11 +14,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\쥰르케아\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj",
+      "projectUniqueName": "C:\\Users\\박대호\\Source\\Repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj",
       "projectName": "Jyunrcaea! Framework",
-      "projectPath": "E:\\쥰르케아\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj",
+      "projectPath": "C:\\Users\\박대호\\Source\\Repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj",
       "packagesPath": "C:\\Users\\박대호\\.nuget\\packages\\",
-      "outputPath": "E:\\쥰르케아\\Jyunrcaea! Framework\\obj\\",
+      "outputPath": "C:\\Users\\박대호\\Source\\Repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea! Framework\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
