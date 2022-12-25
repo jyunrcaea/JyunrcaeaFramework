@@ -1,0 +1,22 @@
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\libfreetype-6.dll
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\libjpeg-9.dll
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\libpng16-16.dll
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\libtiff-5.dll
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\libwebp-7.dll
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\zlib1.dll
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\Jyunrcaea! Framework.deps.json
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\Jyunrcaea! Framework.dll
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\Jyunrcaea! Framework.pdb
+E:\쥰르케아\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.csproj.AssemblyReference.cache
+E:\쥰르케아\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.GeneratedMSBuildEditorConfig.editorconfig
+E:\쥰르케아\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.AssemblyInfoInputs.cache
+E:\쥰르케아\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.AssemblyInfo.cs
+E:\쥰르케아\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.csproj.CoreCompileInputs.cache
+E:\쥰르케아\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.dll
+E:\쥰르케아\Jyunrcaea! Framework\obj\Release\net6.0\refint\Jyunrcaea! Framework.dll
+E:\쥰르케아\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.pdb
+E:\쥰르케아\Jyunrcaea! Framework\obj\Release\net6.0\ref\Jyunrcaea! Framework.dll
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\dll\SDL2.dll
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\dll\SDL2_image.dll
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\dll\SDL2_mixer.dll
+E:\쥰르케아\Jyunrcaea! Framework\bin\Release\net6.0\dll\SDL2_ttf.dll
