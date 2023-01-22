@@ -11,13 +11,15 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("Jyunrcaea! Framework")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("Jyunrcaea!")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
+[assembly: System.Reflection.AssemblyDescriptionAttribute("This is C# framework for make game!")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
 [assembly: System.Reflection.AssemblyProductAttribute("Jyunrcaea! Framework")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Jyunrcaea! Framework")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
+[assembly: System.Reflection.AssemblyMetadataAttribute("RepositoryUrl", "https://github.com/jyunrcaea/JyunrcaeaFramework")]
 
 // MSBuild WriteCodeFragment 클래스에서 생성되었습니다.
 

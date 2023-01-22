@@ -7,6 +7,16 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
+    <Title>Jyunrcaea! Framework</Title>
+    <Company>Jyunrcaea!</Company>
+    <Authors>614project</Authors>
+    <Description>This is C# framework for make game!</Description>
+    <PackageProjectUrl>http://jyunrcaeaframework.kro.kr</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jyunrcaea/JyunrcaeaFramework</RepositoryUrl>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>True</Optimize>
   </PropertyGroup>
 
   <ItemGroup>

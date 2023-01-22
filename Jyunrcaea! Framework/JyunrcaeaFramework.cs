@@ -11,10 +11,17 @@ namespace JyunrcaeaFramework
     public static class Framework
     {
 #if DEBUG
+        /// <summary>
+        /// ODD 를 실행할지에 대한 여부입니다.
+        /// </summary>
         public static bool ObjectDrawDebuging = false;
-
+        /// <summary>
+        /// ODD 실행시 객체의 테두리를 표시할 색입니다.
+        /// </summary>
         public static Color ObjectDrawDebugingLineColor = new(255, 50, 50);
-
+        /// <summary>
+        /// ODD 실행시 장면의 테두리를 표시할 색입니다.
+        /// </summary>
         public static Color SceneDrawDebugingLineColor = new(50, 255, 50);
 #endif
         /// <summary>
@@ -23,12 +30,19 @@ namespace JyunrcaeaFramework
         /// 장면 갯수가 적은 경우 사용하지 않는걸 권장합니다.
         /// </summary>
         public static bool MultiCoreProcess = false;
-
+        /// <summary>
+        /// 창의 배경색을 설정합니다.
+        /// </summary>
         public static Color BackgroundColor = new(31, 30, 51);
-
-        public static readonly System.Version Version = new(0, 2, 1);
-
-        public static FrameworkFunction function = new();
+        /// <summary>
+        /// 현재 프레임워크의 버전을 알려줍니다.
+        /// </summary>
+        public static readonly System.Version Version = new(0, 3, 3);
+        /// <summary>
+        /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
+        /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
+        /// </summary>
+        public static FrameworkFunction Function = new();
         /// <summary>
         /// SDL2 Window
         /// </summary>
@@ -48,8 +62,11 @@ namespace JyunrcaeaFramework
         /// <param name="option">초기 창 생성옵션</param>
         /// <param name="render_option">렌더러 옵션</param>
         /// <exception cref="JyunrcaeaFrameworkException">초기화 실패시</exception>
-        public static void Init(string title, uint width, uint height, int? x, int? y, WindowOption option, RenderOption render_option = new())
+        public static void Init(string title, uint width, uint height, int? x, int? y, WindowOption option, RenderOption render_option = default,AudioOption audio_option = default)
         {
+            #region 값 검사
+            if (audio_option.ch > 8) throw new JyunrcaeaFrameworkException("지원하지 않는 스테레오 ( AudioOption.Channls > 8)");
+            #endregion
             if (SDL.SDL_Init(SDL.SDL_INIT_EVERYTHING) != 0)
             {
                 throw new JyunrcaeaFrameworkException($"SDL2 라이브러리 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
@@ -65,6 +82,7 @@ namespace JyunrcaeaFramework
                 SDL.SDL_DestroyWindow(window);
                 throw new JyunrcaeaFrameworkException($"렌더 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             }
+            if (SDL.SDL_SetRenderDrawBlendMode(renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) < 0) throw new JyunrcaeaFrameworkException($"렌더러의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             //if (SDL.SDL_SetRenderDrawBlendMode(renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_MOD) != 0) throw new JyunrcaeaFrameworkException("SDL Error: " + SDL.SDL_GetError());
             if (SDL_image.IMG_Init(SDL_image.IMG_InitFlags.IMG_INIT_JPG | SDL_image.IMG_InitFlags.IMG_INIT_WEBP | SDL_image.IMG_InitFlags.IMG_INIT_TIF | SDL_image.IMG_InitFlags.IMG_INIT_PNG) == 0)
             {
@@ -81,6 +99,31 @@ namespace JyunrcaeaFramework
                 SDL_image.IMG_Quit();
                 throw new JyunrcaeaFrameworkException($"SDL2 ttf 라이브러리 초기화에 실패하였습니다. SDL ttf Error : {SDL_ttf.TTF_GetError()}");
             }
+            if (SDL_mixer.Mix_Init(SDL_mixer.MIX_InitFlags.MIX_INIT_MP3 | SDL_mixer.MIX_InitFlags.MIX_INIT_OGG | SDL_mixer.MIX_InitFlags.MIX_INIT_MID | SDL_mixer.MIX_InitFlags.MIX_INIT_FLAC | SDL_mixer.MIX_InitFlags.MIX_INIT_OPUS | SDL_mixer.MIX_InitFlags.MIX_INIT_MOD) == 0)
+            {
+                SDL.SDL_DestroyWindow(window);
+                SDL.SDL_DestroyRenderer(renderer);
+                SDL.SDL_Quit();
+                SDL_image.IMG_Quit();
+                throw new JyunrcaeaFrameworkException($"SDL mixer 라이브러리 초기화에 실패하였습니다. SDL mixer Error : {SDL_mixer.Mix_GetError()}");
+            }
+            bool setting = true;
+            while (setting) {
+                if (SDL_mixer.Mix_OpenAudio(audio_option.hz, SDL_mixer.MIX_DEFAULT_FORMAT, audio_option.ch, audio_option.cs) != 0)
+                {
+                    if (!audio_option.trylow || audio_option.ch == 1)
+                    {
+                        SDL.SDL_DestroyWindow(window);
+                        SDL.SDL_DestroyRenderer(renderer);
+                        SDL.SDL_Quit();
+                        SDL_image.IMG_Quit();
+                        SDL_mixer.Mix_Quit();
+                        throw new JyunrcaeaFrameworkException($"SDL mixer 오디오를 여는데 실패하였습니다. SDL mixer Error : {SDL_mixer.Mix_GetError()}");
+                    }
+                    audio_option.ch = (audio_option.ch == 7) ? 6 : audio_option.ch--;
+                }
+                else setting = false;
+            }
 #if WINDOWS
             SDL.SDL_SetEventFilter((_, eventPtr) =>
             {
@@ -91,17 +134,25 @@ namespace JyunrcaeaFramework
                 switch (e.window.windowEvent)
                 {
                     case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
-                        Framework.function.Resize();
+                        Window.size.w = e.window.data1;
+                        Window.size.h = e.window.data2;
+                        Window.wh = Window.size.w * 0.5f;
+                        Window.hh = Window.size.h * 0.5f;
+                        Framework.Function.Resize();
                         break;
                     case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
-                        Framework.function.WindowMove();
+                        Window.position.x = e.window.data1;
+                        Window.position.y = e.window.data2;
+                        Framework.Function.WindowMove();
                         break;
                     default:
                         return 1;
                 }
-                Framework.function.Draw();
+                Framework.Function.Draw();
                 return 1;
             }, IntPtr.Zero);
+
+            SDL_mixer.Mix_HookMusicFinished(Music.MusicFinished);
 #endif
             TextureSharing.resourcelist = new();
             Window.size = new() { w = Window.default_size.x = (int)width, h = Window.default_size.y = (int)height };
@@ -127,7 +178,9 @@ namespace JyunrcaeaFramework
         /// For limit Framelate
         /// </summary>
         internal static System.Diagnostics.Stopwatch frametimer = new();
-
+        /// <summary>
+        /// 프레임워크가 지금까지 작동된 시간을 밀리초(ms)로 반환합니다.
+        /// </summary>
         public static float RunningTime => frametimer.ElapsedTicks * 0.0001f;
 
         /// <summary>
@@ -138,9 +191,10 @@ namespace JyunrcaeaFramework
         {
             if (running) throw new JyunrcaeaFrameworkException("이 함수는 이미 실행중인 함수입니다. (함수가 종료될때까지 호출할수 없습니다.)");
             running = true;
-            Framework.function.Start();
+            Framework.Function.Start();
+            FrameworkFunction.updatetime = 0;
+            FrameworkFunction.endtime = Display.framelatelimit;
             frametimer.Start();
-            FrameworkFunction.endtime = (FrameworkFunction.updatetime = frametimer.ElapsedTicks) + Display.framelatelimit;
             while (running)
             {
                 while (SDL.SDL_PollEvent(out sdle) != 0)
@@ -148,21 +202,21 @@ namespace JyunrcaeaFramework
                     switch (sdle.type)
                     {
                         case SDL.SDL_EventType.SDL_QUIT:
-                            Framework.function.WindowQuit();
+                            Framework.Function.WindowQuit();
                             break;
                         case SDL.SDL_EventType.SDL_WINDOWEVENT:
                             switch (sdle.window.windowEvent)
                             {
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED:
-                                    function.Resized();
+                                    Function.Resized();
                                     break;
-                                
+
                                 //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_NONE:
                                 //    Console.WriteLine("none");
                                 //    break;
-                                //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
-                                //    Console.WriteLine("close");
-                                //    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
+                                    Framework.Function.WindowQuit();
+                                    break;
 #if !WINDOWS
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
                                     //SDL.SDL_GetWindowSize(window, out var w, out var h);
@@ -184,7 +238,7 @@ namespace JyunrcaeaFramework
                             }   
                             break;
                         case SDL.SDL_EventType.SDL_DROPFILE:
-                            Framework.function.FileDropped(SDL.UTF8_ToManaged(sdle.drop.file, true));
+                            Framework.Function.FileDropped(SDL.UTF8_ToManaged(sdle.drop.file, true));
                             break;
                         case SDL.SDL_EventType.SDL_DROPTEXT:
                             break;
@@ -192,39 +246,46 @@ namespace JyunrcaeaFramework
                             break;
                         case SDL.SDL_EventType.SDL_KEYDOWN:
                             //Console.WriteLine(sdle.key.keysym.sym.ToString());
-                            Framework.function.KeyDown((Keycode)sdle.key.keysym.sym);
+                            Framework.Function.KeyDown((Keycode)sdle.key.keysym.sym);
                             break;
                         case SDL.SDL_EventType.SDL_MOUSEMOTION:
-                            Framework.function.MouseMove();
+                            Framework.Function.MouseMove();
                             break;
                         case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                            Framework.function.MouseButtonDown((Mousecode)sdle.button.button);
+                            Framework.Function.MouseButtonDown((Mousecode)sdle.button.button);
                             break;
                         case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
-                            Framework.function.MouseButtonUp((Mousecode)sdle.button.button);
+                            Framework.Function.MouseButtonUp((Mousecode)sdle.button.button);
                             break;
                         case SDL.SDL_EventType.SDL_KEYUP:
-                            Framework.function.KeyUp((Keycode)sdle.key.keysym.sym);
+                            Framework.Function.KeyUp((Keycode)sdle.key.keysym.sym);
                             break;
                     }
                     
                 }
-                Framework.function.Draw();
+                Framework.Function.Draw();
             }
-            Framework.function.Stop();
+            Framework.Function.Stop();
             SDL.SDL_DestroyRenderer(renderer);
             SDL.SDL_DestroyWindow(window);
+            SDL_mixer.Mix_Quit();
             SDL_image.IMG_Quit();
             SDL_ttf.TTF_Quit();
             SDL.SDL_Quit();
         }
 
+        /// <summary>
+        /// 프레임워크를 중지합니다.
+        /// 즉, 창을 종료합니다.
+        /// </summary>
         public static void Stop()
         {
             running = false;
         }
     }
-
+    /// <summary>
+    /// 모니터의 정보를 얻거나, 또는 장면을 추가/제거 하기위한 클래스입니다.
+    /// </summary>
     public static class Display
     {
         internal static SDL.SDL_DisplayMode dm;
@@ -232,7 +293,11 @@ namespace JyunrcaeaFramework
         internal static List<SceneInterface> scenes = new();
 
         internal static List<Thread> threads = new();
-
+        /// <summary>
+        /// 장면을 추가합니다.
+        /// </summary>
+        /// <param name="scene">장면</param>
+        /// <returns>장면의 위치</returns>
         public static int AddScene(SceneInterface scene)
         {
             scenes.Add(scene);
@@ -240,14 +305,20 @@ namespace JyunrcaeaFramework
             if (Framework.running) scene.Start();
             return scenes.Count - 1;
         }
-
+        /// <summary>
+        /// 원하는 위치의 장면을 제거합니다.
+        /// </summary>
+        /// <param name="index">장면의 위치</param>
         public static void RemoveScene(int index)
         {
             scenes[index].Stop();
             scenes.RemoveAt(index);
             threads.RemoveAt(index);
         }
-
+        /// <summary>
+        /// 특정 장면을 제거합니다.
+        /// </summary>
+        /// <param name="scene"></param>
         public static void RemoveScene(SceneInterface scene)
         {
             scene.Stop();
@@ -256,11 +327,17 @@ namespace JyunrcaeaFramework
         }
 
         static float fps = 60;
-
+        /// <summary>
+        /// 모니터의 픽셀 너비를 구합니다.
+        /// </summary>
         public static int MonitorWidth => dm.w;
-
+        /// <summary>
+        /// 모니터의 픽셀 높이를 구합니다.
+        /// </summary>
         public static int MonitorHeight => dm.h;
-
+        /// <summary>
+        /// 모니터의 주사율을 구합니다.
+        /// </summary>
         public static int MonitorRefreshRate => dm.refresh_rate;
 
         internal static long framelatelimit = 166666;
@@ -318,30 +395,18 @@ namespace JyunrcaeaFramework
             SDL.SDL_FreeSurface(surface);
         }
 
-        //static bool fulls = false;
+        public static void Resize(int width, int height)
+        {
+            SDL.SDL_SetWindowSize(Framework.window, width, height);
+            Window.size.w = width;
+            Window.size.h = height;
+            Framework.Function.Resize();
+        }
 
-        //static uint beforew=0,beforeh=0;
-
-        //public static bool FullScreen
-        //{
-        //    set
-        //    {
-        //        fulls = value;  
-        //        if (value == true)
-        //        {
-        //            beforew = w; beforeh = h;
-        //            SDL.SDL_SetWindowDisplayMode(Framework.window,ref Display.dm);
-        //            SDL.SDL_SetWindowFullscreen(Framework.window, (uint)SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN);
-
-
-        //        }else
-        //        {
-        //            //SDL.SDL_SetWindowSize(Framework.window, (int)beforew, (int)beforeh);
-        //            SDL.SDL_SetWindowFullscreen(Framework.window, 0);
-        //        }
-        //    }
-        //    get => fulls;
-        //}
+        public static void Move(int? x=null,int? y=null)
+        {
+            SDL.SDL_SetWindowPosition(Framework.window, x == null ? SDL.SDL_WINDOWPOS_CENTERED : (int)x, y == null ? SDL.SDL_WINDOWPOS_CENTERED : (int)y);
+        }
     }
 
     public interface AllEventInterface:
@@ -358,9 +423,14 @@ namespace JyunrcaeaFramework
     {
 
     }
-
+    /// <summary>
+    /// 프레임워크가 이벤트를 받았으때 실행될 함수들이 모인 클래스입니다.
+    /// </summary>
     public class FrameworkFunction : ObjectInterface, AllEventInterface
     {
+        /// <summary>
+        /// 'Framework.Run' 함수를 호출시 실행되는 함수입니다.
+        /// </summary>
         public override void Start()
         {
             if (Framework.MultiCoreProcess)
@@ -376,7 +446,9 @@ namespace JyunrcaeaFramework
             }
 
         }
-
+        /// <summary>
+        /// 'Framework.Stop' 함수를 호출시 실행되는 함수입니다.
+        /// </summary>
         public override void Stop()
         {
             if (Framework.MultiCoreProcess)
@@ -396,12 +468,13 @@ namespace JyunrcaeaFramework
         private int iu,id,ir,iwm,ird,ist,ifd;
 
         private float iratio;
-
+        /// <summary>
+        /// 창의 크기가 조절될경우 실행되는 함수입니다.
+        /// (창 크기 조절이 완전히 끝날때 실행되진 않습니다.)
+        /// 창이 처음 생성될때는 실행되지 않습니다.
+        /// </summary>
         public override void Resize()
         {
-            SDL.SDL_GetWindowSize(Framework.window, out Window.size.w, out Window.size.h);
-            Window.wh = Window.size.w * 0.5f;
-            Window.hh = Window.size.h * 0.5f;
             iratio = (float)Window.size.w / (float)Window.default_size.x;
             if ( iratio * Window.default_size.y > Window.size.h )
             {
@@ -412,19 +485,16 @@ namespace JyunrcaeaFramework
             {
                 Display.scenes[ir].Resize();
             }
-            //for (ir = 0; ir < Display.scenes.Count; ir++)
-            //{
-            //    (Display.threads[ir] = new(Display.scenes[ir].Resize)).Start();
-            //}
-
         }
 
         internal static long endtime=0;
-
+        /// <summary>
+        /// Rendering
+        /// </summary>
         internal override void Draw()
         {
             if (endtime > Framework.frametimer.ElapsedTicks) {
-                if (endtime > Framework.frametimer.ElapsedTicks + 1100) Thread.Sleep(1);
+                if (endtime > Framework.frametimer.ElapsedTicks + 1200) Thread.Sleep(1);
                 return;
             }
             Update(((updatems = Framework.frametimer.ElapsedTicks) - updatetime) * 0.0001f);
@@ -471,7 +541,9 @@ namespace JyunrcaeaFramework
 
             updatetime = updatems;
         }
-
+        /// <summary>
+        /// 창 크기 조절이 완전히 끝날때 호출되는 함수입니다.
+        /// </summary>
         public virtual void Resized()
         {
             Resize();
@@ -487,12 +559,11 @@ namespace JyunrcaeaFramework
             }
 
         }
-
+        /// <summary>
+        /// 창 위치가 조정될떄 호출되는 함수입니다.
+        /// </summary>
         public virtual void WindowMove()
         {
-            SDL.SDL_GetWindowPosition(Framework.window, out var x, out var y);
-            Window.position.x = x;
-            Window.position.y = y;
             if (Framework.MultiCoreProcess)
             {
                 Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].WindowMove());
@@ -508,7 +579,9 @@ namespace JyunrcaeaFramework
         }
 
         static int iwq;
-
+        /// <summary>
+        /// 창 나가기 버튼을 클릭했을때 호출되는 함수입니다.
+        /// </summary>
         public virtual void WindowQuit()
         {
             if (Framework.MultiCoreProcess)
@@ -522,7 +595,10 @@ namespace JyunrcaeaFramework
             }
 
         }
-
+        /// <summary>
+        /// 파일이 드래그 드롭될때 호출되는 함수입니다.
+        /// </summary>
+        /// <param name="filename"></param>
         public virtual void FileDropped(string filename)
         {
             for (ifd = 0; ifd < Display.scenes.Count; ifd++)
@@ -530,7 +606,10 @@ namespace JyunrcaeaFramework
         }
 
         static int ikd;
-
+        /// <summary>
+        /// 키보드의 특정 키가 눌렸을때 실행되는 함수입니다.
+        /// </summary>
+        /// <param name="e"></param>
         public virtual void KeyDown(Keycode e)
         {
             for (ikd = 0; ikd < Display.scenes.Count; ikd++)
@@ -538,7 +617,9 @@ namespace JyunrcaeaFramework
         }
 
         static int imm;
-
+        /// <summary>
+        /// 마우스가 움직일때 호출되는 함수입니다.
+        /// </summary>
         public virtual void MouseMove()
         {
             SDL.SDL_GetMouseState(out Mouse.position.x, out Mouse.position.y);
@@ -606,10 +687,14 @@ namespace JyunrcaeaFramework
         }
 #endif
     }
-
+    /// <summary>
+    /// 창을 생성할때 쓰일 창 옵션입니다.
+    /// </summary>
     public struct WindowOption
     {
-        internal SDL.SDL_WindowFlags option = new();
+        internal SDL.SDL_WindowFlags option = default;
+
+        public WindowOption() { option = SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;  }
 
         public WindowOption(bool resize,bool borderless,bool fullscreen, bool fullscreen_desktop,bool hide)
         {
@@ -620,7 +705,9 @@ namespace JyunrcaeaFramework
             if (hide) option |= SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN;
         }
     }
-
+    /// <summary>
+    /// 프레임워크를 초기화 할때 쓰일 렌더러 옵션입니다.
+    /// </summary>
     public struct RenderOption
     {
         internal SDL.SDL_RendererFlags option = new();
@@ -631,6 +718,7 @@ namespace JyunrcaeaFramework
             if (sccelerated) option |= SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED;
             if (software) option |= SDL.SDL_RendererFlags.SDL_RENDERER_SOFTWARE;
             if (vsync) option |= SDL.SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC;
+            //option |= SDL.SDL_RendererFlags.SDL_RENDERER_TARGETTEXTURE;
             if (anti_aliasing)
             {
                 anti_level = 2;
@@ -645,7 +733,119 @@ namespace JyunrcaeaFramework
             }
         }
     }
+    /// <summary>
+    /// 프레임워크를 초기화 할때 쓰일 오디오 옵션입니다.
+    /// </summary>
+    public struct AudioOption
+    {
+        internal int ch, cs, hz;
+        internal bool trylow;
 
+        public AudioOption(byte Channals = 8,bool TryLowChannals = true, int ChunkSize = 2048, int Hz = 48000)
+        {
+            trylow = TryLowChannals;
+            ch = Channals;
+            cs = ChunkSize;
+            hz = Hz;
+        }
+    }
+
+    public abstract class PlayableSound
+    {
+        internal IntPtr sound;
+
+        internal abstract void Ready();
+
+        internal abstract void Free();
+    }
+
+    public class Music : PlayableSound
+    {
+        string filename;
+
+        public Music(string FileName)
+        {
+            filename = FileName;
+        }
+
+        internal override void Ready()
+        {
+            this.sound = SDL_mixer.Mix_LoadMUS(filename);
+            if (this.sound == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"음악을 불러오는데 실패하였습니다. SDL mixer Error: {SDL_mixer.Mix_GetError()}");
+        }
+
+        internal override void Free()
+        {
+            SDL_mixer.Mix_FreeMusic(this.sound);
+        }
+
+        static List<Music> list = new();
+
+        public static void AddMusic(Music music)
+        {   
+            list.Add(music);
+            if (list.Count == 1) music.Ready();
+        }
+
+        public static bool Play()
+        {
+            if (list.Count == 0 || SDL_mixer.Mix_PlayingMusic() != 0) return false;
+            NowPlayingMusic = list.First();
+            list.RemoveAt(0);
+            //if (NowPlayingMusic.sound == IntPtr.Zero) NowPlayingMusic.Ready();
+            if (SDL_mixer.Mix_PlayMusic(NowPlayingMusic.sound,1) == -1) throw new JyunrcaeaFrameworkException($"음악 재생에 실패하였습니다. {SDL_mixer.Mix_GetError()}");
+            if (list.Count != 0 && list.First().sound == IntPtr.Zero) list.First().Ready(); 
+            return true;
+        }
+
+        public static bool Resume()
+        {
+            if (SDL_mixer.Mix_PlayingMusic() != 0) return false;
+            SDL_mixer.Mix_ResumeMusic();
+            return true;
+        }
+
+        public static Music? NowPlayingMusic { get; internal set; } = null;
+
+        public static Music NextPlayMusic => list.First();
+
+        public static Music LastPlayMusic => list.Last();
+
+        public static string? Title => NowPlayingMusic == null ? null : SDL_mixer.Mix_GetMusicTitle(NowPlayingMusic.sound);
+
+        public static string? Artist => NowPlayingMusic == null ? null : SDL_mixer.Mix_GetMusicArtistTag(NowPlayingMusic.sound);
+
+        public static void Skip()
+        {
+            SDL_mixer.Mix_HaltMusic();
+        }
+
+        public static bool Paused => SDL_mixer.Mix_PausedMusic() == 1;
+
+        public static void Pause()
+        {
+            SDL_mixer.Mix_PauseMusic();
+        }
+
+        public static double NowTime { get { if (NowPlayingMusic == null) return -1; return SDL_mixer.Mix_GetMusicPosition(NowPlayingMusic.sound); }
+            set
+            {
+                if (SDL_mixer.Mix_SetMusicPosition(value) == -1) throw new JyunrcaeaFrameworkException("잘못된 위치");
+            }
+        }
+
+        public static int MusicQueueCount => list.Count;
+
+        internal static void MusicFinished()
+        {
+            if (SDL_mixer.Mix_PlayingMusic() == 0) return;
+            if (NowPlayingMusic != null) NowPlayingMusic.Free();
+
+        }
+    }
+    /// <summary>
+    /// 객체의 기본이 되는 객체 인터페이스입니다. (사실 추상 클래스이긴 하지만...)
+    /// </summary>
     public abstract class ObjectInterface
 #if  DEBUG
         : ODDInterface
@@ -657,7 +857,9 @@ namespace JyunrcaeaFramework
         public abstract void Start();
         public bool Hide = false;
     }
-
+    /// <summary>
+    /// 장면의 기본이 되는 장면 인터페이스입니다. 객체 인터페이스와 모든 이벤트 인터페이스를 상속하고 있습니다. 
+    /// </summary>
     public abstract class SceneInterface : ObjectInterface , AllEventInterface
     {
         public RectSize? RenderRange = null;
@@ -704,9 +906,14 @@ namespace JyunrcaeaFramework
 
         public abstract void MouseButtonUp(Mousecode e);
     }
-
+    /// <summary>
+    /// 장면에 쓰일 객체 추상 클래스입니다.
+    /// </summary>
     public abstract class DrawableObject : ObjectInterface
     {
+        public object? InheritedObject { get; internal set; } = null;
+
+
         internal SDL.SDL_Rect dst = new();
 
         //internal RenderPositionForScene scenepos = null!;
@@ -871,7 +1078,9 @@ namespace JyunrcaeaFramework
         internal abstract void ODD();
     }
 #endif
-
+    /// <summary>
+    /// 객체를 담을수 있는 대표적인 장면입니다. 
+    /// </summary>
     public class Scene : SceneInterface
     {
         //public int X = 0, Y = 0;
@@ -898,59 +1107,62 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 장면 위에 그릴수 있는 객체를 원하는 범위에 추가합니다. 
         /// </summary>
-        /// <param name="sp">그릴수 있는 객체(sprite, textbox, rectangle 등)</param>
-        /// <param name="index">추가할 범위 (음수일경우 맨 마지막에서 횟수만큼 앞으로 가서 추가합니다, 즉 -2 일경우 마지막(-1)에서 앞으로 한칸입니다.)</param>
-        /// <returns>성공시 true를 반환, 실패서 false를 반환</returns>
-        public bool AddSprite(object sp,int index)
+        /// <param name="NewSprite">그릴수 있는 객체(sprite, textbox, rectangle 등)</param>
+        /// <param name="Index">추가할 범위 (음수일경우 맨 마지막에서 횟수만큼 앞으로 가서 추가합니다, 즉 -2 일경우 마지막(-1)에서 앞으로 한칸입니다.)</param>
+        /// <returns>성공시 true를 반환, 실패서 false를 반환 (값이 잘못된 경우 예외오류)</returns>
+        /// <exception cref="JyunrcaeaFrameworkException">잘못된 위치값을 넣었거나, 이미 다른 장면에 객체를 추가한 경우 발생하는 예외입니다.</exception>
+        public bool AddSprite(object NewSprite,int Index)
         {
-            if (sp is DrawableObject)
+            if (NewSprite is DrawableObject)
             {
-                //objectlist.Add(sp);
-                //((DrawableObject)sp).scenepos = this.pos;
-                if (sp is DropFileEventInterface) drops.Add((DropFileEventInterface)sp);
-                if (sp is ResizeEndEventInterface) resizes.Add((ResizeEndEventInterface)sp);
-                if (sp is UpdateEventInterface) updates.Add((UpdateEventInterface)sp);
-                if (sp is WindowMoveEventInterface) windowMovedInterfaces.Add((WindowMoveEventInterface)sp); 
-                if (sp is KeyDownEventInterface) keyDownEvents.Add((KeyDownEventInterface)sp);
-                if (sp is MouseMoveEventInterface) mouseMoves.Add((MouseMoveEventInterface)sp);
-                if (sp is WindowQuitEventInterface) windowQuits.Add((WindowQuitEventInterface)sp);
-                if (sp is KeyUpEventInterface) keyUpEvents.Add((KeyUpEventInterface)sp);
-                if (sp is MouseButtonDownEventInterface) mouseButtonDownEvents.Add((MouseButtonDownEventInterface)sp);
-                if (sp is MouseButtonUpEventInterface) mouseButtonUpEvents.Add((MouseButtonUpEventInterface)sp);
-                if (index < 0)
+                DrawableObject dosprite = (DrawableObject)NewSprite;
+                if (dosprite.InheritedObject != null)  throw new JyunrcaeaFrameworkException("이 객체는 이미 다른 장면에 추가되었습니다.");
+                dosprite.InheritedObject = this;
+                if (NewSprite is DropFileEventInterface) drops.Add((DropFileEventInterface)NewSprite);
+                if (NewSprite is ResizeEndEventInterface) resizes.Add((ResizeEndEventInterface)NewSprite);
+                if (NewSprite is UpdateEventInterface) updates.Add((UpdateEventInterface)NewSprite);
+                if (NewSprite is WindowMoveEventInterface) windowMovedInterfaces.Add((WindowMoveEventInterface)NewSprite); 
+                if (NewSprite is KeyDownEventInterface) keyDownEvents.Add((KeyDownEventInterface)NewSprite);
+                if (NewSprite is MouseMoveEventInterface) mouseMoves.Add((MouseMoveEventInterface)NewSprite);
+                if (NewSprite is WindowQuitEventInterface) windowQuits.Add((WindowQuitEventInterface)NewSprite);
+                if (NewSprite is KeyUpEventInterface) keyUpEvents.Add((KeyUpEventInterface)NewSprite);
+                if (NewSprite is MouseButtonDownEventInterface) mouseButtonDownEvents.Add((MouseButtonDownEventInterface)NewSprite);
+                if (NewSprite is MouseButtonUpEventInterface) mouseButtonUpEvents.Add((MouseButtonUpEventInterface)NewSprite);
+                if (Index < 0)
                 {
-                    if (index == -1) {
-                        sprites.Add((DrawableObject)sp);
+                    if (Index == -1) {
+                        sprites.Add(dosprite);
                         //objectlist.Add(sp);
                     }
                     else
                     {
-                        int i = sprites.Count + index;
-                        if (i < 0) throw new JyunrcaeaFrameworkException($"존재하지 않는 범위입니다. (입력한 범위: {index}, 선택된 범위: {i}, 리스트 갯수: {sprites.Count})");
-                        sprites.Insert(i, (DrawableObject)sp);
+                        int i = sprites.Count + Index;
+                        if (i < 0) throw new JyunrcaeaFrameworkException($"존재하지 않는 범위입니다. (입력한 범위: {Index}, 선택된 범위: {i}, 리스트 갯수: {sprites.Count})");
+                        sprites.Insert(i, dosprite);
                         //objectlist.Insert(i, sp);
                     }
                 }
                 else {
-                    sprites.Insert(index, (DrawableObject)sp);
+                    sprites.Insert(Index, dosprite);
                     //objectlist.Insert(index, sp);
                 }
                 if (Framework.running)
-                    sprites.Last().Start();
+                    dosprite.Start();
                 return true;
             }
             return false;
         }
-
+        /// <summary>
+        /// 장면에 있는 객체를 삭제합니다.
+        /// </summary>
+        /// <param name="sp">삭제할 동일 객체</param>
+        /// <returns>성공적으로 처리될경우 true, 만약 장면에 해당 객체가 없거나, 'DrawableObject' 클래스가 상속되지 않은 객체인경우 false가 반환됩니다.</returns>
         public bool RemoveSprite(object sp)
         {
             if (sp is not DrawableObject) return false;
-            
-            //if (objectlist.IndexOf(sp) == -1) return false;
-            //objectlist.Remove(sp);
-            
-            if (!sprites.Remove((DrawableObject)sp)) return false;
-           // ((DrawableObject)sp).scenepos = null!;
+            DrawableObject dosprite = (DrawableObject)sp;
+            if (!sprites.Remove(dosprite)) return false;
+            dosprite.InheritedObject = null;
             if (sp is DropFileEventInterface) drops.Remove((DropFileEventInterface)sp);
             if (sp is ResizeEndEventInterface) resizes.Remove((ResizeEndEventInterface)sp);
             if (sp is UpdateEventInterface) updates.Remove((UpdateEventInterface)sp);
@@ -961,7 +1173,7 @@ namespace JyunrcaeaFramework
             if (sp is KeyUpEventInterface) keyUpEvents.Remove((KeyUpEventInterface)sp);
             if (sp is MouseButtonDownEventInterface) mouseButtonDownEvents.Remove((MouseButtonDownEventInterface)sp);
             if (sp is MouseButtonUpEventInterface) mouseButtonUpEvents.Remove((MouseButtonUpEventInterface)sp);
-            ((DrawableObject)sp).Stop();
+            dosprite.Stop();
             return true;
         }
 
@@ -1098,7 +1310,9 @@ namespace JyunrcaeaFramework
                 mouseButtonUpEvents[i].MouseButtonUp(e);
         }
     }
-
+    /// <summary>
+    /// 직사각형을 출력하는 객체입니다.
+    /// </summary>
     public class Rectangle : DrawableObject
     {
         public Rectangle() { }
@@ -1159,6 +1373,7 @@ namespace JyunrcaeaFramework
                 this.dst.x = this.px + this.originpos.x + this.mx;
                 this.dst.y = this.py + this.originpos.y + this.my;
             }
+            //if (SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) == -1) throw new JyunrcaeaFrameworkException($"렌더러 블랜더 모드 설정 실패 SDL Error: {SDL.SDL_GetError()}");
             //Console.WriteLine("r: {0}, w: {1}, h: {2}, x: {3}, y: {4}",this.Color.Red,this.size.w,this.size.h,this.size.x,this.size.y);
             if (SDL.SDL_SetRenderDrawColor(Framework.renderer,this.Color.Red,this.Color.Green,this.Color.Blue,this.Color.Alpha) < 0) throw new JyunrcaeaFrameworkException($"색 변경에 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
 
@@ -1201,7 +1416,9 @@ namespace JyunrcaeaFramework
             
         }
     }
-
+    /// <summary>
+    /// 이미지를 출력하는 객체입니다.
+    /// </summary>
     public class Sprite : DrawableObject , IDisposable
     {
         //string filename = string.Empty;
@@ -1212,7 +1429,15 @@ namespace JyunrcaeaFramework
 
         //SDL.SDL_Rect src = new();
 
+        //public Color? BlendColor = null;
+
         DrawableTexture Texture = null!;
+
+        public byte TextureOpacity
+        {
+            get => Texture.Opacity;
+            set => Texture.Opacity = value;
+        }
 
         //SDL.SDL_Rect dst = new();
 
@@ -1323,6 +1548,9 @@ namespace JyunrcaeaFramework
                 this.dst.y = this.py + this.originpos.y + this.my;
                 this.needresetdrawposition = false;
             }
+            //SDL.SDL_SetRenderTarget(Framework.renderer, this.Texture.texture);
+            //SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
+            //SDL.SDL_SetRenderDrawColor(Framework.renderer, BlendColor.Red, BlendColor.Green, BlendColor.Blue, BlendColor.Alpha);
             SDL.SDL_RenderCopyEx(Framework.renderer, this.Texture.texture,ref this.Texture.src,ref this.dst, Rotation, IntPtr.Zero, flip);
         }
 
@@ -1368,6 +1596,52 @@ namespace JyunrcaeaFramework
 #endif
     }
 
+    public class TextboxForAnimation : TextBox, UpdateEventInterface
+    {
+        public TextboxForAnimation(string filename,int size,string text="") : base(filename,size,text)
+        {
+
+        }
+
+        public TextboxForAnimation(string filename,int size,Color FontColor,Color? BackgroundColor) : base(filename,size,FontColor,BackgroundColor) { }
+
+        public MoveAnimationManager MoveAnimationState = new();
+
+        public OpacityAnimationManager OpacityAnimationState = new();
+
+        public void Move(int x, int y, float AnimationTime = 0f, float StartupDelay = 0f)
+        {
+            //Console.WriteLine("go to: {0}, {1}. movetime: {2}s", x, y, AnimationTime * 0.0001f);
+            if (AnimationTime == 0f && StartupDelay == 0f)
+            {
+                base.X = x;
+                base.Y = y;
+                return;
+            }
+            MoveAnimationState.bpx = base.X;
+            MoveAnimationState.bpy = base.Y;
+            MoveAnimationState.Start(x, y, AnimationTime, StartupDelay);
+        }
+
+        public void Opacity(byte Opacity, float AnimationTime = 0f, float StartupDelay = 0f)
+        {
+            if (AnimationTime == 0f && StartupDelay == 0f)
+            {
+                base.TextOpacity = Opacity;
+                return;
+            }
+            OpacityAnimationState.beforealpha = base.TextOpacity;
+            OpacityAnimationState.Start(Opacity, AnimationTime, StartupDelay);
+        }
+
+        public virtual void Update(float ms)
+        {
+            float nowtime = Framework.frametimer.ElapsedTicks * 0.0001f;
+            if (!MoveAnimationState.Complete) { MoveAnimationState.Update(ref base.mx, ref base.my); base.needresetdrawposition = true; }
+            if (!OpacityAnimationState.Complete) { base.TextOpacity = OpacityAnimationState.Update(); if (OpacityAnimationState.Complete && OpacityAnimationState.CompleteFunction != null) OpacityAnimationState.CompleteFunction(); }
+        }
+    }
+
     public class SpriteForAnimation : Sprite, UpdateEventInterface
     {
         public SpriteForAnimation()
@@ -1375,81 +1649,166 @@ namespace JyunrcaeaFramework
 
         }
 
-        //public SpriteForAnimation(string filename) : base(filename) { }
-
         public SpriteForAnimation(DrawableTexture texture) : base(texture) { }
 
-        long starttime = 0;
-        float nowtime = 0;
+        MoveAnimationManager MoveAnimationState = new();
 
-        float xe = 0, ye = 0;
+        OpacityAnimationManager OpacityAnimationState = new();
 
-        public new int X => base.X;
-
-        public new int Y => base.Y;
-
-        public int TargetPositionX { get; internal set; } = 0;
-
-        public int TargetPositionY { get; internal set; } = 0;
-
-        int bpx = 0, bpy = 0;
-
-
-
-        public float ArrivalTime { get; internal set; } = 0;
-
-        public bool MoveComplete { get; internal set; } = true;
-
-        public Action? CompleteFunction = null;
-
-        /// <summary>
-        /// 원하는 위치에 주어진 시간 내 적당한 속도로 이동합니다.
-        /// </summary>
-        /// <param name="x">좌표값 X</param>
-        /// <param name="y">좌표값 Y</param>
-        /// <param name="movetime">이동 시간(밀리초)</param>
-        /// /// <param name="starttime">시작 시간(밀리초)</param>
-        public void Move(int x,int y,float movetime,float starttime = 0f)
+        public void Move(int x,int y,float AnimationTime = 0f,float StartupDelay = 0f)
         {
-            bpx = base.X;
-            bpy = base.Y;
-            TargetPositionX = x;
-            TargetPositionY = y;
-            this.ArrivalTime = movetime;
-            this.starttime = Framework.frametimer.ElapsedTicks + (long)(starttime * 10000);
-            if (movetime == 0f)
+            if (AnimationTime == 0f && StartupDelay == 0f)
             {
-                base.X = x; base.Y = y;
-                return; 
+                base.X = x;
+                base.Y = y;
+                return;
             }
+            MoveAnimationState.bpx = base.X;
+            MoveAnimationState.bpy = base.Y;
+            MoveAnimationState.Start(x, y, AnimationTime, StartupDelay);
+        }
 
-            xe = (float)(x - bpx) / movetime;
-            ye = (float)(y - bpy) / movetime;
 
-            MoveComplete = false;
 
+        public void Opacity(byte Opacity,float AnimationTime = 0f,float StartupDelay = 0f)
+        {
+            if (AnimationTime == 0f && StartupDelay == 0f)
+            {
+                this.TextureOpacity = Opacity;
+                return;
+            }
+            OpacityAnimationState.beforealpha = base.TextureOpacity;
+            OpacityAnimationState.Start(Opacity,AnimationTime, StartupDelay);
         }
 
         public virtual void Update(float ms)
         {
-            if (MoveComplete || Framework.frametimer.ElapsedTicks <= starttime) return;
+            if (!MoveAnimationState.Complete) { MoveAnimationState.Update(ref base.mx, ref base.my); base.needresetdrawposition = true; }
+            if (!OpacityAnimationState.Complete) { base.TextureOpacity = OpacityAnimationState.Update(); if (OpacityAnimationState.CompleteFunction != null) OpacityAnimationState.CompleteFunction(); }
+        }
 
-             nowtime = (Framework.frametimer.ElapsedTicks - starttime) * 0.0001f;
 
-            if (this.ArrivalTime <= nowtime)
+    }
+
+    public class OpacityAnimationManager
+    {
+        public float StartTime { get; internal set; } = 0;
+        public float ArrivalTime { get; internal set; } = 0;
+        internal byte beforealpha;
+        public byte TargetOpacity { get; internal set; }
+        float alphadi;
+        public float AnimationTime { get; internal set; } = 0;
+        public bool Complete { get; internal set; } = true;
+        public Action? CompleteFunction = null;
+
+        internal void Start(byte alpha,float animationtime,float startupdelay = 0f)
+        {
+            StartTime = Framework.RunningTime + startupdelay;
+            ArrivalTime = StartTime + animationtime;
+            alphadi = (float)((TargetOpacity = alpha) - beforealpha) / (this.AnimationTime = animationtime);
+            Complete = false;
+        }
+
+        internal byte Update()
+        {
+            float nowtime = Framework.RunningTime - StartTime;
+            if (nowtime <= 0f) return beforealpha;
+
+            if (AnimationTime <= nowtime)
             {
-                base.X = TargetPositionX;
-                base.Y = TargetPositionY;
-                MoveComplete = true;
+                Complete = true;
+                return TargetOpacity;
+            }
+
+            return (byte)(beforealpha + (byte)(alphadi * nowtime));
+        }
+    }
+
+    [Obsolete("0.5 부터 지원예정")]
+    enum AnimationType : byte
+    {
+        /// <summary>
+        /// 시간에 비례해 이동합니다. (기본값)
+        /// </summary>
+        Normal = 0,
+        /// <summary>
+        /// 중간 지점과 가까워질수록 빨라집니다.
+        /// 멀어질수록 느려집니다.
+        /// </summary>
+        Easing = 1,
+        /// <summary>
+        /// 처음에 느리게 시작합니다.
+        /// 그리고 점점 빨라집니다.
+        /// 마지막에 다다를수록 기하급수적으로 빨라집니다.
+        /// </summary>
+        Ease_In = 2,
+        /// <summary>
+        /// 처음에 빠르게 시작합니다.
+        /// 그리고 점점 느려집니다.
+        /// (Ease_In 를 반대로 하는것과 같습니다.)
+        /// </summary>
+        Ease_Out = 3,
+        /// <summary>
+        /// Easing 과 유사합니다.
+        /// 대신 가속시간이 짧고 감속시간이 길어집니다.
+        /// Easing 보다 자연스러운 애니메이션을 보여줍니다.
+        /// </summary>
+        StandardCurve = 4,
+    }
+
+    public class MoveAnimationManager
+    {
+        internal int bpx, bpy;
+        float xe, ye;
+        public float StartTime { get; internal set; }
+        public bool Complete { get; internal set; } = true;
+        public int TargetPositionX { get; internal set; } = 0;
+        public int TargetPositionY { get; internal set; } = 0;
+        public float AnimationTime { get; internal set; } = 0;
+        public float ArrivalTime { get; internal set; } = 0;
+
+        public Action? CompleteFunction = null;
+
+        internal void Start(int x,int y,float AnimationTime,float StartupDelay = 0f)
+        {
+            this.StartTime = Framework.RunningTime + StartupDelay;
+            Complete = false;
+            TargetPositionX = x;
+            TargetPositionY = y;
+            this.AnimationTime = AnimationTime;
+            this.ArrivalTime = this.StartTime + AnimationTime;
+            xe = (float)(x - bpx) / AnimationTime;
+            ye = (float)(y - bpy) / AnimationTime;
+        }
+
+        public void ModifyArrivalPoint(int x,int y)
+        {
+            TargetPositionX = x;
+            TargetPositionY = y;
+            xe = (float)(x - bpx) / this.AnimationTime;
+            ye = (float)(y - bpy) / this.AnimationTime;
+        }
+
+        internal void Update(ref int x, ref int y)
+        {
+            float nowtime = Framework.RunningTime - StartTime;
+            if (nowtime <= 0f) return;
+            
+            if (AnimationTime <= nowtime)
+            {
+                x = TargetPositionX; y = TargetPositionY;
+                Complete = true;
                 if (CompleteFunction != null) CompleteFunction();
                 return;
             }
 
-            base.X = bpx + (int)(xe * nowtime);
-            base.Y = bpy + (int)(ye * nowtime);
+            x = bpx + (int)(xe * nowtime);
+            y = bpy + (int)(ye * nowtime);
         }
     }
-
+    /// <summary>
+    /// 글자를 출력하는 객체입니다.
+    /// </summary>
     public class TextBox : DrawableObject, IDisposable
     {
         public TextBox(string filename,int size,string text = "")
@@ -1536,6 +1895,13 @@ namespace JyunrcaeaFramework
             }
         }
 
+        byte alpha=255;
+        public byte TextOpacity { get => alpha; set {
+                alpha = value;
+                if (this.tt != IntPtr.Zero) SDL.SDL_SetTextureAlphaMod(tt, value);
+            }
+        }
+
         Color fc = new();
 
         Color? bc = null;
@@ -1594,8 +1960,8 @@ namespace JyunrcaeaFramework
         internal override void Draw()
         {
             if (rerender) TextRender();
-            if (needresetposition) ResetPosition();
             if (needresetsize) Reset();
+            if (needresetposition) ResetPosition();
             if (needresetdrawposition)
             {
                 this.dst.x = this.px + this.originpos.x + this.mx;
@@ -1646,6 +2012,8 @@ namespace JyunrcaeaFramework
             this.tt = SDL.SDL_CreateTextureFromSurface(Framework.renderer, surface);
             SDL.SDL_FreeSurface(surface);
             if (this.tt == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스쳐로 변환하는데 실패했습니다. SDL Error : {SDL.SDL_GetError()}");
+            if (SDL.SDL_SetTextureBlendMode(this.tt, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) < 0) throw new JyunrcaeaFrameworkException($"텍스쳐의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
+            if (alpha != 255) SDL.SDL_SetTextureAlphaMod(tt, alpha);
             SDL.SDL_QueryTexture(this.tt, out _, out _, out src.w, out src.h);
             dst.w = (int)(src.w * this.sz);
             dst.h = (int)(src.h * this.sz);
@@ -1694,10 +2062,12 @@ namespace JyunrcaeaFramework
 
         public byte Blue { get => this.colorbase.b; set => this.colorbase.b = value; }
 
-        public byte Alpha { get => this.colorbase.b; set => this.colorbase.a = value; }
+        public byte Alpha { get => this.colorbase.a; set => this.colorbase.a = value; }
 
         internal SDL.SDL_Color colorbase = new();
     }
+
+
 
     public static class Mouse
     {
@@ -1734,10 +2104,24 @@ namespace JyunrcaeaFramework
             if (SDL.SDL_IntersectRect(ref sp1.dst, ref sp2.dst, out var r) == SDL.SDL_bool.SDL_FALSE) return null;
             return new(r.x, r.y, r.w, r.h);
         }
-
-        public static bool MouseOver(DrawableObject sp)
+        /// <summary>
+        /// 마우스가 객체에 닿았는지 판단합니다.
+        /// </summary>
+        /// <param name="Sprite">객체</param>
+        /// <param name="SceneRenderSize">장면 위치</param>
+        /// <returns></returns>
+        public static bool MouseOver(DrawableObject Sprite,RectSize? SceneRenderSize = null)
         {
-            return SDL.SDL_PointInRect(ref Mouse.position,ref sp.dst) == SDL.SDL_bool.SDL_TRUE;
+            if (SceneRenderSize == null)
+                return SDL.SDL_PointInRect(ref Mouse.position,ref Sprite.dst) == SDL.SDL_bool.SDL_TRUE;
+            SDL.SDL_Rect part = new()
+            {
+                x = SceneRenderSize.size.x + Sprite.dst.x,
+                y = SceneRenderSize.size.y + Sprite.dst.y,
+                w = Sprite.dst.w,
+                h = Sprite.dst.h
+            };
+            return SDL.SDL_PointInRect(ref Mouse.position, ref part) == SDL.SDL_bool.SDL_TRUE;
         }
 
         /// <summary>
@@ -1893,7 +2277,9 @@ namespace JyunrcaeaFramework
     //        this.source = IntPtr.Zero;
     //    }
     //}
-
+    /// <summary>
+    /// 여러 객체에서 같은 이미지를 쓸수 있도록 텍스쳐를 공유하는 곳입니다.
+    /// </summary>
     public static class TextureSharing
     {
         internal static List<SharedTextureAccessKey> resourcelist = null!;
@@ -1983,7 +2369,9 @@ namespace JyunrcaeaFramework
     //        this.Y = y;
     //    }
     //}
-
+    /// <summary>
+    /// 객체가 그릴수 있는 텍스쳐의 추상 클래스입니다.
+    /// </summary>
     public abstract class DrawableTexture
     {
         public bool FixedRenderRange = false;
@@ -1999,6 +2387,21 @@ namespace JyunrcaeaFramework
         public int Width => absolutesrc.x;
 
         public int Height => absolutesrc.y;
+
+        internal byte alpha = 255;
+
+        public byte Opacity
+        {
+            get
+            {
+                return alpha;
+            }
+            set
+            {
+                alpha = value;
+                if (this.texture != IntPtr.Zero) SDL.SDL_SetTextureAlphaMod(texture, alpha);
+            }
+        }
 
         public void SetRenderRange(int x,int y,int width,int height)
         {
@@ -2016,13 +2419,24 @@ namespace JyunrcaeaFramework
             }
         }
 
-        internal abstract void Ready();
+        internal virtual void Ready()
+        {
+            if (SDL.SDL_SetTextureBlendMode(this.texture, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) < 0) throw new JyunrcaeaFrameworkException($"텍스쳐의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
+            if (alpha != 255) SDL.SDL_SetTextureAlphaMod(texture, alpha);
+            
+        }
 
         internal abstract void Free();
-    }
 
+
+    }
+    /// <summary>
+    /// 공유 텍스쳐를 통해 불러오는 텍스쳐입니다.
+    /// </summary>
     public class TextureFromSharedTexture : DrawableTexture
     {
+        
+
         internal SharedTextureAccessKey key = null!;
 
         public TextureFromSharedTexture(SharedTextureAccessKey key)
@@ -2035,6 +2449,7 @@ namespace JyunrcaeaFramework
             key.Ready();
             this.texture = key.texture;
             this.src = key.size;
+            base.Ready();
         }
 
         internal override void Free()
@@ -2044,7 +2459,9 @@ namespace JyunrcaeaFramework
             this.src.w = this.src.h = 0;
         }
     }
-
+    /// <summary>
+    /// 이미지 파일을 통해 불러오는 텍스쳐입니다.
+    /// </summary>
     public class TextureFromFile : DrawableTexture
     {
 
@@ -2067,6 +2484,7 @@ namespace JyunrcaeaFramework
                 this.src.w = this.absolutesrc.x;
                 this.src.h = this.absolutesrc.y;
             }
+            base.Ready();
         }
 
         internal override void Free()
@@ -2074,51 +2492,115 @@ namespace JyunrcaeaFramework
             SDL.SDL_DestroyTexture(this.texture);
             this.absolutesrc.x = this.absolutesrc.y = 0;
             this.needresettexture = true;
+            this.texture = IntPtr.Zero;
         }
     }
 
-    [Obsolete("메모리 엑세스 오류가 발생함, 추후 삭제예정",true)]
-    public class TextureFromByte : DrawableTexture
+    public class TextureFromStringForXPM : DrawableTexture
     {
-        byte[] filedata;
+        public TextureFromStringForXPM() { }
 
-        bool cs;
-
-        /// <summary>
-        /// byte[] 형식의 이미지 파일을 불러옵니다.
-        /// </summary>
-        /// <param name="bytes">파일 데이터</param>
-        /// <param name="clearsource">이미지 로딩 후 파일 데이터 제거 여부</param>
-        public TextureFromByte(byte[] bytes,bool clearsource = true)
+        public TextureFromStringForXPM(string[] xpmdata)
         {
-            this.filedata = bytes;
-            this.cs = clearsource;
+            this.StringForXPM = xpmdata;
         }
 
-        internal override void Ready() {
-            if (filedata == null) throw new JyunrcaeaFrameworkException("null 값이 입력되었습니다.");
-            System.Runtime.InteropServices.GCHandle gCHandle = System.Runtime.InteropServices.GCHandle.Alloc(filedata, System.Runtime.InteropServices.GCHandleType.Pinned);
-            IntPtr srw = SDL.SDL_RWFromConstMem(gCHandle.AddrOfPinnedObject(), filedata.Length * sizeof(byte));
-            if (srw == IntPtr.Zero) { gCHandle.Free(); throw new JyunrcaeaFrameworkException("SDL Error: " + SDL.SDL_GetError()); }
-            else SDL.SDL_FreeRW(srw);
-            this.texture = SDL_image.IMG_LoadTexture_RW(Framework.renderer,srw, 1);
-            gCHandle.Free();
-            if (this.texture == IntPtr.Zero) throw new JyunrcaeaFrameworkException("SDL image Error: " + SDL_image.IMG_GetError());
+        public string[] StringForXPM = null!;
+
+        internal override void Ready()
+        {
+            IntPtr surface = SDL_image.IMG_ReadXPMFromArray(StringForXPM);
+            if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"불러올수 없는 XPM 문자열 SDL Error: {SDL.SDL_GetError()}");
+            this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer,surface);
+            SDL.SDL_FreeSurface(surface);
+            if (this.texture == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스쳐로 변환 실패함 SDL Error: {SDL.SDL_GetError()}");
+            base.Ready();
+        }
+
+        internal override void Free()
+        {
+            SDL.SDL_DestroyTexture(this.texture);
+            this.texture = IntPtr.Zero;
+        }
+    }
+
+    public class TextureFromText : DrawableTexture
+    {
+        public string Fontfile,Text;
+        public int Size;
+        public Color Color;
+        public Color? BackgroundColor;
+        public bool Blended;
+
+        public TextureFromText(string Fontfile,int Size,string Text,Color Color,Color? BackgroundColor = null,bool Blended = true) {
+            this.Fontfile = Fontfile;
+            this.Size = Size;
+            this.Color = Color;
+            this.BackgroundColor = BackgroundColor;
+            this.Text = Text;
+            this.Blended = Blended;
+        }
+
+        public void ReRender()
+        {
+            if (this.texture != IntPtr.Zero) Free();
+            Ready();
+        }
+
+        internal override void Ready()
+        {
+            IntPtr fontsource = SDL_ttf.TTF_OpenFont(Fontfile, Size);
+            if (fontsource == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"불러올수 없는 글꼴 파일 SDL Error: {SDL.SDL_GetError()}"); 
+            IntPtr surface = (BackgroundColor == null) ?
+                (Blended ? SDL_ttf.TTF_RenderUNICODE_Blended(fontsource, Text, Color.colorbase) : SDL_ttf.TTF_RenderUNICODE_Solid(fontsource, Text, Color.colorbase)) : SDL_ttf.TTF_RenderText_Shaded(fontsource,Text, Color.colorbase, BackgroundColor.colorbase);
+            if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스트를 렌더링 하는데 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
+            this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer,surface);
+            SDL.SDL_FreeSurface(surface);
+            if (this.texture == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"렌더링 된 텍스트를 텍스쳐로 변환하는데 실패하였습니다. {SDL.SDL_GetError()}");
             SDL.SDL_QueryTexture(this.texture, out _, out _, out this.absolutesrc.x, out this.absolutesrc.y);
-            if (cs) filedata = null!;
             this.needresettexture = true;
             if (!this.FixedRenderRange)
             {
                 this.src.w = this.absolutesrc.x;
                 this.src.h = this.absolutesrc.y;
             }
+            base.Ready();
         }
 
         internal override void Free()
         {
             SDL.SDL_DestroyTexture(this.texture);
-            this.absolutesrc.x = this.absolutesrc.y = 0;
-            this.needresettexture = true;
+            this.texture = IntPtr.Zero;
+        }
+    }
+
+    public class TextureFromTextFileForXPM : DrawableTexture
+    {
+        public TextureFromTextFileForXPM() { }
+
+        public TextureFromTextFileForXPM(string FilePath)
+        {
+            this.FilePath = FilePath;
+        }
+
+        public string FilePath = string.Empty;
+
+        internal override void Ready()
+        {
+            string[] data = File.ReadAllLines(FilePath);
+            //Array.Resize(ref data, data.Length + 1);
+            //data[data.Length - 1] = null!;
+            IntPtr surface = SDL_image.IMG_ReadXPMFromArray(data);
+            if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"불러올수 없는 XPM 문자열 SDL Error: {SDL.SDL_GetError()}");
+            this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer, surface);
+            SDL.SDL_FreeSurface(surface);
+            if (this.texture == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스쳐로 변환 실패함 SDL Error: {SDL.SDL_GetError()}");
+            base.Ready();
+        }
+
+        internal override void Free()
+        {
+            SDL.SDL_DestroyTexture(this.texture);
         }
     }
 
@@ -2165,49 +2647,6 @@ namespace JyunrcaeaFramework
         Italic = SDL_ttf.TTF_STYLE_ITALIC,
         Underline = SDL_ttf.TTF_STYLE_UNDERLINE,
         Strikethrough = SDL_ttf.TTF_STYLE_STRIKETHROUGH
-    }
-
-    public static class OS
-    {
-        public const bool WindowsOnly
-        #if WINDOWS
-        = true;
-        #else
-        = false;
-        #endif
-
-        public static OSPlatform Platform { get; internal set; }
-
-        public static void CheckPlatform()
-        {
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-            {
-                Platform = OSPlatform.Windows;
-#if !WINDOWS
-                Console.WriteLine("이 라이브러리는 윈도우 이외 플랫폼 전용입니다. 실행에 문제가 생길수 있습니다.");
-#endif
-                return;
-            }
-#if WINDOWS
-            Console.WriteLine("이 라이브러리는 윈도우 전용입니다. 실행에 문제가 생길수 있습니다.");
-#endif
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
-                Platform = OSPlatform.OSX;
-            else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.FreeBSD))
-                Platform = OSPlatform.FreeBSD;
-            else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
-                Platform = OSPlatform.Linux;
-            else Platform = OSPlatform.Unknown;
-        }
-    }
-
-    public enum OSPlatform : byte
-    {
-        Windows = 0,
-        Linux = 1,
-        OSX = 2,
-        FreeBSD = 3,
-        Unknown = 4
     }
 
     public enum Keycode
@@ -2320,7 +2759,7 @@ namespace JyunrcaeaFramework
         // KP_DIVIDE = (int)SDL_Scancode.SDL_SCANCODE_KP_DIVIDE |  SCANCODE_MASK,
         // KP_MULTIPLY = (int)SDL_Scancode.SDL_SCANCODE_KP_MULTIPLY |  SCANCODE_MASK,
         // KP_MINUS = (int)SDL_Scancode.SDL_SCANCODE_KP_MINUS |  SCANCODE_MASK,
-        // KP_PLUS = (int)SDL_Scancode.SDL_SCANCODE_KP_PLUS |  SCANCODE_MASK,
+        KP_PLUS = SDL.SDL_Keycode.SDLK_KP_PLUS,
         NUM_ENTER = SDL.SDL_Keycode.SDLK_KP_ENTER,
         NUM_1 = SDL.SDL_Keycode.SDLK_KP_1,
         NUM_2 = SDL.SDL_Keycode.SDLK_KP_2,
@@ -2436,14 +2875,14 @@ namespace JyunrcaeaFramework
         // KP_HEXADECIMAL =
         //(int)SDL_Scancode.SDL_SCANCODE_KP_HEXADECIMAL |  SCANCODE_MASK,
 
-        // LCTRL = (int)SDL_Scancode.SDL_SCANCODE_LCTRL |  SCANCODE_MASK,
-        // LSHIFT = (int)SDL_Scancode.SDL_SCANCODE_LSHIFT |  SCANCODE_MASK,
-        // LALT = (int)SDL_Scancode.SDL_SCANCODE_LALT |  SCANCODE_MASK,
-        // LGUI = (int)SDL_Scancode.SDL_SCANCODE_LGUI |  SCANCODE_MASK,
-        // RCTRL = (int)SDL_Scancode.SDL_SCANCODE_RCTRL |  SCANCODE_MASK,
-        // RSHIFT = (int)SDL_Scancode.SDL_SCANCODE_RSHIFT |  SCANCODE_MASK,
-        // RALT = (int)SDL_Scancode.SDL_SCANCODE_RALT |  SCANCODE_MASK,
-        // RGUI = (int)SDL_Scancode.SDL_SCANCODE_RGUI |  SCANCODE_MASK,
+        LCTRL = SDL.SDL_Scancode.SDL_SCANCODE_LCTRL,
+        LSHIFT = SDL.SDL_Keycode.SDLK_LSHIFT,
+        LALT = SDL.SDL_Scancode.SDL_SCANCODE_LALT,
+        LGUI = SDL.SDL_Keycode.SDLK_LGUI,
+        RCTRL = SDL.SDL_Keycode.SDLK_RCTRL,
+        RSHIFT = SDL.SDL_Keycode.SDLK_RSHIFT,
+        RALT = SDL.SDL_Keycode.SDLK_RALT,
+        RGUI = SDL.SDL_Keycode.SDLK_RGUI,
 
         // MODE = (int)SDL_Scancode.SDL_SCANCODE_MODE |  SCANCODE_MASK,
 
@@ -2481,17 +2920,35 @@ namespace JyunrcaeaFramework
         // AUDIOREWIND = (int)SDL_Scancode.SDL_SCANCODE_AUDIOREWIND |  SCANCODE_MASK,
         // AUDIOFASTFORWARD = (int)SDL_Scancode.SDL_SCANCODE_AUDIOFASTFORWARD |  SCANCODE_MASK
     }
-
+    /// <summary>
+    /// 마우스 버튼 목록
+    /// </summary>
     public enum Mousecode : byte
     {
+        /// <summary>
+        /// 왼쪽
+        /// </summary>
         Left = 1,
+        /// <summary>
+        /// 중간 (마우스 휠)
+        /// </summary>
         Middle = 2,
+        /// <summary>
+        /// 오른쪽
+        /// </summary>
         Right = 3
     }
-
+    /// <summary>
+    /// 쥰르케아 프레임워크 내에 발생하는 예외적인 오류입니다.
+    /// 프레임워크의 예외 오류는 작동 원리만 잘 파악하면 예방할수 있습니다.
+    /// </summary>
     public class JyunrcaeaFrameworkException : Exception
     {
         public JyunrcaeaFrameworkException() { }
+        /// <summary>
+        /// 쥰르케아 프레임워크 예외 오류
+        /// </summary>
+        /// <param name="message">오류 내용</param>
         public JyunrcaeaFrameworkException(string message) : base(message) { }
     }
 }

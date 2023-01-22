@@ -198,8 +198,8 @@ namespace SDL2
 				string[] xpm
 		);
 
-		/* surface refers to an SDL_Surface* */
-		[DllImport(nativeLibName, EntryPoint = "IMG_SavePNG", CallingConvention = CallingConvention.Cdecl)]
+        /* surface refers to an SDL_Surface* */
+        [DllImport(nativeLibName, EntryPoint = "IMG_SavePNG", CallingConvention = CallingConvention.Cdecl)]
 		private static extern unsafe int INTERNAL_IMG_SavePNG(
 			IntPtr surface,
 			byte* file
