@@ -37,7 +37,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly System.Version Version = new(0, 3, 3);
+        public static readonly System.Version Version = new(0, 3, 4);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
@@ -1451,9 +1451,13 @@ namespace JyunrcaeaFramework
         //public int TextureWidth => src.w;
 
         //public int TextureHeight => src.h;
-
+        /// <summary>
+        /// 해당 객체의 너비
+        /// </summary>
         public int Width => dst.w;
-
+        /// <summary>
+        /// 해당 객체의 높이
+        /// </summary>
         public int Height => dst.h; 
 
         float sz = 1;
@@ -1470,9 +1474,13 @@ namespace JyunrcaeaFramework
          }}
 
         bool fh = false, fv = false;
-
+        /// <summary>
+        /// 좌우로 뒤집을지 결정합니다.
+        /// </summary>
         public bool FlipHorizontal { get => fh; set => flip = ((fh = value) ? SDL.SDL_RendererFlip.SDL_FLIP_HORIZONTAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE) | (fv ? SDL.SDL_RendererFlip.SDL_FLIP_VERTICAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE); }
-
+        /// <summary>
+        /// 상하로 뒤집을지 결정합니다.
+        /// </summary>
         public bool FlipVertical { get => fv; set => flip = (fh ? SDL.SDL_RendererFlip.SDL_FLIP_HORIZONTAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE) | ((fv = value) ? SDL.SDL_RendererFlip.SDL_FLIP_VERTICAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE); }
 
         SDL.SDL_RendererFlip flip = SDL.SDL_RendererFlip.SDL_FLIP_NONE;
@@ -1604,11 +1612,21 @@ namespace JyunrcaeaFramework
         }
 
         public TextboxForAnimation(string filename,int size,Color FontColor,Color? BackgroundColor) : base(filename,size,FontColor,BackgroundColor) { }
-
+        /// <summary>
+        /// 객체의 이동을 관리합니다.
+        /// </summary>
         public MoveAnimationManager MoveAnimationState = new();
-
+        /// <summary>
+        /// 객체의 투명도 변화를 관리합니다.
+        /// </summary>
         public OpacityAnimationManager OpacityAnimationState = new();
-
+        /// <summary>
+        /// 원하는 좌표로 부드럽게 이동합니다.
+        /// </summary>
+        /// <param name="x">도착지점의 x좌표</param>
+        /// <param name="y">도착지점의 y좌표</param>
+        /// <param name="AnimationTime">이동시간 (밀리초)</param>
+        /// <param name="StartupDelay">시작 지연시간 (밀리초)</param>
         public void Move(int x, int y, float AnimationTime = 0f, float StartupDelay = 0f)
         {
             //Console.WriteLine("go to: {0}, {1}. movetime: {2}s", x, y, AnimationTime * 0.0001f);
@@ -1622,7 +1640,12 @@ namespace JyunrcaeaFramework
             MoveAnimationState.bpy = base.Y;
             MoveAnimationState.Start(x, y, AnimationTime, StartupDelay);
         }
-
+        /// <summary>
+        /// 원하는 투명도로 자연스럽게 변화합니다.
+        /// </summary>
+        /// <param name="Opacity">바뀔 투명도값</param>
+        /// <param name="AnimationTime">이동시간 (밀리초)</param>
+        /// <param name="StartupDelay">시작 지연시간 (밀리초)</param>
         public void Opacity(byte Opacity, float AnimationTime = 0f, float StartupDelay = 0f)
         {
             if (AnimationTime == 0f && StartupDelay == 0f)
@@ -1650,11 +1673,21 @@ namespace JyunrcaeaFramework
         }
 
         public SpriteForAnimation(DrawableTexture texture) : base(texture) { }
-
-        MoveAnimationManager MoveAnimationState = new();
-
-        OpacityAnimationManager OpacityAnimationState = new();
-
+        /// <summary>
+        /// 객체의 이동을 관리합니다.
+        /// </summary>
+        public MoveAnimationManager MoveAnimationState = new();
+        /// <summary>
+        /// 객체의 투명도 변화를 관리합니다.
+        /// </summary>
+        public OpacityAnimationManager OpacityAnimationState = new();
+        /// <summary>
+        /// 원하는 좌표로 부드럽게 이동합니다.
+        /// </summary>
+        /// <param name="x">도착지점의 x좌표</param>
+        /// <param name="y">도착지점의 y좌표</param>
+        /// <param name="AnimationTime">이동시간 (밀리초)</param>
+        /// <param name="StartupDelay">시작 지연시간 (밀리초)</param>
         public void Move(int x,int y,float AnimationTime = 0f,float StartupDelay = 0f)
         {
             if (AnimationTime == 0f && StartupDelay == 0f)
@@ -1669,7 +1702,12 @@ namespace JyunrcaeaFramework
         }
 
 
-
+        /// <summary>
+        /// 원하는 투명도로 자연스럽게 변화합니다.
+        /// </summary>
+        /// <param name="Opacity">바뀔 투명도값</param>
+        /// <param name="AnimationTime">이동시간 (밀리초)</param>
+        /// <param name="StartupDelay">시작 지연시간 (밀리초)</param>
         public void Opacity(byte Opacity,float AnimationTime = 0f,float StartupDelay = 0f)
         {
             if (AnimationTime == 0f && StartupDelay == 0f)
@@ -1689,7 +1727,9 @@ namespace JyunrcaeaFramework
 
 
     }
-
+    /// <summary>
+    /// 투명도를 관리하는 객체입니다.
+    /// </summary>
     public class OpacityAnimationManager
     {
         public float StartTime { get; internal set; } = 0;
@@ -1755,7 +1795,9 @@ namespace JyunrcaeaFramework
         /// </summary>
         StandardCurve = 4,
     }
-
+    /// <summary>
+    /// 움직임을 관리하는 객체입니다.
+    /// </summary>
     public class MoveAnimationManager
     {
         internal int bpx, bpy;
