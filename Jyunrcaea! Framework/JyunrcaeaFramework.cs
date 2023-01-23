@@ -37,7 +37,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly System.Version Version = new(0, 3, 4);
+        public static readonly System.Version Version = new(0, 4, 1);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
@@ -1736,7 +1736,8 @@ namespace JyunrcaeaFramework
         public float ArrivalTime { get; internal set; } = 0;
         internal byte beforealpha;
         public byte TargetOpacity { get; internal set; }
-        float alphadi;
+        public FunctionForAnimation CalculationFunction = Animation.Nothing;
+        short distance;
         public float AnimationTime { get; internal set; } = 0;
         public bool Complete { get; internal set; } = true;
         public Action? CompleteFunction = null;
@@ -1745,7 +1746,9 @@ namespace JyunrcaeaFramework
         {
             StartTime = Framework.RunningTime + startupdelay;
             ArrivalTime = StartTime + animationtime;
-            alphadi = (float)((TargetOpacity = alpha) - beforealpha) / (this.AnimationTime = animationtime);
+            this.AnimationTime = animationtime;
+            TargetOpacity = alpha;
+            distance = (short)((short)alpha - (short)beforealpha);
             Complete = false;
         }
 
@@ -1760,12 +1763,13 @@ namespace JyunrcaeaFramework
                 return TargetOpacity;
             }
 
-            return (byte)(beforealpha + (byte)(alphadi * nowtime));
+            return (byte)(distance * CalculationFunction(nowtime / AnimationTime));
         }
     }
 
-    [Obsolete("0.5 부터 지원예정")]
-    enum AnimationType : byte
+    public delegate double FunctionForAnimation(double x);
+
+    public enum AnimationType : byte
     {
         /// <summary>
         /// 시간에 비례해 이동합니다. (기본값)
@@ -1788,26 +1792,27 @@ namespace JyunrcaeaFramework
         /// (Ease_In 를 반대로 하는것과 같습니다.)
         /// </summary>
         Ease_Out = 3,
-        /// <summary>
-        /// Easing 과 유사합니다.
-        /// 대신 가속시간이 짧고 감속시간이 길어집니다.
-        /// Easing 보다 자연스러운 애니메이션을 보여줍니다.
-        /// </summary>
-        StandardCurve = 4,
+        
+        EaseInQuad = 4,
+        EaseOutQuad = 5,
+        EaseInOutQuad = 6,
     }
+
+
     /// <summary>
     /// 움직임을 관리하는 객체입니다.
     /// </summary>
     public class MoveAnimationManager
     {
         internal int bpx, bpy;
-        float xe, ye;
+        int dx, dy;
         public float StartTime { get; internal set; }
         public bool Complete { get; internal set; } = true;
         public int TargetPositionX { get; internal set; } = 0;
         public int TargetPositionY { get; internal set; } = 0;
         public float AnimationTime { get; internal set; } = 0;
         public float ArrivalTime { get; internal set; } = 0;
+        public FunctionForAnimation CalculationFunction = Animation.Nothing;
 
         public Action? CompleteFunction = null;
 
@@ -1819,16 +1824,16 @@ namespace JyunrcaeaFramework
             TargetPositionY = y;
             this.AnimationTime = AnimationTime;
             this.ArrivalTime = this.StartTime + AnimationTime;
-            xe = (float)(x - bpx) / AnimationTime;
-            ye = (float)(y - bpy) / AnimationTime;
+            dx = x - bpx;
+            dy = y - bpy;
         }
 
         public void ModifyArrivalPoint(int x,int y)
         {
             TargetPositionX = x;
             TargetPositionY = y;
-            xe = (float)(x - bpx) / this.AnimationTime;
-            ye = (float)(y - bpy) / this.AnimationTime;
+            dx = x - bpx;
+            dy = y - bpy;
         }
 
         internal void Update(ref int x, ref int y)
@@ -1844,8 +1849,9 @@ namespace JyunrcaeaFramework
                 return;
             }
 
-            x = bpx + (int)(xe * nowtime);
-            y = bpy + (int)(ye * nowtime);
+            double ratio = CalculationFunction(nowtime / AnimationTime);
+
+            x = bpx + (int)(dx * ratio); y = bpy + (int)(dy * ratio);
         }
     }
     /// <summary>
@@ -2030,6 +2036,7 @@ namespace JyunrcaeaFramework
 
         public void TextRender()
         {
+            Console.WriteLine("rerender");
             this.needresetsize = true;
             this.rerender = false;
             if (this.tt != IntPtr.Zero)
@@ -2179,146 +2186,65 @@ namespace JyunrcaeaFramework
         }
     }
 
-    //public static class SharedTexture
-    //{
-    //    internal static List<TextureSourceForSharing> list = null!;
+    public static class Animation
+    {
+        internal static double Nothing(double x) => x;
 
-    //    internal static List<uint> using_count = new();
+        internal static double EaseInSine(double x)
+        {
+            return 1d - Math.Cos((x * Math.PI) * 0.5d);
+        }
 
-    //    internal static SDL.SDL_Rect GetRect(int index)
-    //    {
-    //        SDL.SDL_QueryTexture(list[index].source, out _, out _, out int w, out int h);
-    //        return new() { w = w, h = h };
-    //    }
+        internal static double EaseOutSine(double x)
+        {
+            return Math.Sin((x * Math.PI) * 0.5d);
+        }
 
-    //    /// <summary>
-    //    /// 리스트를 청소해줍니다.
-    //    /// 텍스쳐를 매우 많이 로드하고 해체할경우
-    //    /// 가끔씩 호출해주세요.
-    //    /// </summary>
-    //    public static async void GC()
-    //    {
-    //        await Task.Run(() =>
-    //        {
-    //            for (int i = list.Count - 1; i >= 0; i--)
-    //            {
-    //                if (list[i].filename == string.Empty)
-    //                {
-    //                    list.RemoveAt(i);
-    //                    using_count.RemoveAt(i);
-    //                }
-    //                else break;
-    //            }
-    //            for (int i = 0; i < list.Count; i++)
-    //            {
-    //                if (using_count[i] == 0 && list[i].source != IntPtr.Zero)
-    //                {
-    //                    list[i].Free();
-    //                }
-    //            }
-    //        });
-    //    }
+        internal static double EaseInOutSine(double x)
+        {
+            return -(Math.Cos(Math.PI * x) - 1d) * 0.5d;
+        }
 
-    //    public static uint? GetUsingCount(int index)
-    //    {
-    //        if (index >= list.Count) return null;
-    //        return using_count[index];
-    //    }
+        internal static double EaseInQuad(double x)
+        {
+            return x * x;
+        }
 
-    //    public static int Load(string filename)
-    //    {
-    //        list.Add(new(filename));
-    //        using_count.Add(0);
-    //        return list.Count - 1;
-    //    }
+        internal static double EaseOutQuad(double x)
+        {
+            x = 1d - x;
+            return 1 - x * x;
+        }
 
-    //    public static void Remove(int index)
-    //    {
-    //        list[index].Free();
-    //        if (index + 1 == list.Count)
-    //        {
-    //            list.RemoveAt(index);
-    //            using_count.RemoveAt(index);
-    //        }
-    //        list[index].Dispose();
-    //    }
+        internal static double EaseInOutQuad(double x)
+        {
+            return x < 0.5d ? 2d * x * x : 1d - Math.Pow(-2d * x + 2d, 2d) * 0.5d;
+        }
 
-    //    internal static void Ready(int index)
-    //    {
-    //        if (index >= list.Count) throw new JyunrcaeaFrameworkException($"범위를 벗어난 텍스쳐 값입니다. (저장된 택스쳐 수: {list.Count}, 입력받은 값:{index})");
-    //        if (using_count[index] == 0)
-    //        {
-    //            //forcefree 때문에.
-    //            using_count[index] = 0;
-    //            list[index].Ready();
-    //            if (list[index].source == IntPtr.Zero)
-    //            {
-    //                throw new JyunrcaeaFrameworkException($"텍스쳐를 불러오지 못했습니다. 텍스쳐 번호: {index}, SDL Error: {SDL.SDL_GetError()}");
-    //            }
-    //        }
-    //        using_count[index]++;
+        public static FunctionForAnimation GetAnimation(AnimationType type)
+        {
+            switch (type)
+            {
+                case AnimationType.Normal:
+                    return Nothing;
+                case AnimationType.Easing:
+                    return EaseInOutSine;
+                case AnimationType.Ease_In:
+                    return EaseInSine;
+                case AnimationType.Ease_Out:
+                    return EaseOutSine;
+                case AnimationType.EaseInQuad:
+                    return EaseInQuad;
+                case AnimationType.EaseOutQuad:
+                    return EaseOutQuad;
+                case AnimationType.EaseInOutQuad:
+                    return EaseInOutQuad;
 
-    //    }
+            }
+            throw new JyunrcaeaFrameworkException("존재하지 않는 애니메이션 타입");
+        }
+    }
 
-    //    internal static void Free(int index)
-    //    {
-    //        using_count[index]--;
-    //        if (using_count[index] <= 0)
-    //        {
-    //            //forcefree 때문에
-    //            using_count[index] = 0;
-    //            list[index].Free();
-    //        }
-    //    }
-
-    //    internal static void AllFocusFree()
-    //    {
-    //        for(int i=0;i < list.Count;i++)
-    //        {
-    //            list[i].Free();
-    //            list[i].Dispose();
-    //        }
-    //        list = null!;
-    //    }
-
-    //    public static int Count => list.Count;
-    //}
-
-    //public class TextureSourceForSharing : IDisposable
-    //{
-    //    public string filename = string.Empty;
-    //    public IntPtr source = IntPtr.Zero;
-    //    public bool Ready()
-    //    {
-    //        if (source != IntPtr.Zero) return false;
-    //        source = SDL_image.IMG_LoadTexture(Framework.renderer, filename);
-    //        if (this.source == IntPtr.Zero)
-    //        {
-    //            if (Framework.renderer == IntPtr.Zero) throw new JyunrcaeaFrameworkException("텍스쳐 로드에 실패했습니다. (프레임워크 초기화를 해주세요.) ");
-    //            throw new JyunrcaeaFrameworkException($"텍스쳐 로드에 실패했습니다. SDL Error: {SDL.SDL_GetError()}, SDL Image Error: {SDL_image.IMG_GetError()}");
-    //        }
-    //        return true;
-    //    }
-    //    public void Free()
-    //    {
-    //        SDL.SDL_DestroyTexture(this.source);
-    //        this.source = IntPtr.Zero;
-    //    }
-    //    public TextureSourceForSharing()
-    //    {
-
-    //    }
-    //    public TextureSourceForSharing(string filename)
-    //    {
-    //        this.filename = filename;
-    //    }
-    //    public void Dispose()
-    //    {
-    //        SDL.SDL_DestroyTexture(this.source);
-    //        this.filename = string.Empty;
-    //        this.source = IntPtr.Zero;
-    //    }
-    //}
     /// <summary>
     /// 여러 객체에서 같은 이미지를 쓸수 있도록 텍스쳐를 공유하는 곳입니다.
     /// </summary>
