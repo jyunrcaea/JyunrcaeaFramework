@@ -11,7 +11,8 @@ namespace Main
 
         static void Main(string[] args)
         {
-            Framework.Init("Project Jyunni", 1080, 720, null, null, new(true, false, false, false, true));
+            Framework.SavingPerformance = false;
+            Framework.Init("Animation Test", 1080, 720, null, null, new(true, false, false, false, true));
             //Window.Resize((int)(Display.MonitorWidth * 0.7f), (int)(Display.MonitorHeight * 0.7f));
             //Window.Move(null, null);
             if (!Directory.Exists("cache"))
@@ -163,7 +164,7 @@ namespace Main
 
         public override void Resize()
         {
-
+            base.Resize();
         }
 
         public void Right()

@@ -1,5 +1,6 @@
 ﻿#define WINDOWS
 using SDL2;
+using System.Runtime.CompilerServices;
 
 namespace JyunrcaeaFramework
 {
@@ -24,6 +25,20 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static Color SceneDrawDebugingLineColor = new(50, 255, 50);
 #endif
+        /// <summary>
+        /// 업데이트와 렌더링이 되는 시간을 억지로 살짝 겹칩니다.
+        /// 평상시에는 권장되지 않으며,초당 프레임이 극단적으로 안나오는 경우 약간의 프레임 향상을 시도해볼수 있는 기술입니다.
+        /// </summary>
+        public static bool OvercomeFrame = false;
+        /// <summary>
+        /// 가능한 CPU 사용량을 줄입니다. 안정적인 초당 프레임을 내는데에 방해가 될수 있습니다.
+        /// </summary>
+        public static bool SavingPerformance = true;
+        /// <summary>
+        /// 업데이트와 렌더링을 서로 다른 스레드에서 작업시킵니다.
+        /// 잘하면 나쁘지 않은 성능을 얻을순 있지만, SDL2 라이브러리에 문제를 일으킬수 있습니다.
+        /// </summary>
+        public static bool ThreadRender = false;
         /// <summary>
         /// 이벤트(Update, Quit 등)를 멀티 코어(또는 스레드)로 처리할지에 대한 여부입니다.
         /// true 로 하게 될경우 모든 장면속 이벤트 함수가 동시에 실행됩니다!
@@ -71,7 +86,7 @@ namespace JyunrcaeaFramework
             {
                 throw new JyunrcaeaFrameworkException($"SDL2 라이브러리 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             }
-            window = SDL.SDL_CreateWindow(title, x == null ? SDL.SDL_WINDOWPOS_CENTERED : (int)x, y == null ? SDL.SDL_WINDOWPOS_CENTERED : (int)y, (int)width, (int)height, option.option);
+            window = SDL.SDL_CreateWindow(title, x ?? SDL.SDL_WINDOWPOS_CENTERED, y ?? SDL.SDL_WINDOWPOS_CENTERED, (int)width, (int)height, option.option);
             if (window == IntPtr.Zero)
             {
                 throw new JyunrcaeaFrameworkException($"창 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
@@ -182,7 +197,6 @@ namespace JyunrcaeaFramework
         /// 프레임워크가 지금까지 작동된 시간을 밀리초(ms)로 반환합니다.
         /// </summary>
         public static float RunningTime => frametimer.ElapsedTicks * 0.0001f;
-
         /// <summary>
         /// Framework.Stop(); 을 호출할때까지 창을 띄웁니다. (또는 오류가 날때까지...)
         /// </summary>
@@ -191,13 +205,15 @@ namespace JyunrcaeaFramework
         {
             if (running) throw new JyunrcaeaFrameworkException("이 함수는 이미 실행중인 함수입니다. (함수가 종료될때까지 호출할수 없습니다.)");
             running = true;
+
             Framework.Function.Start();
             FrameworkFunction.updatetime = 0;
             FrameworkFunction.endtime = Display.framelatelimit;
             frametimer.Start();
             while (running)
             {
-                while (SDL.SDL_PollEvent(out sdle) != 0)
+                #region 이벤트
+                while (SDL.SDL_PollEvent(out sdle) == 1)
                 {
                     switch (sdle.type)
                     {
@@ -217,25 +233,30 @@ namespace JyunrcaeaFramework
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
                                     Framework.Function.WindowQuit();
                                     break;
+                                    //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
+                                    //    Console.WriteLine("size: {0} x {1}",sdle.window.data1,sdle.window.data2);
+                                    //    //SDL.SDL_RenderSetLogicalSize(renderer, sdle.window.data1, sdle.window.data2);
+                                    //    SDL.SDL_PumpEvents();
+                                    //    break;
 #if !WINDOWS
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
-                                    //SDL.SDL_GetWindowSize(window, out var w, out var h);
-                                    //Window.w = (uint)w;
-                                    //Window.h = (uint)h;
-                                    //Window.wh = w * 0.5f;
-                                    //Window.hh = h * 0.5f;
-                                    //function.Resize();
-                                    Framework.function.Resize();
-                                    break;
+                                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
+                                                    //SDL.SDL_GetWindowSize(window, out var w, out var h);
+                                                    //Window.w = (uint)w;
+                                                    //Window.h = (uint)h;
+                                                    //Window.wh = w * 0.5f;
+                                                    //Window.hh = h * 0.5f;
+                                                    //function.Resize();
+                                                    Framework.function.Resize();
+                                                    break;
 
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
-                                    SDL.SDL_GetWindowPosition(window, out var x, out var y);
-                                    Window.x = x;
-                                    Window.y = y;
-                                    function.WindowMove();
-                                    break;
+                                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
+                                                    SDL.SDL_GetWindowPosition(window, out var x, out var y);
+                                                    Window.x = x;
+                                                    Window.y = y;
+                                                    function.WindowMove();
+                                                    break;
 #endif
-                            }   
+                            }
                             break;
                         case SDL.SDL_EventType.SDL_DROPFILE:
                             Framework.Function.FileDropped(SDL.UTF8_ToManaged(sdle.drop.file, true));
@@ -261,8 +282,8 @@ namespace JyunrcaeaFramework
                             Framework.Function.KeyUp((Keycode)sdle.key.keysym.sym);
                             break;
                     }
-                    
                 }
+                #endregion
                 Framework.Function.Draw();
             }
             Framework.Function.Stop();
@@ -274,6 +295,77 @@ namespace JyunrcaeaFramework
             SDL.SDL_Quit();
         }
 
+
+        public static void EventProcess()
+        {
+            switch (sdle.type)
+            {
+                case SDL.SDL_EventType.SDL_QUIT:
+                    Framework.Function.WindowQuit();
+                    break;
+                case SDL.SDL_EventType.SDL_WINDOWEVENT:
+                    switch (sdle.window.windowEvent)
+                    {
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED:
+                            Function.Resized();
+                            break;
+
+                        //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_NONE:
+                        //    Console.WriteLine("none");
+                        //    break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
+                            Framework.Function.WindowQuit();
+                            break;
+                            //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
+                            //    Console.WriteLine("size: {0} x {1}",sdle.window.data1,sdle.window.data2);
+                            //    //SDL.SDL_RenderSetLogicalSize(renderer, sdle.window.data1, sdle.window.data2);
+                            //    SDL.SDL_PumpEvents();
+                            //    break;
+#if !WINDOWS
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
+                                    //SDL.SDL_GetWindowSize(window, out var w, out var h);
+                                    //Window.w = (uint)w;
+                                    //Window.h = (uint)h;
+                                    //Window.wh = w * 0.5f;
+                                    //Window.hh = h * 0.5f;
+                                    //function.Resize();
+                                    Framework.function.Resize();
+                                    break;
+
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
+                                    SDL.SDL_GetWindowPosition(window, out var x, out var y);
+                                    Window.x = x;
+                                    Window.y = y;
+                                    function.WindowMove();
+                                    break;
+#endif
+                    }
+                    break;
+                case SDL.SDL_EventType.SDL_DROPFILE:
+                    Framework.Function.FileDropped(SDL.UTF8_ToManaged(sdle.drop.file, true));
+                    break;
+                case SDL.SDL_EventType.SDL_DROPTEXT:
+                    break;
+                case SDL.SDL_EventType.SDL_DROPCOMPLETE:
+                    break;
+                case SDL.SDL_EventType.SDL_KEYDOWN:
+                    //Console.WriteLine(sdle.key.keysym.sym.ToString());
+                    Framework.Function.KeyDown((Keycode)sdle.key.keysym.sym);
+                    break;
+                case SDL.SDL_EventType.SDL_MOUSEMOTION:
+                    Framework.Function.MouseMove();
+                    break;
+                case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
+                    Framework.Function.MouseButtonDown((Mousecode)sdle.button.button);
+                    break;
+                case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
+                    Framework.Function.MouseButtonUp((Mousecode)sdle.button.button);
+                    break;
+                case SDL.SDL_EventType.SDL_KEYUP:
+                    Framework.Function.KeyUp((Keycode)sdle.key.keysym.sym);
+                    break;
+            }
+        }
         /// <summary>
         /// 프레임워크를 중지합니다.
         /// 즉, 창을 종료합니다.
@@ -405,7 +497,7 @@ namespace JyunrcaeaFramework
 
         public static void Move(int? x=null,int? y=null)
         {
-            SDL.SDL_SetWindowPosition(Framework.window, x == null ? SDL.SDL_WINDOWPOS_CENTERED : (int)x, y == null ? SDL.SDL_WINDOWPOS_CENTERED : (int)y);
+            SDL.SDL_SetWindowPosition(Framework.window, x ?? SDL.SDL_WINDOWPOS_CENTERED, y ?? SDL.SDL_WINDOWPOS_CENTERED);
         }
     }
 
@@ -428,6 +520,7 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class FrameworkFunction : ObjectInterface, AllEventInterface
     {
+        
         /// <summary>
         /// 'Framework.Run' 함수를 호출시 실행되는 함수입니다.
         /// </summary>
@@ -494,18 +587,11 @@ namespace JyunrcaeaFramework
         internal override void Draw()
         {
             if (endtime > Framework.frametimer.ElapsedTicks) {
-                if (endtime > Framework.frametimer.ElapsedTicks + 1200) Thread.Sleep(1);
+                if (Framework.SavingPerformance && endtime > Framework.frametimer.ElapsedTicks + 1500) Thread.Sleep(1);
                 return;
             }
             Update(((updatems = Framework.frametimer.ElapsedTicks) - updatetime) * 0.0001f);
-            //for (id = 0; id < Display.scenes.Count; id++)
-            //{
-            //    (Display.threads[id] = new(Display.scenes[id].Draw)).Start();
-            //}
-            //while(id-->0)
-            //{
-            //    Display.threads[id].Join();
-            //}
+            if (Framework.OvercomeFrame && ThreadForOverComeFrame.IsAlive) ThreadForOverComeFrame.Join();
             for (id = 0; id < Display.scenes.Count; id++)
             {
                 Display.scenes[id].Draw();
@@ -517,12 +603,21 @@ namespace JyunrcaeaFramework
             }
 #endif
             SDL.SDL_RenderPresent(Framework.renderer);
-            SDL.SDL_SetRenderDrawColor(Framework.renderer, Framework.BackgroundColor.Red, Framework.BackgroundColor.Green, Framework.BackgroundColor.Blue, Framework.BackgroundColor.Alpha);
-            SDL.SDL_RenderClear(Framework.renderer);
+            if (Framework.OvercomeFrame)
+                (ThreadForOverComeFrame = new(PresentAndClear)).Start();
+            else PresentAndClear();
             if (endtime <= Framework.frametimer.ElapsedTicks - Display.framelatelimit)
                 endtime = Framework.frametimer.ElapsedTicks + Display.framelatelimit;
             else endtime += Display.framelatelimit;
         }
+
+        internal void PresentAndClear()
+        {
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, Framework.BackgroundColor.Red, Framework.BackgroundColor.Green, Framework.BackgroundColor.Blue, Framework.BackgroundColor.Alpha);
+            SDL.SDL_RenderClear(Framework.renderer);
+        }
+
+        internal Thread ThreadForOverComeFrame = new(() => { });
 
         internal static long updatetime = 0, updatems = 0;
 
@@ -827,7 +922,7 @@ namespace JyunrcaeaFramework
             SDL_mixer.Mix_PauseMusic();
         }
 
-        public static double NowTime { get { if (NowPlayingMusic == null) return -1; return SDL_mixer.Mix_GetMusicPosition(NowPlayingMusic.sound); }
+        public static double NowTime { get { return NowPlayingMusic == null ? -1 : SDL_mixer.Mix_GetMusicPosition(NowPlayingMusic.sound); }
             set
             {
                 if (SDL_mixer.Mix_SetMusicPosition(value) == -1) throw new JyunrcaeaFrameworkException("잘못된 위치");
