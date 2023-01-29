@@ -63,6 +63,16 @@ namespace Jyunrcaea.Properties {
         /// <summary>
         ///   System.Byte[] 형식의 지역화된 리소스를 찾습니다.
         /// </summary>
+        internal static byte[] background {
+            get {
+                object obj = ResourceManager.GetObject("background", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   System.Byte[] 형식의 지역화된 리소스를 찾습니다.
+        /// </summary>
         internal static byte[] font {
             get {
                 object obj = ResourceManager.GetObject("font", resourceCulture);
