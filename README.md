@@ -34,6 +34,7 @@ public으로 설정된 변수/함수명은 언더바 없이 지어야 하며,<br
 (예시: ThisIsVariableName)
 ### 변수
 접근성과 관련된 이유를 제외하고는 Get/Set 함수를 생성하는 대신에 프로퍼티를 사용해주세요.<br>
+(다른 과정을 거치지 않고 값만 읽고 쓰도록 하는 변수를 만드실경우 필드를 사용하는게 좋겠죠...?)<br>
 <br>
 접근성과 관련된 이유를 제외하고는 숨겨진 변수와 그 변수를 접근하게 해줄 공개 프로퍼티를 생성하는 대신에<br>
 변수 자체를 프로터리로 생성해주세요.<br>
@@ -54,10 +55,26 @@ class MyPhoneIsSamsungGalaxyNote9 {
 	int storage = 128;
 	public Memory { get => storage; set => storage = value * 1024 * 1024 * 1024 }
 
-	public Ram { get; internal set; } = 6;
+	internal myram = 6;
+	/// 인라인 ('{ get; internal set; }') 을 쓰지 않는 이유는 아레 '프로퍼티' 항목 참고
+	public Ram => myram;
 }
 ```
 ___
+### 프로퍼티
+수동 속성을 사용해주세요.
+즉, 아레 코드 대신에
+```c#
+public int jyunni { get; internal set; } = 614;
+```
+이 코드처럼 작성해주세요.
+```c#
+internal int project614 = 614;
+public int jyunni => 614project;
+```
+(같은 어셈블리에서 접근시 'project614' 변수를 이용하면 되며, 다른 어셈블리에서 접근시 'jyunni' 프로퍼티를 제공해주면 됩니다.)
+이유는 성능 향상... ㅎㅎ(getter시 필드 > 수동 속성 > 인라인)
+
 기여는 언제나 환영합니다.
 
 ## 라이선스

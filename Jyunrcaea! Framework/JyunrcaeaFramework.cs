@@ -998,7 +998,8 @@ namespace JyunrcaeaFramework
     /// </summary>
     public abstract class DrawableObject : ObjectInterface
     {
-        public object? InheritedObject { get; internal set; } = null;
+        internal object? inheritobj = null;
+        public object? InheritedObject => inheritobj;
 
 
         internal SDL.SDL_Rect dst = new();
@@ -1204,7 +1205,7 @@ namespace JyunrcaeaFramework
             {
                 DrawableObject dosprite = (DrawableObject)NewSprite;
                 if (dosprite.InheritedObject != null)  throw new JyunrcaeaFrameworkException("이 객체는 이미 다른 장면에 추가되었습니다.");
-                dosprite.InheritedObject = this;
+                dosprite.inheritobj = this;
                 if (NewSprite is DropFileEventInterface) drops.Add((DropFileEventInterface)NewSprite);
                 if (NewSprite is ResizeEndEventInterface) resizes.Add((ResizeEndEventInterface)NewSprite);
                 if (NewSprite is UpdateEventInterface) updates.Add((UpdateEventInterface)NewSprite);
@@ -1249,7 +1250,7 @@ namespace JyunrcaeaFramework
             if (sp is not DrawableObject) return false;
             DrawableObject dosprite = (DrawableObject)sp;
             if (!sprites.Remove(dosprite)) return false;
-            dosprite.InheritedObject = null;
+            dosprite.inheritobj = null;
             if (sp is DropFileEventInterface) drops.Remove((DropFileEventInterface)sp);
             if (sp is ResizeEndEventInterface) resizes.Remove((ResizeEndEventInterface)sp);
             if (sp is UpdateEventInterface) updates.Remove((UpdateEventInterface)sp);
@@ -1666,7 +1667,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 크기를 설정합니다.
         /// </summary>
-        public float Size { get { return sz; } set {
+        public float Size { get => sz; set {
                 sz = value;
                 //dst.w = (int)(src.w * value);
                 //dst.h = (int)(src.h * value);
@@ -2164,7 +2165,9 @@ namespace JyunrcaeaFramework
 
         SDL.SDL_Rect src = new();
 
-        public bool Blended { get; set; } = true;
+        public bool blend = true;
+
+        public bool Blended { get => blend; set { rerender = true; blend = value; } }
 
         string txt = string.Empty;
 
