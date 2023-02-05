@@ -261,7 +261,7 @@ namespace Jyunrcaea
             }
         }
 
-        public class StartRange : GhostObject
+        public class StartRange : GhostObject, MouseButtonDownEventInterface
         {
             public StartRange()
             {
@@ -273,6 +273,17 @@ namespace Jyunrcaea
                 this.Width = (int)(300 * Window.AppropriateSize);
                 this.Height = (int)(30 * Window.AppropriateSize);
                 base.Resize();
+            }
+            
+            public void MouseButtonDown(Mousecode key)
+            {
+                if (key != Mousecode.Left) return;
+                if (Convenience.MouseOver(this))
+                {
+                    MainScene sc = (MainScene)this.InheritedObject;
+                    Jyunrcaea.Program.musiclistscene.EventRejection = Jyunrcaea.Program.musiclistscene.Hide = false;
+                    sc.EventRejection = sc.Hide = true;
+                }
             }
         }
 

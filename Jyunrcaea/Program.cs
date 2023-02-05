@@ -10,10 +10,14 @@ namespace Jyunrcaea
 
     class Program
     {
+        public static MusicList.MainScene musiclistscene = null!;
+
+        public static WindowState ws = null!;
+
         static void Main(string[] args)
         {
             Framework.SavingPerformance = false;
-            Framework.Init("Jyunrcaea!", 1080, 720, null, null, new(true, false, false, false, true));
+            Framework.Init("Jyunrcaea!", 1080, 720, null, null, new(true,  false, false, true));
             //Window.Resize((int)(Display.MonitorWidth * 0.7f), (int)(Display.MonitorHeight * 0.7f));
             //Window.Move(null, null);
             if (!Directory.Exists("cache"))
@@ -36,6 +40,8 @@ namespace Jyunrcaea
             Window.Icon("cache/icon.png");
             Display.FrameLateLimit = 240;
             Display.AddScene(new MainMenu.MainScene());
+            Display.AddScene(musiclistscene = new MusicList.MainScene());
+            Display.AddScene(ws = new WindowState());
             Framework.Function = new CustomFrameworkFunction();
             Framework.Run();
         }
@@ -59,13 +65,97 @@ namespace Jyunrcaea
             Framework.Stop();
         }
 
+        public static bool fullscreenswicthed = false;
+
         public override void KeyDown(Keycode e)
         {
             if (e == Keycode.F1)
                 Framework.ObjectDrawDebuging = !Framework.ObjectDrawDebuging;
+            else if (e == Keycode.F11)
+            {
+                fullscreenswicthed = true;
+                Window.Fullscreen = !Window.Fullscreen;
+                 //Program.ws.Show("창 모드 변경됨: " + ((Window.Fullscreen = !Window.Fullscreen) ? $"전체화면" : "창화면") + $" ({Display.MonitorWidth} × {Display.MonitorHeight})");
+
+                //switch (Window.FullScreen)
+                //{
+                //    case FullscreenOption.Window:
+                //        Window.FullScreen = FullscreenOption.Borderless;
+                //        break;
+                //    case FullscreenOption.Borderless:
+                //        Window.FullScreen = FullscreenOption.FullScreen;
+                //        break;
+                //    case FullscreenOption.FullScreen:
+                //        Window.FullScreen = FullscreenOption.Window;
+                //        break;
+                //}
+                //Window.FullScreen = Window.FullScreen == FullscreenOption.Window ? FullscreenOption.Borderless : FullscreenOption.Window;
+            }
             base.KeyDown(e);
         }
     }
 
-    
+    class WindowState : Scene
+    {
+        StateText t;
+        StateBackground b;
+
+        public WindowState()
+        {
+            this.AddSprite(b = new());
+            this.AddSprite(t = new());
+
+            t.Opacity(0); b.Opacity(0);
+        }
+
+        public override void Start()
+        {
+            base.Start();
+            t.Resize();
+            b.Resize();
+        }
+
+        public override void Resized()
+        {
+            t.Y = b.Y = (int)(Window.Height * 0.2f);
+            t.Size = (int)(24 * Window.AppropriateSize);
+            b.Width = (int)(400 * Window.AppropriateSize);
+            b.Height = t.Size * 2;
+            if (CustomFrameworkFunction.fullscreenswicthed) {
+                CustomFrameworkFunction.fullscreenswicthed = false;
+                Show($"창 모드 변경됨: {(Window.Fullscreen ? "전체화면" : "창화면" )} ({Window.Width} × {Window.Height})");
+            }
+            else Show($"창 크기 조절됨: {Window.Width} × {Window.Height}");
+        }
+
+        public void Show(string text)
+        {
+            t.Text = text;
+            t.Opacity(200, 200f);
+            b.Opacity(200, 200f);
+        }
+    }
+
+    class StateText : TextboxForAnimation
+    {
+        public  StateText() : base("cache\\font.ttf",0) {
+            this.FontColor = new(0, 0, 0);
+            this.OpacityAnimationState.CompleteFunction = () =>
+            {
+                this.Opacity(0, 200f, 500f);
+            };
+        }
+
+    }
+
+    class StateBackground : RectangleForAnimation
+    {
+        public StateBackground()
+        {
+            this.OpacityAnimationState.CompleteFunction = () =>
+            {
+                this.Opacity(0, 200f, 500f);
+            };
+        }
+    }
 }

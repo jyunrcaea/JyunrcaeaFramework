@@ -52,7 +52,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly System.Version Version = new(0, 4, 1);
+        public static readonly System.Version Version = new(0, 4, 3);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
@@ -167,8 +167,10 @@ namespace JyunrcaeaFramework
                 return 1;
             }, IntPtr.Zero);
 
-            SDL_mixer.Mix_HookMusicFinished(Music.MusicFinished);
+            SDL_mixer.Mix_HookMusicFinished(Music.Finished);
 #endif
+            if ((option.option & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) Window.fullscreenoption = true;
+            if ((option.option & SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) == SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) Window.windowborderless = true;
             TextureSharing.resourcelist = new();
             Window.size = new() { w = Window.default_size.x = (int)width, h = Window.default_size.y = (int)height };
             Window.wh = width * 0.5f;
@@ -477,6 +479,35 @@ namespace JyunrcaeaFramework
         public static int Width => size.w;
         public static int Height => size.h;
 
+        //internal static FullscreenOption fullscreenstate;
+        //public static FullscreenOption FullScreen { get => fullscreenstate; set
+        //    {
+        //        if (fullscreenstate == value) return;
+        //        if (fullscreenstate == FullscreenOption.FullScreen) SDL.SDL_SetWindowFullscreen(Framework.window, 0);
+        //        fullscreenstate = value;
+        //        if (SDL.SDL_SetWindowFullscreen(Framework.window, (uint)fullscreenstate) != 0) throw new JyunrcaeaFrameworkException($"SDL Error : {SDL.SDL_GetError()}");
+        //    }
+        //}
+        internal static bool fullscreenoption = false;
+        public static bool Fullscreen
+        {
+            get => fullscreenoption; set
+            {
+                SDL.SDL_SetWindowFullscreen(Framework.window, (fullscreenoption = value) ? 4097u : 0u);
+                if (!value) { Framework.Function.Resize(); Framework.Function.Resized(); }
+            }
+        }
+
+        internal static bool windowborderless = false;
+        public static bool Borderless
+        {
+            get => windowborderless;
+            set
+            {
+                SDL.SDL_SetWindowBordered(Framework.window, (windowborderless = value) ? SDL.SDL_bool.SDL_TRUE : SDL.SDL_bool.SDL_FALSE);
+            }
+        }
+
         public static bool Show { set { if (value) SDL.SDL_ShowWindow(Framework.window); else SDL.SDL_HideWindow(Framework.window); } }
 
         public static void Icon(string filename)
@@ -781,12 +812,13 @@ namespace JyunrcaeaFramework
 
         public WindowOption() { option = SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;  }
 
-        public WindowOption(bool resize,bool borderless,bool fullscreen, bool fullscreen_desktop,bool hide)
+        public WindowOption(bool resize,bool borderless,bool fullscreen,bool hide)
         {
             if (resize) option |= SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
             if (borderless) option |= SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
-            if (fullscreen) option |= SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
-            if (fullscreen_desktop) option |= SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP;
+            if (fullscreen) option |= SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP;
+            // 보더리스 지원 포기
+            //if (fullscreen_desktop) option |= SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP;
             if (hide) option |= SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN;
         }
     }
@@ -847,6 +879,47 @@ namespace JyunrcaeaFramework
     public class Music : PlayableSound
     {
         string filename;
+        bool quickplay = true;
+        bool nowused = false;
+        public bool PlayReady
+        {
+            get => quickplay;
+            set
+            {
+                if (quickplay == value) return;
+                if (nowused)
+                {
+                    quickplay = value; return;
+                }
+                if (quickplay && this.sound == IntPtr.Zero)
+                {
+                    this.Ready();
+                }
+                else if (!quickplay && this.sound != IntPtr.Zero)
+                {
+                    this.Free();
+                }
+                quickplay = value;
+            }
+        }
+        
+        public bool Using
+        {
+            get => nowused;
+            internal set
+            {
+                if (value == nowused) return;
+                if (nowused = value)
+                {
+                    if (this.sound != IntPtr.Zero) return;
+                    this.Ready();
+                }else
+                {
+                    if (quickplay || this.sound == IntPtr.Zero) return;
+                    this.Free();
+                }
+            }
+        }
 
         public Music(string FileName)
         {
@@ -864,22 +937,11 @@ namespace JyunrcaeaFramework
             SDL_mixer.Mix_FreeMusic(this.sound);
         }
 
-        static List<Music> list = new();
-
-        public static void AddMusic(Music music)
-        {   
-            list.Add(music);
-            if (list.Count == 1) music.Ready();
-        }
-
-        public static bool Play()
+        public static bool Play(Music music)
         {
-            if (list.Count == 0 || SDL_mixer.Mix_PlayingMusic() != 0) return false;
-            NowPlayingMusic = list.First();
-            list.RemoveAt(0);
-            //if (NowPlayingMusic.sound == IntPtr.Zero) NowPlayingMusic.Ready();
-            if (SDL_mixer.Mix_PlayMusic(NowPlayingMusic.sound,1) == -1) throw new JyunrcaeaFrameworkException($"음악 재생에 실패하였습니다. {SDL_mixer.Mix_GetError()}");
-            if (list.Count != 0 && list.First().sound == IntPtr.Zero) list.First().Ready(); 
+            if (music.sound == IntPtr.Zero) music.Ready();
+            playingmusic = music;
+            if (SDL_mixer.Mix_PlayMusic(music.sound, 1) == -1) return false;
             return true;
         }
 
@@ -890,15 +952,25 @@ namespace JyunrcaeaFramework
             return true;
         }
 
-        public static Music? NowPlayingMusic { get; internal set; } = null;
+        static Music? playingmusic = null;
+        public static Music? NowPlaying => playingmusic;
 
-        public static Music NextPlayMusic => list.First();
-
-        public static Music LastPlayMusic => list.Last();
-
-        public static string? Title => NowPlayingMusic == null ? null : SDL_mixer.Mix_GetMusicTitle(NowPlayingMusic.sound);
-
-        public static string? Artist => NowPlayingMusic == null ? null : SDL_mixer.Mix_GetMusicArtistTag(NowPlayingMusic.sound);
+        /// <summary>
+        /// 음악 제목을 가져옵니다. (시간이 다소 걸립니다.)
+        /// 'PlayReady' 가 켜져있거나, 이 음악이 재생중일 경우 좀 더 빠르게 불러올수 있습니다.
+        /// </summary>
+        public string Title { get {
+                //ready 되지 않기 위해 따로 로드 (만약 quickplay 가 true라면 이미 this.sound가 intptr.zero 가 아닐것임)
+                if (this.sound == IntPtr.Zero) {
+                    IntPtr ptr = SDL_mixer.Mix_LoadMUS(this.filename);
+                    if (ptr == IntPtr.Zero) throw new JyunrcaeaFrameworkException("음악 파일 로드에 실패했습니다.");
+                    string tt = SDL_mixer.Mix_GetMusicTitle(ptr);
+                    SDL_mixer.Mix_FreeMusic(ptr);
+                    return tt;
+                }
+                return SDL_mixer.Mix_GetMusicTitle(this.sound); 
+            } 
+        }
 
         public static void Skip()
         {
@@ -912,22 +984,28 @@ namespace JyunrcaeaFramework
             SDL_mixer.Mix_PauseMusic();
         }
 
-        public static double NowTime { get { return NowPlayingMusic == null ? -1 : SDL_mixer.Mix_GetMusicPosition(NowPlayingMusic.sound); }
+        /// <summary>
+        /// 원하는 시간대로 이동합니다.
+        /// </summary>
+        public static double NowTime { get { return NowPlaying == null ? -1 : SDL_mixer.Mix_GetMusicPosition(NowPlaying.sound); }
             set
             {
                 if (SDL_mixer.Mix_SetMusicPosition(value) == -1) throw new JyunrcaeaFrameworkException("잘못된 위치");
             }
         }
 
-        public static int MusicQueueCount => list.Count;
-
-        internal static void MusicFinished()
+        internal static void Finished()
         {
             if (SDL_mixer.Mix_PlayingMusic() == 0) return;
-            if (NowPlayingMusic != null) NowPlayingMusic.Free();
-
+            if (NowPlaying != null) NowPlaying.Free();
+            if (MusicFinished != null) MusicFinished();
         }
+
+        public static FunctionWhenMusicFinished? MusicFinished = null;
     }
+
+    public delegate Music? FunctionWhenMusicFinished();
+    
     /// <summary>
     /// 객체의 기본이 되는 객체 인터페이스입니다. (사실 추상 클래스이긴 하지만...)
     /// </summary>
@@ -1171,9 +1249,6 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class Scene : SceneInterface
     {
-        //public int X = 0, Y = 0;
-
-        //List<object> objectlist = new();
         List<DrawableObject> sprites = new();
         List<DropFileEventInterface> drops = new();
         List<ResizeEndEventInterface> resizes = new();
@@ -1185,13 +1260,6 @@ namespace JyunrcaeaFramework
         List<KeyUpEventInterface> keyUpEvents = new();
         List<MouseButtonDownEventInterface> mouseButtonDownEvents = new();
         List<MouseButtonUpEventInterface> mouseButtonUpEvents = new();
-
-        //public void AddSprite(DrawableObject sp)
-        //{
-        //    sprites.Add(sp);
-        //    if (Framework.running)
-        //        sp.Start();
-        //}
         /// <summary>
         /// 장면 위에 그릴수 있는 객체를 원하는 범위에 추가합니다. 
         /// </summary>
@@ -1600,6 +1668,54 @@ namespace JyunrcaeaFramework
         }
 #endif
     }
+
+    /// <summary>
+    /// 오브젝트들 끼리 묶는 용도로 이용됩니다.
+    /// (0.5부터) 이벤트 멀티스레딩을 지원합니다.
+    /// </summary>
+//    [Obsolete("개발중, 곧 출시될 기능")]
+//    public class GroupObject : DrawableObject, AllEventInterface
+//    {
+//        public GroupObject(int X = 0, int Y = 0)
+//        {
+//            this.X = X;
+//            this.Y = Y;
+//        }
+
+//        public override void Start()
+//        {
+
+//        }
+
+//        public override void Resize()
+//        {
+//            this.needresetposition = true;
+//            this.needresetsize = true;
+//        }
+
+//        internal override void Draw()
+//        {
+//            if (needresetposition) ResetPosition();
+//            if (needresetdrawposition)
+//            {
+//                this.dst.x = this.originpos.x + this.mx;
+//                this.dst.y = this.originpos.y + this.my;
+//                this.needresetdrawposition = false;
+//            }
+//        }
+
+//        public override void Stop()
+//        {
+
+//        }
+
+//#if DEBUG
+//        internal override void ODD()
+//        {
+//            SDL.SDL_RenderDrawRect(Framework.renderer, ref dst);
+//        }
+//#endif
+//    }
 
     /// <summary>
     /// 이미지를 출력하는 객체입니다.
