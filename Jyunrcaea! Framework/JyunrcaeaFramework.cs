@@ -1,6 +1,8 @@
 ﻿#define WINDOWS
 using SDL2;
+using System.Diagnostics.SymbolStore;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace JyunrcaeaFramework
 {
@@ -508,6 +510,35 @@ namespace JyunrcaeaFramework
             }
         }
 
+        /// <summary>
+        /// 창을 맨 앞으로 올리고 사용자가 조작할 대상을 이 창으로 설정합니다.
+        /// </summary>
+        public static void Raise()
+        {
+            SDL.SDL_RaiseWindow(Framework.window);
+        }
+
+        /// <summary>
+        /// 최소화 또는 최대화 된 창의 크기와 위치를 원래대로 돌려놓습니다.
+        /// </summary>
+        public static void Restore()
+        {
+            SDL.SDL_RestoreWindow(Framework.window);
+        }
+
+        /// <summary>
+        /// 창의 투명도를 설정합니다. 0.0f이 완전히 투명이며 1.0f이 완전 불투명입니다.
+        /// 투명도를 지원하지 않는 운영체제에서는 get은 1.0f을 반환합니다.
+        /// </summary>
+        public static float Opacity
+        {
+            get { SDL.SDL_GetWindowOpacity(Framework.window, out var op); return op; }
+            set
+            {
+                SDL.SDL_SetWindowOpacity(Framework.window, value);
+            }
+        }
+
         public static bool Show { set { if (value) SDL.SDL_ShowWindow(Framework.window); else SDL.SDL_HideWindow(Framework.window); } }
 
         public static void Icon(string filename)
@@ -530,6 +561,9 @@ namespace JyunrcaeaFramework
         {
             SDL.SDL_SetWindowPosition(Framework.window, x ?? SDL.SDL_WINDOWPOS_CENTERED, y ?? SDL.SDL_WINDOWPOS_CENTERED);
         }
+
+        [Obsolete("프레임워크 미지원 기능 사용을 위한것입니다. 정식 버전에서 사라질 예정입니다.")]
+        public static uint ID => SDL.SDL_GetWindowID(Framework.window);
     }
 
     public interface AllEventInterface:
@@ -632,6 +666,7 @@ namespace JyunrcaeaFramework
                 ODD();
             }
 #endif
+            SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
             SDL.SDL_RenderPresent(Framework.renderer);
             SDL.SDL_SetRenderDrawColor(Framework.renderer, Framework.BackgroundColor.Red, Framework.BackgroundColor.Green, Framework.BackgroundColor.Blue, Framework.BackgroundColor.Alpha);
             SDL.SDL_RenderClear(Framework.renderer);
@@ -1466,6 +1501,169 @@ namespace JyunrcaeaFramework
                 mouseButtonUpEvents[i].MouseButtonUp(e);
         }
     }
+
+    /// <summary>
+    /// 직접 도형 및 이미지를 그리는 장면입니다.
+    /// 많은 요소들을 빠르게 그려야될때 쓰기 좋습니다.
+    /// </summary>
+    public abstract class Canvas : SceneInterface
+    {
+        List<DrawableTexture> textures = new();
+
+        bool ready = false;
+
+        /// <summary>
+        /// 이 캔버스에서 사용할 텍스쳐를 추가합니다.
+        /// </summary>
+        /// <param name="t">텍스쳐</param>
+        public void AddUsingTexture(DrawableTexture t)
+        {
+            textures.Add(t);
+            if (ready)
+            {
+                t.Ready();
+            }
+        }
+
+        /// <summary>
+        /// 이 캔버스에서 추가해놓은 사용하지 않을 텍스쳐를 제거합니다.
+        /// </summary>
+        /// <param name="t">텍스쳐</param>
+        /// <returns></returns>
+        public bool RemoveUsingTexture(DrawableTexture t)
+        {
+            if (!textures.Remove(t)) return false;
+            if (ready)
+            {
+                t.Free();
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 캔버스 전용 그림도구입니다.
+        /// </summary>
+        protected static class Renderer
+        {
+            public enum BlendType
+            {
+                None = SDL.SDL_BlendMode.SDL_BLENDMODE_NONE,
+                Blend = SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND,
+                Add = SDL.SDL_BlendMode.SDL_BLENDMODE_ADD,
+                Mul = SDL.SDL_BlendMode.SDL_BLENDMODE_MUL,
+                Invalid = SDL.SDL_BlendMode.SDL_BLENDMODE_INVALID
+            }
+
+            public static void Rectangle(RectSize size,Color color)
+            {
+                SDL.SDL_SetRenderDrawColor(Framework.renderer,color.Red,color.Green,color.Blue,color.Alpha);
+                SDL.SDL_RenderFillRect(Framework.renderer,ref size.size);
+            }
+
+            public static void Texture(DrawableTexture texture,RectSize size)
+            {
+                SDL.SDL_RenderCopy(Framework.renderer, texture.texture, ref texture.src, ref size.size);
+            }
+
+            public static bool BlendMode(BlendType blendType)
+            {
+                return SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, (SDL.SDL_BlendMode)blendType) == 0;
+            }
+        }
+
+        public abstract void Render();
+
+        internal override void Draw()
+        {
+            if (this.RenderRange == null) SDL.SDL_RenderDrawRect(Framework.renderer, ref Window.size);
+            else SDL.SDL_RenderDrawRect(Framework.renderer, ref this.RenderRange.size);
+            Render();
+            SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
+        }
+
+        public override void FileDropped(string filename)
+        {
+
+        }
+
+        public override void KeyDown(Keycode e)
+        {
+
+        }
+
+        public override void KeyUp(Keycode e)
+        {
+
+        }
+
+        public override void MouseButtonDown(Mousecode e)
+        {
+
+        }
+
+        public override void MouseButtonUp(Mousecode e)
+        {
+
+        }
+
+        public override void MouseMove()
+        {
+
+        }
+
+        public override void Resize()
+        {
+
+        }
+
+        public override void Resized()
+        {
+
+        }
+
+        public override void Start()
+        {
+            ready = true;
+            for (int i = 0;i < textures.Count; i++)
+            {
+                textures[i].Ready();
+            }
+        }
+
+        public override void Stop()
+        {
+            ready = false;
+            for (int i = 0; i < textures.Count; i++)
+            {
+                textures[i].Free();
+            }
+        }
+
+        public override void Update(float millisecond)
+        {
+
+        }
+
+        public override void WindowMove()
+        {
+
+        }
+
+        public override void WindowQuit()
+        {
+
+        }
+
+#if DEBUG
+        internal override void ODD()
+        {
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, Framework.SceneDrawDebugingLineColor.Red, Framework.SceneDrawDebugingLineColor.Green, Framework.SceneDrawDebugingLineColor.Blue, Framework.SceneDrawDebugingLineColor.Alpha);
+            if (this.RenderRange == null) SDL.SDL_RenderDrawRect(Framework.renderer, ref Window.size);
+            else SDL.SDL_RenderDrawRect(Framework.renderer, ref this.RenderRange.size);
+        }
+#endif
+    }
+
     /// <summary>
     /// 직사각형을 출력하는 객체입니다.
     /// </summary>
@@ -1949,13 +2147,13 @@ namespace JyunrcaeaFramework
         /// <param name="y">도착지점의 y좌표</param>
         /// <param name="AnimationTime">이동시간 (밀리초)</param>
         /// <param name="StartupDelay">시작 지연시간 (밀리초)</param>
-        public void Move(int x, int y, float AnimationTime = 0f, float StartupDelay = 0f)
+        public void Move(int? x, int? y, float AnimationTime = 0f, float StartupDelay = 0f)
         {
-            //Console.WriteLine("go to: {0}, {1}. movetime: {2}s", x, y, AnimationTime * 0.0001f);
+            
             if (AnimationTime == 0f && StartupDelay == 0f)
             {
-                base.X = x;
-                base.Y = y;
+                if(x != null) base.X = (int)x;
+                if(y != null) base.Y = (int)y;
                 return;
             }
             MoveAnimationState.bpx = base.X;
@@ -2009,13 +2207,12 @@ namespace JyunrcaeaFramework
         /// <param name="y">도착지점의 y좌표</param>
         /// <param name="AnimationTime">이동시간 (밀리초)</param>
         /// <param name="StartupDelay">시작 지연시간 (밀리초)</param>
-        public void Move(int x, int y, float AnimationTime = 0f, float StartupDelay = 0f)
+        public void Move(int? x, int? y, float AnimationTime = 0f, float StartupDelay = 0f)
         {
-            //Console.WriteLine("go to: {0}, {1}. movetime: {2}s", x, y, AnimationTime * 0.0001f);
             if (AnimationTime == 0f && StartupDelay == 0f)
             {
-                base.X = x;
-                base.Y = y;
+                if (x != null) base.X = (int)x;
+                if (y != null) base.Y = (int)y;
                 return;
             }
             MoveAnimationState.bpx = base.X;
@@ -2070,12 +2267,12 @@ namespace JyunrcaeaFramework
         /// <param name="y">도착지점의 y좌표</param>
         /// <param name="AnimationTime">이동시간 (밀리초)</param>
         /// <param name="StartupDelay">시작 지연시간 (밀리초)</param>
-        public void Move(int x,int y,float AnimationTime = 0f,float StartupDelay = 0f)
+        public void Move(int? x,int? y,float AnimationTime = 0f,float StartupDelay = 0f)
         {
             if (AnimationTime == 0f && StartupDelay == 0f)
             {
-                base.X = x;
-                base.Y = y;
+                if (x != null) base.X = (int)x;
+                if (y != null) base.Y = (int)y;
                 return;
             }
             MoveAnimationState.bpx = base.X;
@@ -2196,28 +2393,31 @@ namespace JyunrcaeaFramework
         public int TargetPositionY { get; internal set; } = 0;
         public float AnimationTime { get; internal set; } = 0;
         public float ArrivalTime { get; internal set; } = 0;
+        bool gx = true, gy = true;
         public FunctionForAnimation CalculationFunction = Animation.Nothing;
 
         public Action? CompleteFunction = null;
 
-        internal void Start(int x,int y,float AnimationTime,float StartupDelay = 0f)
+        internal void Start(int? x, int? y, float AnimationTime, float StartupDelay = 0f)
         {
+            if (x == null && y == null) return;
             this.StartTime = Framework.RunningTime + StartupDelay;
             Complete = false;
-            TargetPositionX = x;
-            TargetPositionY = y;
+            if (x == null) gx = false;
+            else { gx = true; TargetPositionX = (int)x; dx = (int)x - bpx; }
+            if (y == null) gy = false;
+            else { gy = true; TargetPositionY = (int)y; dy = (int)y - bpy; }
             this.AnimationTime = AnimationTime;
             this.ArrivalTime = this.StartTime + AnimationTime;
-            dx = x - bpx;
-            dy = y - bpy;
         }
 
-        public void ModifyArrivalPoint(int x,int y)
+        public void ModifyArrivalPoint(int? x,int? y)
         {
-            TargetPositionX = x;
-            TargetPositionY = y;
-            dx = x - bpx;
-            dy = y - bpy;
+            if (x == null && y == null) AnimationTime = StartTime = 0f;
+            if (x == null) gx = false;
+            else { gx = true; TargetPositionX = (int)x; dx = (int)x - bpx; }
+            if (y == null) gy = false;
+            else { gy = true; TargetPositionY = (int)y; dy = (int)y - bpy; }
         }
 
         internal void Update(ref int x, ref int y)
@@ -2234,8 +2434,8 @@ namespace JyunrcaeaFramework
             }
 
             double ratio = CalculationFunction(nowtime / AnimationTime);
-
-            x = bpx + (int)(dx * ratio); y = bpy + (int)(dy * ratio);
+            if (gx) x = bpx + (int)(dx * ratio);
+            if (gy) y = bpy + (int)(dy * ratio);
         }
     }
     /// <summary>
@@ -2510,6 +2710,17 @@ namespace JyunrcaeaFramework
         public static int X => position.x;
 
         public static int Y => position.y;
+
+        static bool cursorhide = false;
+
+        public static bool HideCursor
+        {
+            get => false;
+            set
+            {
+                SDL.SDL_ShowCursor((cursorhide = value) ? 0 : 1);
+            }
+        }
     }
 
     /// <summary>
@@ -2542,16 +2753,15 @@ namespace JyunrcaeaFramework
         /// 마우스가 객체에 닿았는지 판단합니다.
         /// </summary>
         /// <param name="Sprite">객체</param>
-        /// <param name="SceneRenderSize">장면 위치</param>
         /// <returns></returns>
-        public static bool MouseOver(DrawableObject Sprite,RectSize? SceneRenderSize = null)
+        public static bool MouseOver(DrawableObject Sprite)
         {
-            if (SceneRenderSize == null)
+            if (Sprite.InheritedObject == null || ((Scene)Sprite.InheritedObject).RenderRange == null)
                 return SDL.SDL_PointInRect(ref Mouse.position,ref Sprite.dst) == SDL.SDL_bool.SDL_TRUE;
             SDL.SDL_Rect part = new()
             {
-                x = SceneRenderSize.size.x + Sprite.dst.x,
-                y = SceneRenderSize.size.y + Sprite.dst.y,
+                x = ((Scene)Sprite.InheritedObject).RenderRange!.size.x + Sprite.dst.x,
+                y = ((Scene)Sprite.InheritedObject).RenderRange!.size.y + Sprite.dst.y,
                 w = Sprite.dst.w,
                 h = Sprite.dst.h
             };
@@ -2867,6 +3077,13 @@ namespace JyunrcaeaFramework
             this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer,surface);
             SDL.SDL_FreeSurface(surface);
             if (this.texture == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스쳐로 변환 실패함 SDL Error: {SDL.SDL_GetError()}");
+            this.needresettexture = true;
+            SDL.SDL_QueryTexture(this.texture, out _, out _, out this.absolutesrc.x, out this.absolutesrc.y);
+            if (!this.FixedRenderRange)
+            {
+                this.src.w = this.absolutesrc.x;
+                this.src.h = this.absolutesrc.y;
+            }
             base.Ready();
         }
 

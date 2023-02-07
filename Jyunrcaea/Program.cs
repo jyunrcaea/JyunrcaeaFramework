@@ -8,6 +8,37 @@ namespace Jyunrcaea
         public const string Version = "0.1";
     }
 
+    class GoodBackground : Canvas
+    {
+        TextureFromFile t;
+        RectSize s = new();
+
+        public GoodBackground()
+        {
+            t = new("test.png");
+            t.Opacity = 100;
+            this.AddUsingTexture(t);
+        }
+
+        public override void Start()
+        {
+            Resize();
+            base.Start();
+        }
+
+        public override void Render()
+        {
+            Renderer.BlendMode(Renderer.BlendType.Mul);
+            Renderer.Texture(t,s);
+        }
+
+        public override void Resize()
+        {
+            s.Width = Window.Width;
+            s.Height = Window.Height;
+        }
+    }
+
     class Program
     {
         public static MusicList.MainScene musiclistscene = null!;
@@ -39,8 +70,10 @@ namespace Jyunrcaea
             }
             Window.Icon("cache/icon.png");
             Display.FrameLateLimit = 240;
+
             Display.AddScene(new MainMenu.MainScene());
             Display.AddScene(musiclistscene = new MusicList.MainScene());
+            Display.AddScene(new GoodBackground());
             Display.AddScene(ws = new WindowState());
             Framework.Function = new CustomFrameworkFunction();
             Framework.Run();
