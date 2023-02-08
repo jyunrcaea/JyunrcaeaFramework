@@ -103,7 +103,7 @@ namespace Jyunrcaea
         public override void KeyDown(Keycode e)
         {
             if (e == Keycode.F1)
-                Framework.ObjectDrawDebuging = !Framework.ObjectDrawDebuging;
+                Debug.ObjectDrawDebuging = !Debug.ObjectDrawDebuging;
             else if (e == Keycode.F11)
             {
                 fullscreenswicthed = true;

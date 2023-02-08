@@ -6,14 +6,10 @@ using System.Runtime.InteropServices;
 
 namespace JyunrcaeaFramework
 {
-    
-    /// <summary>
-    /// 프레임워크에 대한 명령어가 모여있습니다.
-    /// 초기화, 시작, 종료 등이 있습니다.
-    /// </summary>
-    public static class Framework
-    {
 #if DEBUG
+    public static class Debug
+    {
+
         /// <summary>
         /// ODD 를 실행할지에 대한 여부입니다.
         /// </summary>
@@ -26,19 +22,28 @@ namespace JyunrcaeaFramework
         /// ODD 실행시 장면의 테두리를 표시할 색입니다.
         /// </summary>
         public static Color SceneDrawDebugingLineColor = new(50, 255, 50);
+
+        //public static bool CheckDrawTime = false;
+        //internal static float[] drawtimelist = Array.Empty<float>();
+        //public static float[] DrawTimeList => drawtimelist;
+    
+    }
 #endif
-        /// <summary>
-        /// 업데이트와 렌더링이 되는 시간을 억지로 살짝 겹칩니다.
-        /// 평상시에는 권장되지 않으며,초당 프레임이 극단적으로 안나오는 경우 약간의 프레임 향상을 시도해볼수 있는 기술입니다.
-        /// </summary>
-        public static bool OvercomeFrame = false;
+    
+    /// <summary>
+    /// 프레임워크에 대한 명령어가 모여있습니다.
+    /// 초기화, 시작, 종료 등이 있습니다.
+    /// </summary>
+    public static class Framework
+    {
         /// <summary>
         /// 가능한 CPU 사용량을 줄입니다. 안정적인 초당 프레임을 내는데에 방해가 될수 있습니다.
+        /// (컴퓨터 사양이 별로 좋지 못하거나, 초당 프레임을 240 이상 뽑아야될 경우 끄는게 좋습니다.)
         /// </summary>
         public static bool SavingPerformance = true;
         /// <summary>
         /// 업데이트와 렌더링을 서로 다른 스레드에서 작업시킵니다.
-        /// 잘하면 나쁘지 않은 성능을 얻을순 있지만, SDL2 라이브러리에 문제를 일으킬수 있습니다.
+        /// 프레임이 낮은 상태에선 잘하면 나쁘지 않은 성능을 얻을순 있지만, SDL2 라이브러리에 문제를 일으킬수 있습니다.
         /// </summary>
         public static bool ThreadRender = false;
         /// <summary>
@@ -47,10 +52,6 @@ namespace JyunrcaeaFramework
         /// 장면 갯수가 적은 경우 사용하지 않는걸 권장합니다.
         /// </summary>
         public static bool MultiCoreProcess = false;
-        /// <summary>
-        /// 창의 배경색을 설정합니다.
-        /// </summary>
-        public static Color BackgroundColor = new(31, 30, 51);
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
@@ -468,8 +469,13 @@ namespace JyunrcaeaFramework
 
         public static float AppropriateSize { get; internal set; } = 1;
 
-        //internal static uint h = 0;
-        internal static float wh = 0, hh = 0;
+    /// <summary>
+    /// 창의 배경색을 설정합니다.
+    /// </summary>
+    public static Color BackgroundColor = new(31, 30, 51);
+
+    //internal static uint h = 0;
+    internal static float wh = 0, hh = 0;
         //internal static int Y = 0;
 
         public static int X => position.x;
@@ -661,14 +667,14 @@ namespace JyunrcaeaFramework
                 if (!Display.scenes[id].Hide) Display.scenes[id].Draw();
             }
 #if DEBUG
-            if (Framework.ObjectDrawDebuging)
+            if (Debug.ObjectDrawDebuging)
             {
                 ODD();
             }
 #endif
             SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
             SDL.SDL_RenderPresent(Framework.renderer);
-            SDL.SDL_SetRenderDrawColor(Framework.renderer, Framework.BackgroundColor.Red, Framework.BackgroundColor.Green, Framework.BackgroundColor.Blue, Framework.BackgroundColor.Alpha);
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, Window.BackgroundColor.Red, Window.BackgroundColor.Green, Window.BackgroundColor.Blue, Window.BackgroundColor.Alpha);
             SDL.SDL_RenderClear(Framework.renderer);
             if (endtime <= Framework.frametimer.ElapsedTicks - Display.framelatelimit)
                 endtime = Framework.frametimer.ElapsedTicks + Display.framelatelimit;
@@ -830,7 +836,7 @@ namespace JyunrcaeaFramework
 #if DEBUG
         internal override void ODD()
         {
-            SDL.SDL_SetRenderDrawColor(Framework.renderer, Framework.ObjectDrawDebugingLineColor.Red, Framework.ObjectDrawDebugingLineColor.Green, Framework.ObjectDrawDebugingLineColor.Blue, Framework.ObjectDrawDebugingLineColor.Alpha);
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, Debug.ObjectDrawDebugingLineColor.Red, Debug.ObjectDrawDebugingLineColor.Green, Debug.ObjectDrawDebugingLineColor.Blue, Debug.ObjectDrawDebugingLineColor.Alpha);
             for (int i = 0; i < Display.scenes.Count; i++)
             {
                 if (!Display.scenes[i].Hide) Display.scenes[i].ODD();
@@ -1398,13 +1404,13 @@ namespace JyunrcaeaFramework
 #if DEBUG
         internal override void ODD()
         {
-            SDL.SDL_SetRenderDrawColor(Framework.renderer, Framework.ObjectDrawDebugingLineColor.Red, Framework.ObjectDrawDebugingLineColor.Green, Framework.ObjectDrawDebugingLineColor.Blue, Framework.ObjectDrawDebugingLineColor.Alpha);
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, Debug.ObjectDrawDebugingLineColor.Red, Debug.ObjectDrawDebugingLineColor.Green, Debug.ObjectDrawDebugingLineColor.Blue, Debug.ObjectDrawDebugingLineColor.Alpha);
             for(int i =0; i < sprites.Count; i++)
             {
                 if (sprites[i].Hide) continue;
                 sprites[i].ODD();
             }
-            SDL.SDL_SetRenderDrawColor(Framework.renderer, Framework.SceneDrawDebugingLineColor.Red, Framework.SceneDrawDebugingLineColor.Green, Framework.SceneDrawDebugingLineColor.Blue, Framework.SceneDrawDebugingLineColor.Alpha);
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, Debug.SceneDrawDebugingLineColor.Red, Debug.SceneDrawDebugingLineColor.Green, Debug.SceneDrawDebugingLineColor.Blue, Debug.SceneDrawDebugingLineColor.Alpha);
             if (this.RenderRange == null) SDL.SDL_RenderDrawRect(Framework.renderer, ref Window.size);
             else SDL.SDL_RenderDrawRect(Framework.renderer, ref this.RenderRange.size);
         }
@@ -1554,15 +1560,22 @@ namespace JyunrcaeaFramework
                 Invalid = SDL.SDL_BlendMode.SDL_BLENDMODE_INVALID
             }
 
-            public static void Rectangle(RectSize size,Color color)
+            public static bool Rectangle(RectSize size,Color color)
             {
                 SDL.SDL_SetRenderDrawColor(Framework.renderer,color.Red,color.Green,color.Blue,color.Alpha);
-                SDL.SDL_RenderFillRect(Framework.renderer,ref size.size);
+                return SDL.SDL_RenderFillRect(Framework.renderer,ref size.size) == 0;
             }
 
-            public static void Texture(DrawableTexture texture,RectSize size)
+            public static bool Rectangle(int width, int height, int x, int y, byte red, byte green, byte blue, byte alpha)
             {
-                SDL.SDL_RenderCopy(Framework.renderer, texture.texture, ref texture.src, ref size.size);
+                SDL.SDL_SetRenderDrawColor(Framework.renderer, red, green, blue, alpha);
+                SDL.SDL_Rect rt = new() { w = width, h = height, x = x, y =  y };
+                return SDL.SDL_RenderFillRect(Framework.renderer, ref rt) == 0;
+            }
+
+            public static bool Texture(DrawableTexture texture,RectSize size)
+            {
+                return SDL.SDL_RenderCopy(Framework.renderer, texture.texture, ref texture.src, ref size.size) == 0;
             }
 
             public static bool BlendMode(BlendType blendType)
@@ -1657,7 +1670,7 @@ namespace JyunrcaeaFramework
 #if DEBUG
         internal override void ODD()
         {
-            SDL.SDL_SetRenderDrawColor(Framework.renderer, Framework.SceneDrawDebugingLineColor.Red, Framework.SceneDrawDebugingLineColor.Green, Framework.SceneDrawDebugingLineColor.Blue, Framework.SceneDrawDebugingLineColor.Alpha);
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, Debug.SceneDrawDebugingLineColor.Red, Debug.SceneDrawDebugingLineColor.Green, Debug.SceneDrawDebugingLineColor.Blue, Debug.SceneDrawDebugingLineColor.Alpha);
             if (this.RenderRange == null) SDL.SDL_RenderDrawRect(Framework.renderer, ref Window.size);
             else SDL.SDL_RenderDrawRect(Framework.renderer, ref this.RenderRange.size);
         }
