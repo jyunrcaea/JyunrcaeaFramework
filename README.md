@@ -70,7 +70,7 @@ public int jyunni { get; internal set; } = 614;
 이 코드처럼 작성해주세요.
 ```c#
 internal int project614 = 614;
-public int jyunni => 614project;
+public int jyunni => project614;
 ```
 (같은 어셈블리에서 접근시 'project614' 변수를 이용하면 되며, 다른 어셈블리에서 접근시 'jyunni' 프로퍼티를 제공해주면 됩니다.)
 이유는 성능 향상... ㅎㅎ(getter시 필드 > 수동 속성 > 인라인)
