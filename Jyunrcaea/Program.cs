@@ -73,7 +73,7 @@ namespace Jyunrcaea
 
             Display.AddScene(new MainMenu.MainScene());
             Display.AddScene(musiclistscene = new MusicList.MainScene());
-            Display.AddScene(new GoodBackground());
+            //Display.AddScene(new GoodBackground());
             Display.AddScene(ws = new WindowState());
             Framework.Function = new CustomFrameworkFunction();
             Framework.Run();
