@@ -1,5 +1,5 @@
 <div align="center">
-	<img src='Jyunrcaea/Jyunrcaea!FrameworkIcon.png' alt='쥰르케아 프레임워크 아이콘'>
+	<img src="Jyunrcaea! Framework/src/Icon.png" alt='쥰르케아 프레임워크 아이콘'>
 </div>
 
 # Jyunrcaea! Framework
