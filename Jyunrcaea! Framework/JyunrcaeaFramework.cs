@@ -1309,71 +1309,62 @@ namespace JyunrcaeaFramework
         /// </summary>
         /// <param name="NewSprite">그릴수 있는 객체(sprite, textbox, rectangle 등)</param>
         /// <param name="Index">추가할 범위 (음수일경우 맨 마지막에서 횟수만큼 앞으로 가서 추가합니다, 즉 -2 일경우 마지막(-1)에서 앞으로 한칸입니다.)</param>
-        /// <returns>성공시 true를 반환, 실패서 false를 반환 (값이 잘못된 경우 예외오류)</returns>
         /// <exception cref="JyunrcaeaFrameworkException">잘못된 위치값을 넣었거나, 이미 다른 장면에 객체를 추가한 경우 발생하는 예외입니다.</exception>
-        public bool AddSprite(object NewSprite, int Index)
+        public void AddSprite(DrawableObject NewSprite, int Index)
         {
-            if (NewSprite is DrawableObject)
+            if (NewSprite.InheritedObject != null) throw new JyunrcaeaFrameworkException("이 객체는 이미 다른 장면에 추가되었습니다.");
+            NewSprite.inheritobj = this;
+            if (NewSprite is DropFileEventInterface) drops.Add((DropFileEventInterface)NewSprite);
+            if (NewSprite is ResizeEndEventInterface) resizes.Add((ResizeEndEventInterface)NewSprite);
+            if (NewSprite is UpdateEventInterface) updates.Add((UpdateEventInterface)NewSprite);
+            if (NewSprite is WindowMoveEventInterface) windowMovedInterfaces.Add((WindowMoveEventInterface)NewSprite);
+            if (NewSprite is KeyDownEventInterface) keyDownEvents.Add((KeyDownEventInterface)NewSprite);
+            if (NewSprite is MouseMoveEventInterface) mouseMoves.Add((MouseMoveEventInterface)NewSprite);
+            if (NewSprite is WindowQuitEventInterface) windowQuits.Add((WindowQuitEventInterface)NewSprite);
+            if (NewSprite is KeyUpEventInterface) keyUpEvents.Add((KeyUpEventInterface)NewSprite);
+            if (NewSprite is MouseButtonDownEventInterface) mouseButtonDownEvents.Add((MouseButtonDownEventInterface)NewSprite);
+            if (NewSprite is MouseButtonUpEventInterface) mouseButtonUpEvents.Add((MouseButtonUpEventInterface)NewSprite);
+            if (Index < 0)
             {
-                DrawableObject dosprite = (DrawableObject)NewSprite;
-                if (dosprite.InheritedObject != null) throw new JyunrcaeaFrameworkException("이 객체는 이미 다른 장면에 추가되었습니다.");
-                dosprite.inheritobj = this;
-                if (NewSprite is DropFileEventInterface) drops.Add((DropFileEventInterface)NewSprite);
-                if (NewSprite is ResizeEndEventInterface) resizes.Add((ResizeEndEventInterface)NewSprite);
-                if (NewSprite is UpdateEventInterface) updates.Add((UpdateEventInterface)NewSprite);
-                if (NewSprite is WindowMoveEventInterface) windowMovedInterfaces.Add((WindowMoveEventInterface)NewSprite);
-                if (NewSprite is KeyDownEventInterface) keyDownEvents.Add((KeyDownEventInterface)NewSprite);
-                if (NewSprite is MouseMoveEventInterface) mouseMoves.Add((MouseMoveEventInterface)NewSprite);
-                if (NewSprite is WindowQuitEventInterface) windowQuits.Add((WindowQuitEventInterface)NewSprite);
-                if (NewSprite is KeyUpEventInterface) keyUpEvents.Add((KeyUpEventInterface)NewSprite);
-                if (NewSprite is MouseButtonDownEventInterface) mouseButtonDownEvents.Add((MouseButtonDownEventInterface)NewSprite);
-                if (NewSprite is MouseButtonUpEventInterface) mouseButtonUpEvents.Add((MouseButtonUpEventInterface)NewSprite);
-                if (Index < 0)
+                if (Index == -1) {
+                    sprites.Add(NewSprite);
+                    //objectlist.Add(sp);
+                }
+                else
                 {
-                    if (Index == -1) {
-                        sprites.Add(dosprite);
-                        //objectlist.Add(sp);
-                    }
-                    else
-                    {
-                        int i = sprites.Count + Index;
-                        if (i < 0) throw new JyunrcaeaFrameworkException($"존재하지 않는 범위입니다. (입력한 범위: {Index}, 선택된 범위: {i}, 리스트 갯수: {sprites.Count})");
-                        sprites.Insert(i, dosprite);
-                        //objectlist.Insert(i, sp);
-                    }
+                    int i = sprites.Count + Index;
+                    if (i < 0) throw new JyunrcaeaFrameworkException($"존재하지 않는 범위입니다. (입력한 범위: {Index}, 선택된 범위: {i}, 리스트 갯수: {sprites.Count})");
+                    sprites.Insert(i, NewSprite);
+                    //objectlist.Insert(i, sp);
                 }
-                else {
-                    sprites.Insert(Index, dosprite);
-                    //objectlist.Insert(index, sp);
-                }
-                if (Framework.running)
-                    dosprite.Start();
-                return true;
             }
-            return false;
+            else {
+                sprites.Insert(Index, NewSprite);
+                //objectlist.Insert(index, sp);
+            }
+            if (Framework.running)
+                NewSprite.Start();
         }
         /// <summary>
         /// 장면에 있는 객체를 삭제합니다.
         /// </summary>
-        /// <param name="sp">삭제할 동일 객체</param>
-        /// <returns>성공적으로 처리될경우 true, 만약 장면에 해당 객체가 없거나, 'DrawableObject' 클래스가 상속되지 않은 객체인경우 false가 반환됩니다.</returns>
-        public bool RemoveSprite(object sp)
+        /// <param name="RemovedObject">삭제할 동일 객체</param>
+        /// <returns>잘 제거된 경우 true를 반환, 만약 장면에 존재하지 않는 객체일경우 false를 반환합니다.</returns>
+        public bool RemoveSprite(DrawableObject RemovedObject)
         {
-            if (sp is not DrawableObject) return false;
-            DrawableObject dosprite = (DrawableObject)sp;
-            if (!sprites.Remove(dosprite)) return false;
-            dosprite.inheritobj = null;
-            if (sp is DropFileEventInterface) drops.Remove((DropFileEventInterface)sp);
-            if (sp is ResizeEndEventInterface) resizes.Remove((ResizeEndEventInterface)sp);
-            if (sp is UpdateEventInterface) updates.Remove((UpdateEventInterface)sp);
-            if (sp is WindowMoveEventInterface) windowMovedInterfaces.Remove((WindowMoveEventInterface)sp);
-            if (sp is KeyDownEventInterface) keyDownEvents.Remove((KeyDownEventInterface)sp);
-            if (sp is MouseMoveEventInterface) mouseMoves.Remove((MouseMoveEventInterface)sp);
-            if (sp is WindowQuitEventInterface) windowQuits.Remove((WindowQuitEventInterface)sp);
-            if (sp is KeyUpEventInterface) keyUpEvents.Remove((KeyUpEventInterface)sp);
-            if (sp is MouseButtonDownEventInterface) mouseButtonDownEvents.Remove((MouseButtonDownEventInterface)sp);
-            if (sp is MouseButtonUpEventInterface) mouseButtonUpEvents.Remove((MouseButtonUpEventInterface)sp);
-            dosprite.Stop();
+            if (!sprites.Remove(RemovedObject)) return false;
+            RemovedObject.inheritobj = null;
+            if (RemovedObject is DropFileEventInterface) drops.Remove((DropFileEventInterface)RemovedObject);
+            if (RemovedObject is ResizeEndEventInterface) resizes.Remove((ResizeEndEventInterface)RemovedObject);
+            if (RemovedObject is UpdateEventInterface) updates.Remove((UpdateEventInterface)RemovedObject);
+            if (RemovedObject is WindowMoveEventInterface) windowMovedInterfaces.Remove((WindowMoveEventInterface)RemovedObject);
+            if (RemovedObject is KeyDownEventInterface) keyDownEvents.Remove((KeyDownEventInterface)RemovedObject);
+            if (RemovedObject is MouseMoveEventInterface) mouseMoves.Remove((MouseMoveEventInterface)RemovedObject);
+            if (RemovedObject is WindowQuitEventInterface) windowQuits.Remove((WindowQuitEventInterface)RemovedObject);
+            if (RemovedObject is KeyUpEventInterface) keyUpEvents.Remove((KeyUpEventInterface)RemovedObject);
+            if (RemovedObject is MouseButtonDownEventInterface) mouseButtonDownEvents.Remove((MouseButtonDownEventInterface)RemovedObject);
+            if (RemovedObject is MouseButtonUpEventInterface) mouseButtonUpEvents.Remove((MouseButtonUpEventInterface)RemovedObject);
+            RemovedObject.Stop();
             return true;
         }
 
@@ -1381,27 +1372,24 @@ namespace JyunrcaeaFramework
         /// 장면 위에 그릴수 있는 객체를 (추가된 객체들 뒤에) 추가합니다.
         /// </summary>
         /// <param name="sp">그릴수 있는 객체(sprite, textbox, rectangle 등)</param>
-        /// <returns>성공시 객체가 리스트에 저장된 위치를 반환하며, 실패시 '-1' 를 반환합니다.</returns>
-        public int AddSprite(object sp)
+        /// <returns>객체가 리스트에 저장된 위치를 반환합니다.</returns>
+        public int AddSprite(DrawableObject sp)
         {
-            if (AddSprite(sp, -1)) return sprites.Count - 1;
-            return -1;
+            AddSprite(sp, -1);
+            return sprites.Count - 1;
         }
 
         /// <summary>
         /// 장면 위에 그릴수 있는 객체 여러개를 추가합니다.
         /// </summary>
         /// <param name="sp">그릴수 있는 객체들(sprite, textbox, rectangle 등)</param>
-        /// <returns>실패한 객체들의 위치들이 반환됩니다. 만약 반환된게 하나도 없다면 전부다 성공한겁니다.</returns>
-        public int[] AddSprites(params object[] sp)
+        public void AddSprites(params DrawableObject[] sp)
         {
-            if (sp.Length == 0) return null!;
-            List<int> not_success_list = new();
+            if (sp.Length == 0) return;
             for (int i = 0; i < sp.Length; i++)
             {
-                if (AddSprite(sp[i]) == -1) not_success_list.Add(i);
+                AddSprite(sp[i]);
             }
-            return not_success_list.ToArray();
         }
 
 #if DEBUG
@@ -1793,17 +1781,6 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class GhostObject : DrawableObject
     {
-        List<DrawableObject> sprites = new();
-        List<DropFileEventInterface> drops = new();
-        List<ResizeEndEventInterface> resizes = new();
-        List<UpdateEventInterface> updates = new();
-        List<WindowMoveEventInterface> windowMovedInterfaces = new();
-        List<KeyDownEventInterface> keyDownEvents = new();
-        List<MouseMoveEventInterface> mouseMoves = new();
-        List<WindowQuitEventInterface> windowQuits = new();
-        List<KeyUpEventInterface> keyUpEvents = new();
-        List<MouseButtonDownEventInterface> mouseButtonDownEvents = new();
-        List<MouseButtonUpEventInterface> mouseButtonUpEvents = new();
 
         int px = 0, py = 0;
 
@@ -1897,110 +1874,26 @@ namespace JyunrcaeaFramework
 
     /// <summary>
     /// 오브젝트들 끼리 묶는 용도로 이용됩니다.
-    /// 
     /// (0.5부터) GroupObject에 다른 GroupObject를 추가할수 있습니다.
     /// </summary>
     [Obsolete("개발중, 곧 출시될 기능")]
     public class GroupObject : DrawableObject
     {
         List<DrawableObject> sprites = new();
-        List<DropFileEventInterface> drops = new();
-        List<ResizeEndEventInterface> resizes = new();
-        List<UpdateEventInterface> updates = new();
-        List<WindowMoveEventInterface> windowMovedInterfaces = new();
-        List<KeyDownEventInterface> keyDownEvents = new();
-        List<MouseMoveEventInterface> mouseMoves = new();
-        List<WindowQuitEventInterface> windowQuits = new();
-        List<KeyUpEventInterface> keyUpEvents = new();
-        List<MouseButtonDownEventInterface> mouseButtonDownEvents = new();
-        List<MouseButtonUpEventInterface> mouseButtonUpEvents = new();
 
-        /// <summary>
-        /// 장면 위에 그릴수 있는 객체를 원하는 범위에 추가합니다. 
-        /// </summary>
-        /// <param name="NewSprite">그릴수 있는 객체(sprite, textbox, rectangle 등)</param>
-        /// <param name="Index">추가할 범위 (음수일경우 맨 마지막에서 횟수만큼 앞으로 가서 추가합니다, 즉 -2 일경우 마지막(-1)에서 앞으로 한칸입니다.)</param>
-        /// <returns>성공시 true를 반환, 실패서 false를 반환 (값이 잘못된 경우 예외오류)</returns>
-        /// <exception cref="JyunrcaeaFrameworkException">잘못된 위치값을 넣었거나, 이미 다른 장면에 객체를 추가한 경우 발생하는 예외입니다.</exception>
-        public bool AddSprite(object NewSprite, int Index)
+        internal void InheritToScene(DrawableObject obj)
         {
-            if (NewSprite is DrawableObject)
+            if (this.inheritobj is GroupObject)
             {
-                // No way, 
-                if (NewSprite.Equals(this)) throw new JyunrcaeaFrameworkException("Are you kidding me?\nGroupObject can't add myself!");
-                DrawableObject dosprite = (DrawableObject)NewSprite;
-                if (dosprite.InheritedObject != null) throw new JyunrcaeaFrameworkException("이 객체는 이미 다른 장면에 추가되었습니다.");
-                dosprite.inheritobj = this;
-                if (NewSprite is DropFileEventInterface) drops.Add((DropFileEventInterface)NewSprite);
-                if (NewSprite is ResizeEndEventInterface) resizes.Add((ResizeEndEventInterface)NewSprite);
-                if (NewSprite is UpdateEventInterface) updates.Add((UpdateEventInterface)NewSprite);
-                if (NewSprite is WindowMoveEventInterface) windowMovedInterfaces.Add((WindowMoveEventInterface)NewSprite);
-                if (NewSprite is KeyDownEventInterface) keyDownEvents.Add((KeyDownEventInterface)NewSprite);
-                if (NewSprite is MouseMoveEventInterface) mouseMoves.Add((MouseMoveEventInterface)NewSprite);
-                if (NewSprite is WindowQuitEventInterface) windowQuits.Add((WindowQuitEventInterface)NewSprite);
-                if (NewSprite is KeyUpEventInterface) keyUpEvents.Add((KeyUpEventInterface)NewSprite);
-                if (NewSprite is MouseButtonDownEventInterface) mouseButtonDownEvents.Add((MouseButtonDownEventInterface)NewSprite);
-                if (NewSprite is MouseButtonUpEventInterface) mouseButtonUpEvents.Add((MouseButtonUpEventInterface)NewSprite);
-                if (Index < 0)
-                {
-                    if (Index == -1)
-                    {
-                        sprites.Add(dosprite);
-                        //objectlist.Add(sp);
-                    }
-                    else
-                    {
-                        int i = sprites.Count + Index;
-                        if (i < 0) throw new JyunrcaeaFrameworkException($"존재하지 않는 범위입니다. (입력한 범위: {Index}, 선택된 범위: {i}, 리스트 갯수: {sprites.Count})");
-                        sprites.Insert(i, dosprite);
-                        //objectlist.Insert(i, sp);
-                    }
-                }
-                else
-                {
-                    sprites.Insert(Index, dosprite);
-                    //objectlist.Insert(index, sp);
-                }
-                if (Framework.running)
-                    dosprite.Start();
-                return true;
+                ((GroupObject)this.inheritobj).InheritToScene(obj);
+                return;
             }
-            return false;
-        }
-        /// <summary>
-        /// 장면에 있는 객체를 삭제합니다.
-        /// </summary>
-        /// <param name="sp">삭제할 동일 객체</param>
-        /// <returns>성공적으로 처리될경우 true, 만약 장면에 해당 객체가 없거나, 'DrawableObject' 클래스가 상속되지 않은 객체인경우 false가 반환됩니다.</returns>
-        public bool RemoveSprite(object sp)
-        {
-            if (sp is not DrawableObject) return false;
-            DrawableObject dosprite = (DrawableObject)sp;
-            if (!sprites.Remove(dosprite)) return false;
-            dosprite.inheritobj = null;
-            if (sp is DropFileEventInterface) drops.Remove((DropFileEventInterface)sp);
-            if (sp is ResizeEndEventInterface) resizes.Remove((ResizeEndEventInterface)sp);
-            if (sp is UpdateEventInterface) updates.Remove((UpdateEventInterface)sp);
-            if (sp is WindowMoveEventInterface) windowMovedInterfaces.Remove((WindowMoveEventInterface)sp);
-            if (sp is KeyDownEventInterface) keyDownEvents.Remove((KeyDownEventInterface)sp);
-            if (sp is MouseMoveEventInterface) mouseMoves.Remove((MouseMoveEventInterface)sp);
-            if (sp is WindowQuitEventInterface) windowQuits.Remove((WindowQuitEventInterface)sp);
-            if (sp is KeyUpEventInterface) keyUpEvents.Remove((KeyUpEventInterface)sp);
-            if (sp is MouseButtonDownEventInterface) mouseButtonDownEvents.Remove((MouseButtonDownEventInterface)sp);
-            if (sp is MouseButtonUpEventInterface) mouseButtonUpEvents.Remove((MouseButtonUpEventInterface)sp);
-            dosprite.Stop();
-            return true;
-        }
-
-        /// <summary>
-        /// 장면 위에 그릴수 있는 객체를 (추가된 객체들 뒤에) 추가합니다.
-        /// </summary>
-        /// <param name="sp">그릴수 있는 객체(sprite, textbox, rectangle 등)</param>
-        /// <returns>성공시 객체가 리스트에 저장된 위치를 반환하며, 실패시 '-1' 를 반환합니다.</returns>
-        public int AddSprite(object sp)
-        {
-            if (AddSprite(sp, -1)) return sprites.Count - 1;
-            return -1;
+            if (this.inheritobj is Scene)
+            {
+                
+                return;
+            }
+            throw new JyunrcaeaFrameworkException("장면 또는 그룹 객체에 상속되지 않은 그룹 객체입니다.\n그룹 객체가 소유한 객체들을 장면에 추가할수 없습니다.");
         }
 
         public GroupObject(int X = 0, int Y = 0)
@@ -2011,7 +1904,11 @@ namespace JyunrcaeaFramework
 
         public override void Start()
         {
-
+            for (int i=0;i<sprites.Count;i++)
+            {
+                InheritToScene(sprites[i]);
+                sprites[i].Start();
+            }
         }
 
         public override void Resize()
