@@ -2,6 +2,8 @@
 	<img src='Jyunrcaea/Jyunrcaea!FrameworkIcon.png' alt='Jyunrcaea! Framework Icon'>
 </div>
 
+2D Framework.
+
 # Jyunrcaea! Framework
 C# framework help to make 2D game or application easy.
 
