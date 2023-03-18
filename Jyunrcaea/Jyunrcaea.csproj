@@ -44,6 +44,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Jyunrcaea!FrameworkIcon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="test.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

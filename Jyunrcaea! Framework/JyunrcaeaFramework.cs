@@ -1061,6 +1061,9 @@ namespace JyunrcaeaFramework
         internal abstract void Draw();
         public abstract void Start();
         public bool Hide = false;
+
+        //public abstract int X { get; set; }
+        //public abstract int Y { get; set; }
     }
     /// <summary>
     /// 장면의 기본이 되는 장면 인터페이스입니다. 객체 인터페이스와 모든 이벤트 인터페이스를 상속하고 있습니다. 
@@ -1113,10 +1116,17 @@ namespace JyunrcaeaFramework
 
         public abstract void MouseButtonUp(Mousecode e);
     }
+
+    public interface DefaultObjectPositionInterface
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+    }
+
     /// <summary>
     /// 장면에 쓰일 객체 추상 클래스입니다.
     /// </summary>
-    public abstract class DrawableObject : ObjectInterface
+    public abstract class DrawableObject : ObjectInterface, DefaultObjectPositionInterface
     {
         internal object? inheritobj = null;
         public object? InheritedObject => inheritobj;
@@ -1304,6 +1314,34 @@ namespace JyunrcaeaFramework
         List<MouseButtonDownEventInterface> mouseButtonDownEvents = new();
         List<MouseButtonUpEventInterface> mouseButtonUpEvents = new();
 
+        internal void AddAtEventList(DrawableObject NewSprite)
+        {
+            if (NewSprite is DropFileEventInterface) drops.Add((DropFileEventInterface)NewSprite);
+            if (NewSprite is ResizeEndEventInterface) resizes.Add((ResizeEndEventInterface)NewSprite);
+            if (NewSprite is UpdateEventInterface) updates.Add((UpdateEventInterface)NewSprite);
+            if (NewSprite is WindowMoveEventInterface) windowMovedInterfaces.Add((WindowMoveEventInterface)NewSprite);
+            if (NewSprite is KeyDownEventInterface) keyDownEvents.Add((KeyDownEventInterface)NewSprite);
+            if (NewSprite is MouseMoveEventInterface) mouseMoves.Add((MouseMoveEventInterface)NewSprite);
+            if (NewSprite is WindowQuitEventInterface) windowQuits.Add((WindowQuitEventInterface)NewSprite);
+            if (NewSprite is KeyUpEventInterface) keyUpEvents.Add((KeyUpEventInterface)NewSprite);
+            if (NewSprite is MouseButtonDownEventInterface) mouseButtonDownEvents.Add((MouseButtonDownEventInterface)NewSprite);
+            if (NewSprite is MouseButtonUpEventInterface) mouseButtonUpEvents.Add((MouseButtonUpEventInterface)NewSprite);
+        }
+
+        internal void RemoveAtEventList(DrawableObject RemovedObject)
+        {
+            if (RemovedObject is DropFileEventInterface) drops.Remove((DropFileEventInterface)RemovedObject);
+            if (RemovedObject is ResizeEndEventInterface) resizes.Remove((ResizeEndEventInterface)RemovedObject);
+            if (RemovedObject is UpdateEventInterface) updates.Remove((UpdateEventInterface)RemovedObject);
+            if (RemovedObject is WindowMoveEventInterface) windowMovedInterfaces.Remove((WindowMoveEventInterface)RemovedObject);
+            if (RemovedObject is KeyDownEventInterface) keyDownEvents.Remove((KeyDownEventInterface)RemovedObject);
+            if (RemovedObject is MouseMoveEventInterface) mouseMoves.Remove((MouseMoveEventInterface)RemovedObject);
+            if (RemovedObject is WindowQuitEventInterface) windowQuits.Remove((WindowQuitEventInterface)RemovedObject);
+            if (RemovedObject is KeyUpEventInterface) keyUpEvents.Remove((KeyUpEventInterface)RemovedObject);
+            if (RemovedObject is MouseButtonDownEventInterface) mouseButtonDownEvents.Remove((MouseButtonDownEventInterface)RemovedObject);
+            if (RemovedObject is MouseButtonUpEventInterface) mouseButtonUpEvents.Remove((MouseButtonUpEventInterface)RemovedObject);
+        } 
+
         /// <summary>
         /// 장면 위에 그릴수 있는 객체를 원하는 범위에 추가합니다. 
         /// </summary>
@@ -1391,6 +1429,16 @@ namespace JyunrcaeaFramework
                 AddSprite(sp[i]);
             }
         }
+
+        //int mx = 0, my = 0;
+        //bool position_changed = false;
+
+        ////장면의 X 좌표.
+        //public override int X {
+        //    get => mx;
+        //    set { position_changed = true; mx = value; } }
+
+        //public override int Y { get => my; set { position_changed = true; my = value; } }
 
 #if DEBUG
         internal override void ODD()
@@ -1890,7 +1938,7 @@ namespace JyunrcaeaFramework
             }
             if (this.inheritobj is Scene)
             {
-                
+                ((Scene)this.inheritobj).AddAtEventList(obj);
                 return;
             }
             throw new JyunrcaeaFrameworkException("장면 또는 그룹 객체에 상속되지 않은 그룹 객체입니다.\n그룹 객체가 소유한 객체들을 장면에 추가할수 없습니다.");
@@ -1902,6 +1950,12 @@ namespace JyunrcaeaFramework
             this.Y = Y;
         }
 
+        public int AddSprite(DrawableObject NewSprite)
+        {
+            this.sprites.Add(NewSprite);
+            return this.sprites.Count - 1;
+        }
+
         public override void Start()
         {
             for (int i=0;i<sprites.Count;i++)
@@ -1909,13 +1963,23 @@ namespace JyunrcaeaFramework
                 InheritToScene(sprites[i]);
                 sprites[i].Start();
             }
+            //drawrect.w = Window.Width;
+            //drawrect.h = Window.Height;
         }
 
         public override void Resize()
         {
             this.needresetposition = true;
             this.needresetsize = true;
+            for (r = 0;r<sprites.Count;r++)
+            {
+                sprites[r].Resize();
+            }
         }
+
+        int d,r;
+
+        SDL.SDL_Rect drawrect=new();
 
         internal override void Draw()
         {
@@ -1926,17 +1990,35 @@ namespace JyunrcaeaFramework
                 this.dst.y = this.originpos.y + this.my;
                 this.needresetdrawposition = false;
             }
+            SDL.SDL_RenderGetViewport(Framework.renderer, out var r);
+            drawrect.x = r.x + this.mx;
+            drawrect.y = r.y + this.my;
+            drawrect.w = r.w;
+            drawrect.h = r.h;
+            SDL.SDL_RenderSetViewport(Framework.renderer, ref this.drawrect);
+            for (d = 0;d<sprites.Count;d++)
+            {
+                sprites[d].Draw();
+            }
+            SDL.SDL_RenderSetViewport(Framework.renderer,ref r);
         }
 
         public override void Stop()
         {
-
+            for(int i=0;i<sprites.Count;i++)
+            {
+                sprites[i].Stop();
+            }
         }
 
 #if DEBUG
         internal override void ODD()
         {
             SDL.SDL_RenderDrawRect(Framework.renderer, ref dst);
+            for (d=0;d<sprites.Count;d++)
+            {
+                sprites[d].ODD();
+            }
         }
 #endif
     }

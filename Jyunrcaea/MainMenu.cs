@@ -33,6 +33,7 @@ namespace Jyunrcaea
                 this.AddSprite(setting = new Setting());
                 this.AddSprite(exit = new Exit());
                 this.AddSprite(new Version());
+                this.AddSprite(new TestGruop());
             }
 
             public override void Start()

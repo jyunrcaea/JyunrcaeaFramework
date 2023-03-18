@@ -39,6 +39,34 @@ namespace Jyunrcaea
         }
     }
 
+    class JFIcon : Sprite
+    {
+        public JFIcon() : base(new TextureFromFile("Jyunrcaea!FrameworkIcon.png"))
+        {
+            
+        }
+
+        public override void Resize()
+        {
+            this.Size = Window.AppropriateSize * 0.5f;
+            base.Resize();
+        }
+    }
+
+    public class TestGruop : GroupObject
+    {
+        public TestGruop()
+        {
+            this.AddSprite(new JFIcon());
+            
+        }
+
+        public override void Resize()
+        {
+            base.Resize();
+        }
+    }
+
     class Program
     {
         public static MusicList.MainScene musiclistscene = null!;

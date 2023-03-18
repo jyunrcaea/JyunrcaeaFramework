@@ -59,3 +59,4 @@ C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\obj\Debug
 C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\obj\Debug\net6.0\Jyunrcaea.Properties.Resources.resources
 C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\obj\Debug\net6.0\Jyunrcaea.csproj.GenerateResource.cache
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\test.png
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\Jyunrcaea!FrameworkIcon.png
