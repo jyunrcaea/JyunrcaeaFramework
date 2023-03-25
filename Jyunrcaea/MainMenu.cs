@@ -33,7 +33,7 @@ namespace Jyunrcaea
                 this.AddSprite(setting = new Setting());
                 this.AddSprite(exit = new Exit());
                 this.AddSprite(new Version());
-                this.AddSprite(new TestGruop());
+                //this.AddSprite(new TestGruop());
             }
 
             public override void Start()
@@ -121,7 +121,7 @@ namespace Jyunrcaea
 
         public class Version : TextboxForAnimation
         {
-            public Version() : base("cache/font.ttf", 20, $"Jyunrcaea! ({Jyunrcaea.Store.Version} Alpha Version)")
+            public Version() : base("cache/font.ttf", 20, $"Jyunrcaea! ({Jyunrcaea.Store.Version})")
             {
                 OriginY = VerticalPositionType.Bottom;
                 DrawY = VerticalPositionType.Top;

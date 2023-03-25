@@ -5,7 +5,7 @@ namespace Jyunrcaea
 {
     public static class Store
     {
-        public const string Version = "0.1";
+        public const string Version = "0.2 Alpha";
     }
 
     class GoodBackground : Canvas
@@ -102,6 +102,7 @@ namespace Jyunrcaea
             Display.AddScene(new MainMenu.MainScene());
             Display.AddScene(musiclistscene = new MusicList.MainScene());
             //Display.AddScene(new GoodBackground());
+            Display.AddScene(new Setting.SettingScene());
             Display.AddScene(ws = new WindowState());
             Framework.Function = new CustomFrameworkFunction();
             Framework.Run();
@@ -179,7 +180,7 @@ namespace Jyunrcaea
         public override void Resized()
         {
             t.Y = b.Y = (int)(Window.Height * 0.2f);
-            t.Size = (int)(24 * Window.AppropriateSize);
+            t.Size = (int)(20 * Window.AppropriateSize);
             b.Width = (int)(400 * Window.AppropriateSize);
             b.Height = t.Size * 2;
             if (CustomFrameworkFunction.fullscreenswicthed) {
@@ -213,6 +214,7 @@ namespace Jyunrcaea
     {
         public StateBackground()
         {
+            this.Radius = 8;
             this.OpacityAnimationState.CompleteFunction = () =>
             {
                 this.Opacity(0, 200f, 500f);

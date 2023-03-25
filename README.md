@@ -7,6 +7,10 @@
 # Jyunrcaea! Framework
 C# 으로 2D 게임 또는 앱을 쉽게 개발할수 있도록 도와주는 프레임워크.
 
+## 안내사항 
+현재 Jyunrcaea! Framework 의 구조가 너무 어설퍼서, 구조를 다시 설계하고 있습니다.
+다시 설계된 프레임워크가 원본보다 좋을경우 그걸로 갈아타게될 예정입니다.
+
 ## Jyunrcaea! Framework 의 이점
 * 다른 게임엔진이나 프레임워크와 달리, 개발 환경 세팅이 매우 간단합니다.
 * 블록코딩에서 볼수있는 장면/오브젝트 시스템을 갖고왔습니다.
@@ -28,56 +32,6 @@ Visual Studio 에서 C# 프로젝트를 생성합니다.<br>
 그 파일 안에 있던 Jyunrcaea! Framework.dll 프로젝트에 참조하세요,<br>
 그리고 나머지 파일들은 프로젝트에 복사 후 속성에서 '항상 복사'로 설정하신뒤<br>
 코딩하시고 디버깅 하면 끝!
-
-## 기여
-### 이름
-public으로 설정된 변수/함수명은 언더바 없이 지어야 하며,<br>
-단어의 첫글자는 대문자여야 합니다.<br>
-(예시: ThisIsVariableName)
-### 변수
-접근성과 관련된 이유를 제외하고는 Get/Set 함수를 생성하는 대신에 프로퍼티를 사용해주세요.<br>
-(다른 과정을 거치지 않고 값만 읽고 쓰도록 하는 변수를 만드실경우 필드를 사용하는게 좋겠죠...?)<br>
-<br>
-접근성과 관련된 이유를 제외하고는 숨겨진 변수와 그 변수를 접근하게 해줄 공개 프로퍼티를 생성하는 대신에<br>
-변수 자체를 프로터리로 생성해주세요.<br>
-#### 잘못된 예
-``` c#
-class my_phone_is_samsung_galaxy_note_9 {
-	int storage = 512;
-	public get_memory() => storage;
-	public setmemory(int gb) => storage = gb * 1024 * 1024 * 1024;
-
-	internal phoneram = 8;
-	public ram => phoneram;
-}
-```
-#### 잘된 예
-```c#
-class MyPhoneIsSamsungGalaxyNote9 {
-	int storage = 128;
-	public Memory { get => storage; set => storage = value * 1024 * 1024 * 1024 }
-
-	internal myram = 6;
-	/// 인라인 ('{ get; internal set; }') 을 쓰지 않는 이유는 아레 '프로퍼티' 항목 참고
-	public Ram => myram;
-}
-```
-___
-### 프로퍼티
-수동 속성을 사용해주세요.
-즉, 아레 코드 대신에
-```c#
-public int jyunni { get; internal set; } = 614;
-```
-이 코드처럼 작성해주세요.
-```c#
-internal int project614 = 614;
-public int jyunni => project614;
-```
-(같은 어셈블리에서 접근시 'project614' 변수를 이용하면 되며, 다른 어셈블리에서 접근시 'jyunni' 프로퍼티를 제공해주면 됩니다.)
-이유는 성능 향상... ㅎㅎ(getter시 필드 > 수동 속성 > 인라인)
-
-기여는 언제나 환영합니다.
 
 ## 라이선스
 이 프로젝트 및 코드들은 MIT License가 적용됩니다.<br><br>

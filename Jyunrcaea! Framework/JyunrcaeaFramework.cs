@@ -1,8 +1,10 @@
 ﻿#define WINDOWS
 using SDL2;
 using System.Diagnostics.SymbolStore;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Text;
 
 namespace JyunrcaeaFramework
@@ -218,6 +220,7 @@ namespace JyunrcaeaFramework
             frametimer.Start();
             while (running)
             {
+                Framework.Function.Draw();
                 #region 이벤트
                 while (SDL.SDL_PollEvent(out sdle) == 1)
                 {
@@ -290,7 +293,6 @@ namespace JyunrcaeaFramework
                     }
                 }
                 #endregion
-                Framework.Function.Draw();
             }
             Framework.Function.Stop();
             SDL.SDL_DestroyRenderer(renderer);
@@ -1131,6 +1133,7 @@ namespace JyunrcaeaFramework
         internal object? inheritobj = null;
         public object? InheritedObject => inheritobj;
 
+        internal int addx=0, dddy=0;
 
         internal SDL.SDL_Rect dst = new();
 
@@ -1300,9 +1303,32 @@ namespace JyunrcaeaFramework
     /// <summary>
     /// 객체를 담을수 있는 대표적인 장면입니다. 
     /// </summary>
-    public class Scene : SceneInterface
+    public class Scene : SceneInterface, DefaultObjectPositionInterface
     {
-        List<DrawableObject> sprites = new();
+        int mx=0, my=0;
+        bool needupdatepos = false;
+
+        public int X
+        {
+            get => mx;
+            set
+            {
+                mx = value;
+                needupdatepos = true;
+            }
+        }
+
+        public int Y
+        {
+            get => my;
+            set
+            {
+                my = value;
+                needupdatepos = true;
+            }
+        }
+
+        private protected List<DrawableObject> sprites = new();
         List<DropFileEventInterface> drops = new();
         List<ResizeEndEventInterface> resizes = new();
         List<UpdateEventInterface> updates = new();
@@ -1469,7 +1495,15 @@ namespace JyunrcaeaFramework
 
         public override void Stop()
         {
+            for (int i = 0; i < sprites.Count; i++)
+                sprites[i].Stop();
+        }
 
+        internal virtual void UpdatePosToObjects()
+        {
+            for (int i = 0; i < sprites.Count; i++)
+                sprites[i].needresetdrawposition = true;
+            needupdatepos = false;
         }
 
         public override void Update(float ms)
@@ -1481,6 +1515,7 @@ namespace JyunrcaeaFramework
         internal override void Draw()
         {
             if (this.Hide) return;
+            if (needupdatepos) UpdatePosToObjects();
             if (this.RenderRange == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
             else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRange.size);
             for (int i = 0; i < this.sprites.Count; i++)
@@ -1547,6 +1582,244 @@ namespace JyunrcaeaFramework
         }
     }
 
+    public class ListingScene : Scene
+    {
+        List<DrawableObject> BackObjects = new();
+        List<DrawableObject> FrontObjects = new();
+
+        public override void Start()
+        {
+            for (int i=0;i < BackObjects.Count;i++)
+                BackObjects[i].Start();
+            base.Start();
+            for (int i = 0; i < FrontObjects.Count; i++)
+                FrontObjects[i].Start();
+        }
+
+        public override void Resize()
+        {
+            for (int i = 0; i < BackObjects.Count; i++)
+                BackObjects[i].Resize();
+            base.Resize();
+            for (int i = 0; i < FrontObjects.Count; i++)
+                FrontObjects[i].Resize();
+        }
+
+        public override void Stop()
+        {
+            for (int i = 0; i < BackObjects.Count; i++)
+                BackObjects[i].Stop();
+            base.Stop();
+            for (int i = 0; i < FrontObjects.Count; i++)
+                FrontObjects[i].Stop();
+            this.EventRejection = true;
+        }
+
+        public bool HorizontalArrange = false;
+
+        public RectSize? RenderRangeOfListedObjects = null;
+
+        private int indexforrender;
+
+        public void AddSpriteAtBack(DrawableObject NewSprite,int index = -1)
+        {
+            NewSprite.inheritobj = this;
+            if (index == -1)
+                BackObjects.Add(NewSprite);
+            else if (index >= 0)
+            {
+                BackObjects.Insert(index, NewSprite);
+            } else
+            {
+                index = BackObjects.Count + index;
+                if (index < 0) throw new JyunrcaeaFrameworkException($"잘못된 인덱스 값입니다. (리스트 내 객체 갯수: {BackObjects.Count}, 삽입할려는 위치: {index})");
+                BackObjects.Insert(BackObjects.Count + index, NewSprite);
+            }
+            this.AddAtEventList(NewSprite);
+        }
+
+        public void AddSpriteAtFront(DrawableObject NewSprite, int index = -1)
+        {
+            NewSprite.inheritobj = this;
+            if (index == -1)
+                FrontObjects.Add(NewSprite);
+            else if (index >= 0)
+            {
+                FrontObjects.Insert(index, NewSprite);
+            }
+            else
+            {
+                index = FrontObjects.Count + index;
+                if (index < 0) throw new JyunrcaeaFrameworkException($"잘못된 인덱스 값입니다. (리스트 내 객체 갯수: {FrontObjects.Count}, 삽입할려는 위치: {index})");
+                FrontObjects.Insert(FrontObjects.Count + index, NewSprite);
+            }
+            this.AddAtEventList(NewSprite);
+        }
+
+        int line;
+
+        internal override void UpdatePosToObjects()
+        {
+
+        }
+
+        internal override void Draw()
+        {
+            if (this.Hide) return;
+            if (this.RenderRange == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
+            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRange.size);
+            for (indexforrender = 0; indexforrender < BackObjects.Count; indexforrender++)
+            {
+                if (BackObjects[indexforrender].Hide) continue;
+                BackObjects[indexforrender].Draw();
+            }
+            if (this.RenderRangeOfListedObjects == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
+            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRangeOfListedObjects.size);
+            int collocatepos=0;
+            if (HorizontalArrange)
+            {
+                line = this.X;
+                collocatepos = this.Y;
+            }
+            else
+            {
+                line = this.Y;
+                collocatepos = this.X;
+            }
+            bool itishad;
+            ListingOptionInterface lo = null!;
+            for (indexforrender = 0; indexforrender < base.sprites.Count; indexforrender++)
+            {
+                if (sprites[indexforrender].Hide) continue;
+                if (sprites[indexforrender] is ListingOptionInterface)
+                {
+                    itishad = true;
+                    lo = (ListingOptionInterface)sprites[indexforrender];
+                    if (HorizontalArrange)
+                    {
+                        this.X += lo.LastMargin;
+                    }
+                    else
+                    {
+                        this.Y += lo.LastMargin;
+                    }
+
+                } else itishad = false;
+                sprites[indexforrender].needresetdrawposition = true;
+                sprites[indexforrender].Draw();
+                if (itishad)
+                {
+
+                    if (HorizontalArrange)
+                    {
+                        this.X += lo.NextMargin;
+                    }
+                    else
+                    {
+                        this.Y += lo.NextMargin;
+                    }
+                    if (lo.ListingLineOption == ListingLineOption.StayStill)
+                    {
+                        continue;
+                    } else if(lo.ListingLineOption == ListingLineOption.Collocate)
+                    {
+                        if (HorizontalArrange)
+                        {
+                            this.Y += sprites[indexforrender].dst.h;
+                        }
+                        else
+                        {
+                            this.X += sprites[indexforrender].dst.w;
+                        }
+                        continue;
+                    } else
+                    {
+                        if (HorizontalArrange ? (this.Y != collocatepos) : (this.X != collocatepos))
+                        {
+                            if (HorizontalArrange)
+                            {
+                                this.Y = collocatepos;
+                            } else
+                            {
+                                this.X = collocatepos;
+                            }
+                        }
+                    }
+                } else
+                {
+                    if (HorizontalArrange ? (this.Y != collocatepos) : (this.X != collocatepos))
+                    {
+                        if (HorizontalArrange)
+                        {
+                            this.Y = collocatepos;
+                        }
+                        else
+                        {
+                            this.X = collocatepos;
+                        }
+                    }
+                }
+                if (HorizontalArrange)
+                {
+                    this.X += sprites[indexforrender].dst.w;
+                } else
+                {
+                    this.Y += sprites[indexforrender].dst.h;
+                }
+            }
+            if (HorizontalArrange)
+            {
+                this.X = line;
+                this.Y = collocatepos;
+            }
+            else
+            {
+                this.Y = line;
+                this.X = collocatepos;
+            }
+            if (this.RenderRange == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
+            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRange.size);
+            for (indexforrender = 0; indexforrender < FrontObjects.Count; indexforrender++)
+            {
+                if (FrontObjects[indexforrender].Hide) continue;
+                FrontObjects[indexforrender].Draw();
+            }
+        }
+
+#if DEBUG
+        internal override void ODD()
+        {
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, 100, 100, 255, 255);
+            if (this.RenderRange == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
+            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRange.size);
+            for (indexforrender = 0; indexforrender < BackObjects.Count; indexforrender++)
+            {
+                if (BackObjects[indexforrender].Hide) continue;
+                BackObjects[indexforrender].ODD();
+            }
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, Debug.ObjectDrawDebugingLineColor.Red, Debug.ObjectDrawDebugingLineColor.Green, Debug.ObjectDrawDebugingLineColor.Blue, Debug.ObjectDrawDebugingLineColor.Alpha);
+            if (this.RenderRangeOfListedObjects == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
+            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRangeOfListedObjects.size);
+            for (indexforrender = 0; indexforrender < sprites.Count; indexforrender++)
+            {
+                if (sprites[indexforrender].Hide) continue;
+                sprites[indexforrender].ODD();
+            }
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, 100, 100, 255, 255);
+            if (this.RenderRange == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
+            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRange.size);
+            for (indexforrender = 0; indexforrender < FrontObjects.Count; indexforrender++)
+            {
+                if (FrontObjects[indexforrender].Hide) continue;
+                FrontObjects[indexforrender].ODD();
+            }
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, Debug.SceneDrawDebugingLineColor.Red, Debug.SceneDrawDebugingLineColor.Green, Debug.SceneDrawDebugingLineColor.Blue, Debug.SceneDrawDebugingLineColor.Alpha);
+            if (this.RenderRange == null) SDL.SDL_RenderDrawRect(Framework.renderer, ref Window.size);
+            else SDL.SDL_RenderDrawRect(Framework.renderer, ref this.RenderRange.size);
+        }
+#endif
+    }
+
     /// <summary>
     /// 직접 도형 및 이미지를 그리는 장면입니다.
     /// 많은 요소들을 빠르게 그려야될때 쓰기 좋습니다.
@@ -1610,6 +1883,16 @@ namespace JyunrcaeaFramework
                 SDL.SDL_SetRenderDrawColor(Framework.renderer, red, green, blue, alpha);
                 SDL.SDL_Rect rt = new() { w = width, h = height, x = x, y = y };
                 return SDL.SDL_RenderFillRect(Framework.renderer, ref rt) == 0;
+            }
+
+            public static bool RoundedRectangle(short width, short height, short x, short y,short radius, byte red, byte green, byte blue, byte alpha)
+            {
+                return SDL_gfx.roundedBoxRGBA(Framework.renderer,x,y, (short)(x + width), (short)(y+height),radius,red,green,blue,alpha) == 0;
+            }
+
+            public static bool RoundedRectangleLine(short width, short height, short x, short y, short radius, byte red, byte green, byte blue, byte alpha)
+            {
+                return SDL_gfx.roundedRectangleRGBA(Framework.renderer, x, y, (short)(x + width), (short)(y + height), radius, red, green, blue, alpha) == 0;
             }
 
             public static bool Texture(DrawableTexture texture, RectSize size)
@@ -1748,7 +2031,7 @@ namespace JyunrcaeaFramework
             }
         }
 
-
+        public short Radius = 0;
 
         int px = 0, py = 0;
 
@@ -1776,14 +2059,21 @@ namespace JyunrcaeaFramework
             if (needresetsize) this.ResetSize();
             if (needresetdrawposition)
             {
-                this.dst.x = this.px + this.originpos.x + this.mx;
-                this.dst.y = this.py + this.originpos.y + this.my;
+                this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
+                this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
             }
             //if (SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) == -1) throw new JyunrcaeaFrameworkException($"렌더러 블랜더 모드 설정 실패 SDL Error: {SDL.SDL_GetError()}");
             //Console.WriteLine("r: {0}, w: {1}, h: {2}, x: {3}, y: {4}",this.Color.Red,this.size.w,this.size.h,this.size.x,this.size.y);
             if (SDL.SDL_SetRenderDrawColor(Framework.renderer, this.Color.Red, this.Color.Green, this.Color.Blue, this.Color.Alpha) < 0) throw new JyunrcaeaFrameworkException($"색 변경에 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
 
-            if (SDL.SDL_RenderFillRect(Framework.renderer, ref dst) == -1) throw new JyunrcaeaFrameworkException($"직사각형 렌더링에 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
+            if (this.Radius == 0)
+            {
+                if (SDL.SDL_RenderFillRect(Framework.renderer, ref dst) == -1) throw new JyunrcaeaFrameworkException($"직사각형 렌더링에 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
+            }
+            else
+            {
+                if (SDL_gfx.roundedBoxRGBA(Framework.renderer, (short)dst.x, (short)dst.y, (short)(dst.x+dst.w), (short)(dst.y+dst.h),this.Radius,this.Color.Red,this.Color.Green,this.Color.Blue,this.Color.Alpha) != 0) throw new JyunrcaeaFrameworkException("둥근 직사각형 렌더링에 실패하였습니다. ()");
+            }
         }
 
 #if DEBUG
@@ -2177,8 +2467,8 @@ namespace JyunrcaeaFramework
             if (needresetsize) ResetSize();
             if (needresetdrawposition)
             {
-                this.dst.x = this.px + this.originpos.x + this.mx;
-                this.dst.y = this.py + this.originpos.y + this.my;
+                this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
+                this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
                 this.needresetdrawposition = false;
             }
             //SDL.SDL_SetRenderTarget(Framework.renderer, this.Texture.texture);
@@ -2605,6 +2895,26 @@ namespace JyunrcaeaFramework
             }
         }
 
+        public int Height
+        {
+            get
+            {
+                if (rerender) TextRender();
+                if (needresetsize) Reset();
+                return this.dst.h;
+            }
+        }
+
+        public int Width
+        {
+            get
+            {
+                if (rerender) TextRender();
+                if (needresetsize) Reset();
+                return this.dst.w;
+            }
+        }
+
         int px = 0, py = 0;
 
         float sz = 1;
@@ -2632,7 +2942,7 @@ namespace JyunrcaeaFramework
             get => fontsize;
             set
             {
-                if (SDL_ttf.TTF_SetFontSize(this.fontsource, fontsize = value) == -1) throw new JyunrcaeaFrameworkException("글꼴 크기 조정에 실패하였습니다.");
+                if (SDL_ttf.TTF_SetFontSize(this.fontsource, fontsize = value) == -1) throw new JyunrcaeaFrameworkException($"글꼴 크기 조정에 실패하였습니다. (SDL ttf Error: {SDL_ttf.TTF_GetError()}, font size: {fontsize}, source: {this.fontsource.ToString()})");
                 rerender = true;
             }
         }
@@ -2706,8 +3016,8 @@ namespace JyunrcaeaFramework
             if (needresetposition) ResetPosition();
             if (needresetdrawposition)
             {
-                this.dst.x = this.px + this.originpos.x + this.mx;
-                this.dst.y = this.py + this.originpos.y + this.my;
+                this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
+                this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
                 needresetdrawposition = false;
             }
 
@@ -2868,11 +3178,20 @@ namespace JyunrcaeaFramework
                 return SDL.SDL_PointInRect(ref Mouse.position,ref Sprite.dst) == SDL.SDL_bool.SDL_TRUE;
             SDL.SDL_Rect part = new()
             {
-                x = ((Scene)Sprite.InheritedObject).RenderRange!.size.x + Sprite.dst.x,
-                y = ((Scene)Sprite.InheritedObject).RenderRange!.size.y + Sprite.dst.y,
                 w = Sprite.dst.w,
                 h = Sprite.dst.h
             };
+            if (Sprite.inheritobj is ListingScene)
+            {
+                part.x = ((ListingScene)Sprite.InheritedObject).RenderRangeOfListedObjects!.size.x + Sprite.dst.x;
+                part.y = ((ListingScene)Sprite.InheritedObject).RenderRangeOfListedObjects!.size.y + Sprite.dst.y;
+            } else
+            {
+                part.x = ((Scene)Sprite.InheritedObject).RenderRange!.size.x + Sprite.dst.x;
+                part.y = ((Scene)Sprite.InheritedObject).RenderRange!.size.y + Sprite.dst.y;
+            }
+            //SDL.SDL_SetRenderDrawColor(Framework.renderer, 123, 233, 193,255);
+            //SDL.SDL_RenderFillRect(Framework.renderer, ref part);
             return SDL.SDL_PointInRect(ref Mouse.position, ref part) == SDL.SDL_bool.SDL_TRUE;
         }
 
@@ -3668,6 +3987,61 @@ namespace JyunrcaeaFramework
             
             base.Start();
         }
+    }
+
+    /// <summary>
+    /// 객체에 대한 자세한 정보를 얻어냅니다.
+    /// 객체는 렌더링 때 좌표나 크기 등 값들이 새로고침 되므로, 업데이트 도중에 변경사항이 있어도 그 사항이 적용된 값을 제공하지 않는다는점 주의해주세요.
+    /// </summary>
+    public static class DetailOfObject
+    {
+        /// <summary>
+        /// 화면에 출력되는 실제 픽셀 가로길이를 알아냅니다.
+        /// </summary>
+        /// <param name="obj">객체</param>
+        /// <returns>가로 길이</returns>
+        public static int DrawWidth(DrawableObject obj)
+        {
+            return obj.dst.w;
+        }
+
+        /// <summary>
+        /// 화면에 출력되는 실제 픽셀 세로길이를 알아냅니다.
+        /// </summary>
+        /// <param name="obj">객체</param>
+        /// <returns>세로 길이</returns>
+        public static int DrawHeight(DrawableObject obj)
+        {
+            return obj.dst.h;
+        }
+
+        /// <summary>
+        /// Canvas 기준, 실제 렌더링 위치를 알아냅니다. (객체의 왼쪽 위 모서리의 좌표)
+        /// </summary>
+        /// <param name="obj">객체</param>
+        /// <param name="x">X 좌표</param>
+        /// <param name="y">Y 좌표</param>
+        public static void RealPosition(DrawableObject obj,out int x,out int y)
+        {
+            x = obj.dst.x;
+            y = obj.dst.y;
+        }
+
+
+    }
+
+    public interface ListingOptionInterface
+    {
+        int LastMargin { get; }
+        int NextMargin { get; }
+        ListingLineOption ListingLineOption { get; }
+    }
+
+    public enum ListingLineOption
+    {
+        NextLine = 0,
+        Collocate = 1,
+        StayStill = 2
     }
 
     /// <summary>

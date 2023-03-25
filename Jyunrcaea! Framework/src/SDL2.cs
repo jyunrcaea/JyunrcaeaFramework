@@ -38,11 +38,20 @@ using System.Text;
 
 namespace SDL2
 {
+	public static class DLLPath
+	{
+		public const string sdl = "dll/SDL2";
+		public const string image = "dll/SDL2_image";
+		public const string mixer = "dll/SDL2_mixer";
+		public const string ttf = "dll/SDL2_ttf";
+		public const string gfx = "dll/SDL2_gfx";
+	}
+
 	public static class SDL
 	{
 		#region SDL2# Variables
 
-		private const string nativeLibName = "dll/SDL2";
+		private const string nativeLibName = DLLPath.sdl;
 
 		#endregion
 

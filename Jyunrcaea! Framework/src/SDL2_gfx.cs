@@ -38,7 +38,7 @@ namespace SDL2
 		#region SDL2# Variables
 
 		/* Used by DllImport to load the native library. */
-		private const string nativeLibName = "dll/SDL2_gfx";
+		private const string nativeLibName = DLLPath.gfx;
 
 		#endregion
 		

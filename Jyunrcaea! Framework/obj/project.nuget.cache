@@ -1,12 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "WmP1Ncm/xI0A/be3diF0Zno417StHEkytk8olYggI9/IO/HtXm3DA0qvBiAI6quZtg2s5KaB3ut9zHP+7XONOA==",
+  "dgSpecHash": "dVCC2SAWfD9ArIdztAuJqLBScMyL1M9upt2tBEPrZ1f3aXbWO72d/wsDzKIwm96vyxzQyj/eKg/K5yicYLIDmQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\박대호\\source\\repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj",
-  "expectedPackageFiles": [
-    "C:\\Users\\박대호\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\6.0.15\\microsoft.windowsdesktop.app.ref.6.0.15.nupkg.sha512",
-    "C:\\Users\\박대호\\.nuget\\packages\\microsoft.netcore.app.ref\\6.0.15\\microsoft.netcore.app.ref.6.0.15.nupkg.sha512",
-    "C:\\Users\\박대호\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\6.0.15\\microsoft.aspnetcore.app.ref.6.0.15.nupkg.sha512"
-  ],
+  "expectedPackageFiles": [],
   "logs": []
 }

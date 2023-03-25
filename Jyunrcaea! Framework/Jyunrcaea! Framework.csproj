@@ -20,6 +20,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Update="dll\SDL2_gfx.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="dll\SDL2_ttf.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
