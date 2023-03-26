@@ -852,7 +852,7 @@ namespace JyunrcaeaFramework
     /// </summary>
     public struct WindowOption
     {
-        internal SDL.SDL_WindowFlags option = default;
+        internal SDL.SDL_WindowFlags option = SDL.SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
 
         public WindowOption() { option = SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE; }
 
@@ -2009,7 +2009,7 @@ namespace JyunrcaeaFramework
     /// <summary>
     /// 직사각형을 출력하는 객체입니다.
     /// </summary>
-    public class Rectangle : DrawableObject
+    public class Rectangle : DrawableObject, CanGetLenght
     {
         public Rectangle() { }
 
@@ -2125,7 +2125,7 @@ namespace JyunrcaeaFramework
     /// 그려지지 않는 유령 객체입니다.
     /// 특정 위치와 크기를 설정한 다음 해당 객체와 닿았는가 판단하거나, 거리 등을 계산할때 쓰이도록 만들어둔 계산용 객체입니다.
     /// </summary>
-    public class GhostObject : DrawableObject
+    public class GhostObject : DrawableObject, CanGetLenght
     {
 
         int px = 0, py = 0;
@@ -2315,78 +2315,10 @@ namespace JyunrcaeaFramework
 #endif
     }
 
-    [Obsolete("0.6 때 출시예정")]
-    public class TextLineBox : DrawableObject
-    {
-        List<string> strings = new List<string>();
-        List<IntPtr> renderedtexts = new();
-        Queue<int> rerenderlines = new();
-
-        /// <summary>
-        /// 원하는 줄의 텍스트를 변경합니다.
-        /// 한줄만 바꿔야되는 경우, 이 명령어를 사용하는게 성능 향샹에 도움이 됩니다.
-        /// </summary>
-        /// <param name="Index">원하는 줄</param>
-        /// <param name="text">바꿀 내용</param>
-        public void EditLine(int Index,string text)
-        {
-
-        }
-
-        /// <summary>
-        /// 전체적인 텍스트를 읽거나 씁니다. (set의 경우 \n 을 기준으로 split 되어 배열에 저장됩니다.)
-        /// 모든 줄을 바꿀게 아니라면, EditLine 함수를 사용하는것을 권장합니다.
-        /// </summary>
-        public string Text
-        {
-            get => string.Join('\n', strings);
-            set
-            {
-                strings.Clear();
-                strings = value.Split('\n').ToList();
-            }
-        }
-
-        public string[] Texts => strings.ToArray();
-
-        bool AllRerender = false;
-
-        void RenderLine(int Index, string text)
-        {
-            
-        }
-
-        public void IDispose()
-        {
-
-        }
-
-        public override void Start()
-        {
-        }
-        public override void Resize()
-        {
-        }
-        public override void Stop()
-        {
-        }
-        internal override void Draw()
-        {
-        }
-        internal override void ResetDrawPosition()
-        {
-        }
-#if DEBUG
-        internal override void ODD()
-        {
-        }
-#endif
-    }
-
     /// <summary>
     /// 이미지를 출력하는 객체입니다.
     /// </summary>
-    public class Sprite : DrawableObject , IDisposable
+    public class Sprite : DrawableObject , IDisposable, CanGetLenght
     {
         //string filename = string.Empty;
 
@@ -2911,7 +2843,7 @@ namespace JyunrcaeaFramework
     /// <summary>
     /// 글자를 출력하는 객체입니다.
     /// </summary>
-    public class TextBox : DrawableObject, IDisposable
+    public class TextBox : DrawableObject, IDisposable, CanGetLenght
     {
         public TextBox(string filename,int size,string text = "")
         {
@@ -2944,6 +2876,7 @@ namespace JyunrcaeaFramework
                 fs = value;
                 if (fontsource == IntPtr.Zero) return;
                 SDL_ttf.TTF_SetFontStyle(this.fontsource, (int)fs);
+                
             }
         }
 
@@ -3070,6 +3003,16 @@ namespace JyunrcaeaFramework
         //        this.rerender = true;
         //    }
         //}
+        /// <summary>
+        /// 
+        /// </summary>
+        uint wraplenght = 0;
+
+        /// <summary>
+        /// 글자의 너비를 제한시키며, 너비를 초과한 글자는 내려씁니다.
+        /// 0으로 설정할경우 제한되지 않습니다.
+        /// </summary>
+        public uint WrapLenght { get => wraplenght; set { rerender = true; wraplenght = value; } }   
 
         public void Reset()
         {
@@ -3128,11 +3071,11 @@ namespace JyunrcaeaFramework
             }
 
             IntPtr surface = (this.bc == null) ?
-#if WINDOWS
-              (Blended ? SDL_ttf.TTF_RenderUNICODE_Blended(this.fontsource, this.txt, fc.colorbase) : SDL_ttf.TTF_RenderUNICODE_Solid(this.fontsource, this.txt, fc.colorbase)) : SDL_ttf.TTF_RenderText_Shaded(this.fontsource, this.txt, fc.colorbase, this.bc.colorbase);
-#else
-              (Blended ? SDL_ttf.TTF_RenderUTF8_Blended(this.fontsource, this.txt, fc.colorbase) : SDL_ttf.TTF_RenderUTF8_Solid(this.fontsource,this.txt,fc.colorbase)) : SDL_ttf.TTF_RenderUTF8_Shaded(this.fontsource, this.txt, fc.colorbase,this.bc.colorbase);
-#endif
+//#if WINDOWS
+              (Blended ? SDL_ttf.TTF_RenderUTF8_Blended_Wrapped(this.fontsource, this.txt, fc.colorbase,wraplenght) : SDL_ttf.TTF_RenderUTF8_Solid_Wrapped(this.fontsource, this.txt, fc.colorbase,wraplenght)) : SDL_ttf.TTF_RenderUTF8_Shaded_Wrapped(this.fontsource, this.txt, fc.colorbase, this.bc.colorbase,wraplenght);
+//#else
+//              (Blended ? SDL_ttf.TTF_RenderUTF8_Blended(this.fontsource, this.txt, fc.colorbase) : SDL_ttf.TTF_RenderUTF8_Solid(this.fontsource,this.txt,fc.colorbase)) : SDL_ttf.TTF_RenderUTF8_Shaded(this.fontsource, this.txt, fc.colorbase,this.bc.colorbase);
+//#endif
             //Console.WriteLine("{0}, {1}",this.bc == null,Blended);
             if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스트 렌더링에 실패하였습니다. SDL ttf Error : {SDL_ttf.TTF_GetError()}");
             this.tt = SDL.SDL_CreateTextureFromSurface(Framework.renderer, surface);
@@ -3280,6 +3223,15 @@ namespace JyunrcaeaFramework
             int x = sp1.AbsoluteX - sp2.AbsoluteX, y = sp1.AbsoluteY - sp2.AbsoluteY;
             return Math.Sqrt(x * x + y * y);
         }
+    }
+
+    /// <summary>
+    /// 너비와 높이를 얻을수 있는 객체에게만 상속되는 인터페이스입니다.
+    /// </summary>
+    public interface CanGetLenght
+    {
+        public int Width { get; }
+        public int Height { get; }
     }
 
     public static class Animation

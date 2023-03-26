@@ -5,7 +5,7 @@ namespace Jyunrcaea
 {
     public static class Store
     {
-        public const string Version = "0.2 Alpha";
+        public const string Version = "0.2.1 Development Version";
     }
 
     class GoodBackground : Canvas
@@ -104,6 +104,7 @@ namespace Jyunrcaea
             //Display.AddScene(new GoodBackground());
             Display.AddScene(new Setting.SettingScene());
             Display.AddScene(ws = new WindowState());
+            //Display.AddScene(new TitleBar.Border());
             Framework.Function = new CustomFrameworkFunction();
             Framework.Run();
         }

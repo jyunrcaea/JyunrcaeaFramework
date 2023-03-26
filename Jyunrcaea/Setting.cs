@@ -10,9 +10,21 @@ namespace Jyunrcaea.Setting
 {
     internal class SettingScene : Scene
     {
-        List<TextboxForSetting> settingList = new()
+        List<DrawableObject> settingList = new()
         {
-            new("FrameLate: ",Display.FrameLateLimit.ToString()),
+            new TitleForSetting("Jyunrcaea! Information",32),
+            new TextboxForSetting("Version: ",Store.Version),
+            new TextboxForSetting("Framework Version: ",Framework.Version.ToString()),
+            new EmptySpaceForSetting(30),
+            new TitleForSetting("Display Option",32),
+            new TextboxForSetting("Framelate Limit: ",$"{Display.FrameLateLimit.ToString()} frame/s"),
+            new EmptySpaceForSetting(30),
+            new TitleForSetting("Skin",32),
+            new TextboxForSetting("Skin Folder Directory: ","Data/Skin/Jyunrcaea!"),
+            new EmptySpaceForSetting(30),
+            new TitleForSetting("Debug",32),
+            new TitleForSetting("Reset Setting Data", 24) { BackgroundColor = new(200,200,200,128)},
+            new TitleForSetting("Uninstall", 24) { BackgroundColor = new(200,200,200,128)},
         };
 
         Background bb;
@@ -39,8 +51,8 @@ namespace Jyunrcaea.Setting
             int y = (int)(Window.Height * 0.5f - 300f * Window.AppropriateSize);
             x += (int)(20f * Window.AppropriateSize);
             y += (int)(20f * Window.AppropriateSize);
-            int hei = (int)(Window.AppropriateSize * 24);
-            for (int i =0; i < settingList.Count; i++) { settingList[i].X = x; settingList[i].Y = y; y += hei; }
+            int hei = (int)(Window.AppropriateSize * 25.5f);
+            for (int i =0; i < settingList.Count; i++) { settingList[i].X = x; settingList[i].Y = y; if (settingList[i] is TextBox) y += ((TextBox)settingList[i]).Height; else if (settingList[i] is GhostObject) y += ((GhostObject)settingList[i]).Height; else y += hei; }
 
         }
     }
@@ -94,6 +106,45 @@ namespace Jyunrcaea.Setting
         {
             this.Text.Size = this.Title.Size = (int)(Window.AppropriateSize * 24);
             this.Text.X = this.Title.Width;
+            base.Resize();
+        }
+    }
+
+    class TitleForSetting : TextBox
+    {
+        int defaultsize;
+
+        public TitleForSetting(string text,int size) : base("cache/font.ttf",size,text) {
+            defaultsize = size;
+            this.FontColor = new(0, 0, 0);
+            OriginX = HorizontalPositionType.Left;
+            DrawX = HorizontalPositionType.Right;
+            OriginY = VerticalPositionType.Top;
+            DrawY = VerticalPositionType.Bottom;
+        }
+
+        public override void Resize()
+        {
+            this.Size = (int)(defaultsize * Window.AppropriateSize);
+            base.Resize();
+        }
+    }
+
+    class EmptySpaceForSetting : GhostObject
+    {
+        int defaultsize;
+
+        public EmptySpaceForSetting(int size) : base(0,0,5, size) {
+            OriginX = HorizontalPositionType.Left;
+            DrawX = HorizontalPositionType.Right;
+            OriginY = VerticalPositionType.Top;
+            DrawY = VerticalPositionType.Bottom;
+            defaultsize = size;
+        }
+
+        public override void Resize()
+        {
+            this.Height = (int)(defaultsize * Window.AppropriateSize);
             base.Resize();
         }
     }
