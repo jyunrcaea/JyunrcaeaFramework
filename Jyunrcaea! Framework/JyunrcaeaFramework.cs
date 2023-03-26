@@ -58,7 +58,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly System.Version Version = new(0, 4, 4);
+        public static readonly System.Version Version = new(0, 5, 1);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
@@ -1593,240 +1593,6 @@ namespace JyunrcaeaFramework
         }
     }
 
-    [Obsolete("불안정한 기능")]
-    public class ListingScene : Scene
-    {
-        List<DrawableObject> BackObjects = new();
-        List<DrawableObject> FrontObjects = new();
-
-        public override void Start()
-        {
-            for (int i=0;i < BackObjects.Count;i++)
-                BackObjects[i].Start();
-            base.Start();
-            for (int i = 0; i < FrontObjects.Count; i++)
-                FrontObjects[i].Start();
-        }
-
-        public override void Resize()
-        {
-            for (int i = 0; i < BackObjects.Count; i++)
-                BackObjects[i].Resize();
-            base.Resize();
-            for (int i = 0; i < FrontObjects.Count; i++)
-                FrontObjects[i].Resize();
-        }
-
-        public override void Stop()
-        {
-            for (int i = 0; i < BackObjects.Count; i++)
-                BackObjects[i].Stop();
-            base.Stop();
-            for (int i = 0; i < FrontObjects.Count; i++)
-                FrontObjects[i].Stop();
-            this.EventRejection = true;
-        }
-
-        public bool HorizontalArrange = false;
-
-        public RectSize? RenderRangeOfListedObjects = null;
-
-        private int indexforrender;
-
-        public void AddSpriteAtBack(DrawableObject NewSprite,int index = -1)
-        {
-            NewSprite.inheritobj = this;
-            if (index == -1)
-                BackObjects.Add(NewSprite);
-            else if (index >= 0)
-            {
-                BackObjects.Insert(index, NewSprite);
-            } else
-            {
-                index = BackObjects.Count + index;
-                if (index < 0) throw new JyunrcaeaFrameworkException($"잘못된 인덱스 값입니다. (리스트 내 객체 갯수: {BackObjects.Count}, 삽입할려는 위치: {index})");
-                BackObjects.Insert(BackObjects.Count + index, NewSprite);
-            }
-            this.AddAtEventList(NewSprite);
-        }
-
-        public void AddSpriteAtFront(DrawableObject NewSprite, int index = -1)
-        {
-            NewSprite.inheritobj = this;
-            if (index == -1)
-                FrontObjects.Add(NewSprite);
-            else if (index >= 0)
-            {
-                FrontObjects.Insert(index, NewSprite);
-            }
-            else
-            {
-                index = FrontObjects.Count + index;
-                if (index < 0) throw new JyunrcaeaFrameworkException($"잘못된 인덱스 값입니다. (리스트 내 객체 갯수: {FrontObjects.Count}, 삽입할려는 위치: {index})");
-                FrontObjects.Insert(FrontObjects.Count + index, NewSprite);
-            }
-            this.AddAtEventList(NewSprite);
-        }
-
-        int line;
-
-        internal override void Draw()
-        {
-            if (this.Hide) return;
-            if (this.RenderRange == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
-            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRange.size);
-            for (indexforrender = 0; indexforrender < BackObjects.Count; indexforrender++)
-            {
-                if (BackObjects[indexforrender].Hide) continue;
-                BackObjects[indexforrender].Draw();
-            }
-            if (this.RenderRangeOfListedObjects == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
-            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRangeOfListedObjects.size);
-            int collocatepos=0;
-            if (HorizontalArrange)
-            {
-                line = this.X;
-                collocatepos = this.Y;
-            }
-            else
-            {
-                line = this.Y;
-                collocatepos = this.X;
-            }
-            bool itishad;
-            ListingOptionInterface lo = null!;
-            for (indexforrender = 0; indexforrender < base.sprites.Count; indexforrender++)
-            {
-                if (sprites[indexforrender].Hide) continue;
-                if (sprites[indexforrender] is ListingOptionInterface)
-                {
-                    itishad = true;
-                    lo = (ListingOptionInterface)sprites[indexforrender];
-                    if (HorizontalArrange)
-                    {
-                        this.X += lo.LastMargin;
-                    }
-                    else
-                    {
-                        this.Y += lo.LastMargin;
-                    }
-
-                } else itishad = false;
-                sprites[indexforrender].needresetdrawposition = true;
-                sprites[indexforrender].Draw();
-                if (itishad)
-                {
-
-                    if (HorizontalArrange)
-                    {
-                        this.X += lo.NextMargin;
-                    }
-                    else
-                    {
-                        this.Y += lo.NextMargin;
-                    }
-                    if (lo.ListingLineOption == ListingLineOption.StayStill)
-                    {
-                        continue;
-                    } else if(lo.ListingLineOption == ListingLineOption.Collocate)
-                    {
-                        if (HorizontalArrange)
-                        {
-                            this.Y += sprites[indexforrender].dst.h;
-                        }
-                        else
-                        {
-                            this.X += sprites[indexforrender].dst.w;
-                        }
-                        continue;
-                    } else
-                    {
-                        if (HorizontalArrange ? (this.Y != collocatepos) : (this.X != collocatepos))
-                        {
-                            if (HorizontalArrange)
-                            {
-                                this.Y = collocatepos;
-                            } else
-                            {
-                                this.X = collocatepos;
-                            }
-                        }
-                    }
-                } else
-                {
-                    if (HorizontalArrange ? (this.Y != collocatepos) : (this.X != collocatepos))
-                    {
-                        if (HorizontalArrange)
-                        {
-                            this.Y = collocatepos;
-                        }
-                        else
-                        {
-                            this.X = collocatepos;
-                        }
-                    }
-                }
-                if (HorizontalArrange)
-                {
-                    this.X += sprites[indexforrender].dst.w;
-                } else
-                {
-                    this.Y += sprites[indexforrender].dst.h;
-                }
-            }
-            if (HorizontalArrange)
-            {
-                this.X = line;
-                this.Y = collocatepos;
-            }
-            else
-            {
-                this.Y = line;
-                this.X = collocatepos;
-            }
-            if (this.RenderRange == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
-            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRange.size);
-            for (indexforrender = 0; indexforrender < FrontObjects.Count; indexforrender++)
-            {
-                if (FrontObjects[indexforrender].Hide) continue;
-                FrontObjects[indexforrender].Draw();
-            }
-        }
-
-#if DEBUG
-        internal override void ODD()
-        {
-            SDL.SDL_SetRenderDrawColor(Framework.renderer, 100, 100, 255, 255);
-            if (this.RenderRange == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
-            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRange.size);
-            for (indexforrender = 0; indexforrender < BackObjects.Count; indexforrender++)
-            {
-                if (BackObjects[indexforrender].Hide) continue;
-                BackObjects[indexforrender].ODD();
-            }
-            SDL.SDL_SetRenderDrawColor(Framework.renderer, Debug.ObjectDrawDebugingLineColor.Red, Debug.ObjectDrawDebugingLineColor.Green, Debug.ObjectDrawDebugingLineColor.Blue, Debug.ObjectDrawDebugingLineColor.Alpha);
-            if (this.RenderRangeOfListedObjects == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
-            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRangeOfListedObjects.size);
-            for (indexforrender = 0; indexforrender < sprites.Count; indexforrender++)
-            {
-                if (sprites[indexforrender].Hide) continue;
-                sprites[indexforrender].ODD();
-            }
-            SDL.SDL_SetRenderDrawColor(Framework.renderer, 100, 100, 255, 255);
-            if (this.RenderRange == null) SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
-            else SDL.SDL_RenderSetViewport(Framework.renderer, ref this.RenderRange.size);
-            for (indexforrender = 0; indexforrender < FrontObjects.Count; indexforrender++)
-            {
-                if (FrontObjects[indexforrender].Hide) continue;
-                FrontObjects[indexforrender].ODD();
-            }
-            SDL.SDL_SetRenderDrawColor(Framework.renderer, Debug.SceneDrawDebugingLineColor.Red, Debug.SceneDrawDebugingLineColor.Green, Debug.SceneDrawDebugingLineColor.Blue, Debug.SceneDrawDebugingLineColor.Alpha);
-            if (this.RenderRange == null) SDL.SDL_RenderDrawRect(Framework.renderer, ref Window.size);
-            else SDL.SDL_RenderDrawRect(Framework.renderer, ref this.RenderRange.size);
-        }
-#endif
-    }
-
     /// <summary>
     /// 직접 도형 및 이미지를 그리는 장면입니다.
     /// 많은 요소들을 빠르게 그려야될때 쓰기 좋습니다.
@@ -3192,23 +2958,14 @@ namespace JyunrcaeaFramework
         public static bool MouseOver(DrawableObject Sprite)
         {
             if (Sprite.InheritedObject == null || ((Scene)Sprite.InheritedObject).RenderRange == null)
-                return SDL.SDL_PointInRect(ref Mouse.position,ref Sprite.dst) == SDL.SDL_bool.SDL_TRUE;
+                return SDL.SDL_PointInRect(ref Mouse.position, ref Sprite.dst) == SDL.SDL_bool.SDL_TRUE;
             SDL.SDL_Rect part = new()
             {
                 w = Sprite.dst.w,
-                h = Sprite.dst.h
+                h = Sprite.dst.h,
+                x = ((Scene)Sprite.InheritedObject).RenderRange!.size.x + Sprite.dst.x,
+                y = ((Scene)Sprite.InheritedObject).RenderRange!.size.y + Sprite.dst.y
             };
-            if (Sprite.inheritobj is ListingScene)
-            {
-                part.x = ((ListingScene)Sprite.InheritedObject).RenderRangeOfListedObjects!.size.x + Sprite.dst.x;
-                part.y = ((ListingScene)Sprite.InheritedObject).RenderRangeOfListedObjects!.size.y + Sprite.dst.y;
-            } else
-            {
-                part.x = ((Scene)Sprite.InheritedObject).RenderRange!.size.x + Sprite.dst.x;
-                part.y = ((Scene)Sprite.InheritedObject).RenderRange!.size.y + Sprite.dst.y;
-            }
-            //SDL.SDL_SetRenderDrawColor(Framework.renderer, 123, 233, 193,255);
-            //SDL.SDL_RenderFillRect(Framework.renderer, ref part);
             return SDL.SDL_PointInRect(ref Mouse.position, ref part) == SDL.SDL_bool.SDL_TRUE;
         }
 
@@ -4008,21 +3765,6 @@ namespace JyunrcaeaFramework
         }
 
 
-    }
-    [Obsolete("0.5 에서 삭제될 예정")]
-    public interface ListingOptionInterface
-    {
-        int LastMargin { get; }
-        int NextMargin { get; }
-        ListingLineOption ListingLineOption { get; }
-    }
-
-    [Obsolete("0.5 에서 삭제될 예정")]
-    public enum ListingLineOption
-    {
-        NextLine = 0,
-        Collocate = 1,
-        StayStill = 2
     }
 
 
