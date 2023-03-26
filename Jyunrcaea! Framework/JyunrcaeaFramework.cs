@@ -1582,6 +1582,7 @@ namespace JyunrcaeaFramework
         }
     }
 
+    [Obsolete("불안정한 기능")]
     public class ListingScene : Scene
     {
         List<DrawableObject> BackObjects = new();
@@ -1657,11 +1658,6 @@ namespace JyunrcaeaFramework
         }
 
         int line;
-
-        internal override void UpdatePosToObjects()
-        {
-
-        }
 
         internal override void Draw()
         {
@@ -2214,10 +2210,12 @@ namespace JyunrcaeaFramework
     /// 오브젝트들 끼리 묶는 용도로 이용됩니다.
     /// (0.5부터) GroupObject에 다른 GroupObject를 추가할수 있습니다.
     /// </summary>
-    [Obsolete("개발중, 곧 출시될 기능")]
+    [Obsolete("실험버전, 장기간 업데이트 예정 (구조가 자주 바뀔수 있음)")]
     public class GroupObject : DrawableObject
     {
         List<DrawableObject> sprites = new();
+
+        
 
         internal void InheritToScene(DrawableObject obj)
         {
@@ -2280,17 +2278,10 @@ namespace JyunrcaeaFramework
                 this.dst.y = this.originpos.y + this.my;
                 this.needresetdrawposition = false;
             }
-            SDL.SDL_RenderGetViewport(Framework.renderer, out var r);
-            drawrect.x = r.x + this.mx;
-            drawrect.y = r.y + this.my;
-            drawrect.w = r.w;
-            drawrect.h = r.h;
-            SDL.SDL_RenderSetViewport(Framework.renderer, ref this.drawrect);
             for (d = 0;d<sprites.Count;d++)
             {
                 sprites[d].Draw();
             }
-            SDL.SDL_RenderSetViewport(Framework.renderer,ref r);
         }
 
         public override void Stop()
@@ -2309,6 +2300,71 @@ namespace JyunrcaeaFramework
             {
                 sprites[d].ODD();
             }
+        }
+#endif
+    }
+
+    [Obsolete("0.6 때 출시예정")]
+    public class TextLineBox : DrawableObject
+    {
+        List<string> strings = new List<string>();
+        List<IntPtr> renderedtexts = new();
+        Queue<int> rerenderlines = new();
+
+        /// <summary>
+        /// 원하는 줄의 텍스트를 변경합니다.
+        /// 한줄만 바꿔야되는 경우, 이 명령어를 사용하는게 성능 향샹에 도움이 됩니다.
+        /// </summary>
+        /// <param name="Index">원하는 줄</param>
+        /// <param name="text">바꿀 내용</param>
+        public void EditLine(int Index,string text)
+        {
+
+        }
+
+        /// <summary>
+        /// 전체적인 텍스트를 읽거나 씁니다. (set의 경우 \n 을 기준으로 split 되어 배열에 저장됩니다.)
+        /// 모든 줄을 바꿀게 아니라면, EditLine 함수를 사용하는것을 권장합니다.
+        /// </summary>
+        public string Text
+        {
+            get => string.Join('\n', strings);
+            set
+            {
+                strings.Clear();
+                strings = value.Split('\n').ToList();
+            }
+        }
+
+        public string[] Texts => strings.ToArray();
+
+        bool AllRerender = false;
+
+        void RenderLine(int Index, string text)
+        {
+            
+        }
+
+        public void IDispose()
+        {
+
+        }
+
+        public override void Start()
+        {
+        }
+        public override void Resize()
+        {
+        }
+        public override void Stop()
+        {
+        }
+        internal override void Draw()
+        {
+        }
+#if DEBUG
+        internal override void ODD()
+        {
         }
 #endif
     }
@@ -3935,60 +3991,6 @@ namespace JyunrcaeaFramework
         /// </summary>
         Right = 3
     }
-
-    [Obsolete("미완성")]
-    class SceneFromWeber : Scene
-    {
-        string path = string.Empty;
-
-        //Dictionary<string,DrawableObject>
-
-        public SceneFromWeber(string WeberFilePath)
-        {
-            path = WeberFilePath;
-            string? errorcode;
-            if ((errorcode = Ready()) != null) throw new JyunrcaeaFrameworkException($"Weber 파일을 불러오는데 문제가 발생했습니다.\nWeber 오류: {errorcode}");
-            
-        }
-
-        private string? Ready()
-        {
-            if (!File.Exists(path))
-            {
-                return $"'{path}'은/는 존재하지 않는 파일 경로입니다.";
-            }
-
-            string[] cmd = File.ReadAllLines(path);
-
-            int line = -1;
-
-            while(++line<cmd.Length)
-            {
-
-            }
-
-            void AddObject()
-            {
-                //0 : ghost
-                //1 : sprite
-                //2 : textbox
-                int type = 0;
-                HorizontalPositionType originx = HorizontalPositionType.Middle;
-                VerticalPositionType originy = VerticalPositionType.Middle;
-                string name;
-
-            }
-
-            return null;
-        }
-
-        public override void Start()
-        {
-            
-            base.Start();
-        }
-    }
-
     /// <summary>
     /// 객체에 대한 자세한 정보를 얻어냅니다.
     /// 객체는 렌더링 때 좌표나 크기 등 값들이 새로고침 되므로, 업데이트 도중에 변경사항이 있어도 그 사항이 적용된 값을 제공하지 않는다는점 주의해주세요.
@@ -4029,7 +4031,7 @@ namespace JyunrcaeaFramework
 
 
     }
-
+    [Obsolete("0.5 에서 삭제될 예정")]
     public interface ListingOptionInterface
     {
         int LastMargin { get; }
@@ -4037,12 +4039,14 @@ namespace JyunrcaeaFramework
         ListingLineOption ListingLineOption { get; }
     }
 
+    [Obsolete("0.5 에서 삭제될 예정")]
     public enum ListingLineOption
     {
         NextLine = 0,
         Collocate = 1,
         StayStill = 2
     }
+
 
     /// <summary>
     /// 쥰르케아 프레임워크 내에 발생하는 예외적인 오류입니다.

@@ -27,6 +27,7 @@ namespace Jyunrcaea.Setting
                     new FrameLateText()
                 );
             this.RenderRangeOfListedObjects = new();
+            this.Hide = true;
         }
 
         public override void Start()
