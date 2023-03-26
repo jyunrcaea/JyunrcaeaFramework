@@ -1125,10 +1125,6 @@ namespace JyunrcaeaFramework
         public int Y { get; set; }
     }
 
-    internal interface HaveDrawPositionInterface { 
-        abstract void ResetDrawPosition();
-    }
-
     /// <summary>
     /// 장면에 쓰일 객체 추상 클래스입니다.
     /// </summary>
