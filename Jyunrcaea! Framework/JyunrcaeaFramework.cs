@@ -1125,6 +1125,10 @@ namespace JyunrcaeaFramework
         public int Y { get; set; }
     }
 
+    internal interface HaveDrawPositionInterface { 
+        abstract void ResetDrawPosition();
+    }
+
     /// <summary>
     /// 장면에 쓰일 객체 추상 클래스입니다.
     /// </summary>
@@ -1133,7 +1137,7 @@ namespace JyunrcaeaFramework
         internal object? inheritobj = null;
         public object? InheritedObject => inheritobj;
 
-        internal int addx=0, dddy=0;
+        //internal int addx=0, dddy=0;
 
         internal SDL.SDL_Rect dst = new();
 
@@ -1148,6 +1152,11 @@ namespace JyunrcaeaFramework
             else this.originpos.y = (this.oy == VerticalPositionType.Middle ? (int)Window.hh : (int)Window.size.h);
             this.needresetposition = false;
             this.needresetdrawposition = true;
+        }
+
+        internal virtual void ResetDrawPosition()
+        {
+            this.needresetdrawposition = false;
         }
 
         internal int mx = 0, my = 0;
@@ -1327,6 +1336,8 @@ namespace JyunrcaeaFramework
                 needupdatepos = true;
             }
         }
+
+        public DrawableObject[] SpriteList => sprites.ToArray();
 
         private protected List<DrawableObject> sprites = new();
         List<DropFileEventInterface> drops = new();
@@ -2049,17 +2060,18 @@ namespace JyunrcaeaFramework
             needresetsize = true;
         }
 
+        internal override void ResetDrawPosition()
+        {
+            this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
+            this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
+            needresetdrawposition = false;
+        }
+
         internal override void Draw()
         {
             if (needresetposition) this.ResetPosition();
             if (needresetsize) this.ResetSize();
-            if (needresetdrawposition)
-            {
-                this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
-                this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
-            }
-            //if (SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) == -1) throw new JyunrcaeaFrameworkException($"렌더러 블랜더 모드 설정 실패 SDL Error: {SDL.SDL_GetError()}");
-            //Console.WriteLine("r: {0}, w: {1}, h: {2}, x: {3}, y: {4}",this.Color.Red,this.size.w,this.size.h,this.size.x,this.size.y);
+            if (needresetdrawposition) ResetDrawPosition();
             if (SDL.SDL_SetRenderDrawColor(Framework.renderer, this.Color.Red, this.Color.Green, this.Color.Blue, this.Color.Alpha) < 0) throw new JyunrcaeaFrameworkException($"색 변경에 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
 
             if (this.Radius == 0)
@@ -2215,8 +2227,6 @@ namespace JyunrcaeaFramework
     {
         List<DrawableObject> sprites = new();
 
-        
-
         internal void InheritToScene(DrawableObject obj)
         {
             if (this.inheritobj is GroupObject)
@@ -2241,6 +2251,7 @@ namespace JyunrcaeaFramework
         public int AddSprite(DrawableObject NewSprite)
         {
             this.sprites.Add(NewSprite);
+            NewSprite.inheritobj = this;
             return this.sprites.Count - 1;
         }
 
@@ -2360,6 +2371,9 @@ namespace JyunrcaeaFramework
         {
         }
         internal override void Draw()
+        {
+        }
+        internal override void ResetDrawPosition()
         {
         }
 #if DEBUG
@@ -2510,6 +2524,13 @@ namespace JyunrcaeaFramework
             this.targettexture.Free();
         }
 
+        internal override void ResetDrawPosition()
+        {
+            this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
+            this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
+            this.needresetdrawposition = false;
+        }
+
         internal override void Draw()
         {
             if (this.targettexture.needresettexture)
@@ -2521,12 +2542,7 @@ namespace JyunrcaeaFramework
             }
             if (needresetposition) ResetPosition();
             if (needresetsize) ResetSize();
-            if (needresetdrawposition)
-            {
-                this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
-                this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
-                this.needresetdrawposition = false;
-            }
+            if (needresetdrawposition) ResetDrawPosition();
             //SDL.SDL_SetRenderTarget(Framework.renderer, this.Texture.texture);
             //SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
             //SDL.SDL_SetRenderDrawColor(Framework.renderer, BlendColor.Red, BlendColor.Green, BlendColor.Blue, BlendColor.Alpha);
@@ -3065,17 +3081,19 @@ namespace JyunrcaeaFramework
             needresetdrawposition = true;
         }
 
+        internal override void ResetDrawPosition()
+        {
+            this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
+            this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
+            needresetdrawposition = false;
+        }
+
         internal override void Draw()
         {
             if (rerender) TextRender();
             if (needresetsize) Reset();
             if (needresetposition) ResetPosition();
-            if (needresetdrawposition)
-            {
-                this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
-                this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
-                needresetdrawposition = false;
-            }
+            if (needresetdrawposition) ResetDrawPosition();
 
             if (this.tt != IntPtr.Zero)
             if(SDL.SDL_RenderCopyEx(Framework.renderer, this.tt, ref this.src, ref this.dst, Rotation, IntPtr.Zero, flip) != 0) throw new JyunrcaeaFrameworkException("sdl error: " + SDL.SDL_GetError());
@@ -4025,6 +4043,14 @@ namespace JyunrcaeaFramework
         /// <param name="y">Y 좌표</param>
         public static void RealPosition(DrawableObject obj,out int x,out int y)
         {
+            if (obj.needresetposition)
+            {
+                obj.ResetPosition();
+            }
+            if (obj.needresetdrawposition)
+            {
+                obj.ResetDrawPosition();
+            }
             x = obj.dst.x;
             y = obj.dst.y;
         }

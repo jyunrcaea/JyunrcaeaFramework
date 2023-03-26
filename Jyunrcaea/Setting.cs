@@ -8,26 +8,22 @@ using System.Threading.Tasks;
 
 namespace Jyunrcaea.Setting
 {
-    internal class SettingScene : ListingScene
+    internal class SettingScene : Scene
     {
+        List<TextboxForSetting> settingList = new()
+        {
+            new("FrameLate: ",Display.FrameLateLimit.ToString()),
+        };
+
         Background bb;
 
-        internal FrameLate fl;
-
-        public SettingScene() {
-            this.AddSpriteAtBack(new Blind());
-            this.AddSpriteAtBack(bb = new Background());
+        public SettingScene()
+        {
             this.AddSprites(
-                    new DetailTitle(),
-                    new Version(),
-                    new RunningTime(),
-                    new SettingTitle(),
-                    fl = new FrameLate(),
-                    new FrameLateBackground(),
-                    new FrameLateText()
+                    new Blind(),
+                    bb = new Background()
                 );
-            this.RenderRangeOfListedObjects = new();
-            this.Hide = true;
+            this.AddSprites(settingList.ToArray());
         }
 
         public override void Start()
@@ -39,10 +35,13 @@ namespace Jyunrcaea.Setting
         public override void Resize()
         {
             base.Resize();
-            this.RenderRangeOfListedObjects.Width = (int)(760 * Window.AppropriateSize);
-            this.RenderRangeOfListedObjects.Height = (int)(560 * Window.AppropriateSize);
-            this.RenderRangeOfListedObjects.X = (int)(Window.Width * 0.5f - this.RenderRangeOfListedObjects.Width * 0.5f + 20 * Window.AppropriateSize);
-            this.RenderRangeOfListedObjects.Y = (int)(Window.Height * 0.5f - this.RenderRangeOfListedObjects.Height * 0.5f + 20 * Window.AppropriateSize);
+            int x = (int)(Window.Width * 0.5f -  400f * Window.AppropriateSize);
+            int y = (int)(Window.Height * 0.5f - 300f * Window.AppropriateSize);
+            x += (int)(20f * Window.AppropriateSize);
+            y += (int)(20f * Window.AppropriateSize);
+            int hei = (int)(Window.AppropriateSize * 24);
+            for (int i =0; i < settingList.Count; i++) { settingList[i].X = x; settingList[i].Y = y; y += hei; }
+
         }
     }
 
@@ -61,7 +60,7 @@ namespace Jyunrcaea.Setting
         }
     }
 
-    class Background : Rectangle
+    class Background : RectangleForAnimation
     {
         public Background() : base(800, 600)
         {
@@ -77,155 +76,29 @@ namespace Jyunrcaea.Setting
         }
     }
 
-    class DetailTitle : DefaultTextbox
+    class TextboxForSetting : GroupObject
     {
-        public DetailTitle() : base("Program Information",46) { }
+        public TextBox Title = new("cache/font.ttf", 0) { FontColor = new(0,0,0), OriginX = HorizontalPositionType.Left, DrawX = HorizontalPositionType.Right, OriginY = VerticalPositionType.Top, DrawY = VerticalPositionType.Bottom };
 
-        public override void Resize()
+        public TextBox Text = new("cache/font.ttf",0) { FontColor = new(0, 0, 0), OriginX = HorizontalPositionType.Left, DrawX = HorizontalPositionType.Right, OriginY = VerticalPositionType.Top, DrawY = VerticalPositionType.Bottom };
+
+        public TextboxForSetting(string text1,string text2)
         {
-            this.Size = (int)(46 * Window.AppropriateSize);
-            base.Resize();
-        }
-    }
-
-    class SettingTitle : DefaultTextbox, ListingOptionInterface
-    {
-        public SettingTitle() : base("Settting",46) { }
-
-        public int LastMargin { get; } = 20;
-        public int NextMargin { get; } = 0;
-        public ListingLineOption ListingLineOption { get; } = ListingLineOption.NextLine;
-
-        public override void Resize()
-        {
-            this.Size = (int)(46 * Window.AppropriateSize);
-            //this.X = (int)(-300 * Window.AppropriateSize);
-            //this.Y = (int)(-300 * Window.AppropriateSize) + (int)(this.Size * 1.1);
-            base.Resize();
-        }
-    }
-
-    class DefaultTextbox : TextBox
-    {
-        public DefaultTextbox(string text, int size =0) : base("cache/font.ttf", size, text)
-        {
-            this.FontColor = new(0, 0, 0);
-            this.OriginX = HorizontalPositionType.Left;
-            this.OriginY = VerticalPositionType.Top;
-            this.DrawX = HorizontalPositionType.Right;
-            this.DrawY = VerticalPositionType.Bottom;
-        }
-    }
-
-    class Version : DefaultTextbox
-    {
-        public Version() : base($"Jyunrcaea! Version : {Jyunrcaea.Store.Version}") { }
-
-        public override void Resize()
-        {
-            this.Size = (int)(24 * Window.AppropriateSize);
-            base.Resize();
-        }
-    }
-
-    class RunningTime : DefaultTextbox, UpdateEventInterface
-    {
-        public RunningTime() : base("Loading Time...") { }
-
-        public override void Resize()
-        {
-            this.Size = (int)(24 * Window.AppropriateSize);
-            base.Resize();
-        }
-
-        public void Update(float ms)
-        {
-            this.Text = "Running time : " + (Framework.RunningTime * 0.001f ).ToString("0.0") +"s";
-        }
-    }
-
-    class FrameLate : DefaultTextbox, ListingOptionInterface
-    {
-        public FrameLate() : base("Frame Late : ") { }
-
-        public int LastMargin { get; } = 0;
-        public int NextMargin { get; } = 0;
-        public ListingLineOption ListingLineOption { get; } = ListingLineOption.Collocate;
-
-        public override void Start()
-        {
-            //this.Text = "Frame Late : " + Display.FrameLateLimit.ToString();
-            //if (Display.FrameLateLimit == Display.MonitorRefreshRate)
-            //{
-            //    this.Text += " (= Monitor Refresh Rate)";
-            //}
-            base.Start();
+            Title.Text = text1;
+            Text.Text = text2;
+            this.AddSprite(Title);
+            this.AddSprite(Text);
         }
 
         public override void Resize()
         {
-            this.Size = (int)(24 * Window.AppropriateSize);
-            //this.X = (int)(-380 * Window.AppropriateSize);
-            //this.Y = (int)(-150 * Window.AppropriateSize);
-            base.Resize();
-        }
-    }
-
-    class FrameLateBackground : RectangleForAnimation, ListingOptionInterface, MouseMoveEventInterface
-    {
-        public FrameLateBackground()
-        {
-            this.Color = new(150, 150, 150,0);
-            this.OriginX = HorizontalPositionType.Left;
-            this.OriginY = VerticalPositionType.Top;
-            this.DrawX = HorizontalPositionType.Right;
-            this.DrawY = VerticalPositionType.Bottom;
-            this.Opacity(0);
-        }
-
-        public int LastMargin { get; } = 0;
-        public int NextMargin { get; } = 0;
-        public ListingLineOption ListingLineOption { get; } = ListingLineOption.StayStill;
-
-        public override void Resize()
-        {
-            this.Height = ((SettingScene)this.InheritedObject).fl.Height;
-            this.Width = (int)(48 * Window.AppropriateSize);
-            base.Resize();
-        }
-
-        bool hovered = false;
-
-        public void MouseMove()
-        {
-            if (hovered)
-            {
-                if (Convenience.MouseOver(this)) return;
-                this.Opacity(0, 250f);
-                hovered = false;
-            } else
-            {
-                if (!Convenience.MouseOver(this)) return;
-                this.Opacity(128, 250f);
-                hovered = true;
-            }
-        }
-    }
-
-    class FrameLateText : DefaultTextbox
-    {
-        public FrameLateText() : base(Display.FrameLateLimit.ToString()) {
-            this.FontColor = new();
-        }
-
-        public override void Resize()
-        {
-            this.Size = (int)(24 * Window.AppropriateSize);
-            this.X = 4;
+            this.Text.Size = this.Title.Size = (int)(Window.AppropriateSize * 24);
+            this.Text.X = this.Title.Width;
             base.Resize();
         }
     }
 }
+
 
 //namespace Jyunrcaea
 //{

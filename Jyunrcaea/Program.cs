@@ -137,21 +137,9 @@ namespace Jyunrcaea
             {
                 fullscreenswicthed = true;
                 Window.Fullscreen = !Window.Fullscreen;
-                 //Program.ws.Show("창 모드 변경됨: " + ((Window.Fullscreen = !Window.Fullscreen) ? $"전체화면" : "창화면") + $" ({Display.MonitorWidth} × {Display.MonitorHeight})");
-
-                //switch (Window.FullScreen)
-                //{
-                //    case FullscreenOption.Window:
-                //        Window.FullScreen = FullscreenOption.Borderless;
-                //        break;
-                //    case FullscreenOption.Borderless:
-                //        Window.FullScreen = FullscreenOption.FullScreen;
-                //        break;
-                //    case FullscreenOption.FullScreen:
-                //        Window.FullScreen = FullscreenOption.Window;
-                //        break;
-                //}
-                //Window.FullScreen = Window.FullScreen == FullscreenOption.Window ? FullscreenOption.Borderless : FullscreenOption.Window;
+            } else if (e == Keycode.ESCAPE)
+            {
+                Framework.Stop();
             }
             base.KeyDown(e);
         }
