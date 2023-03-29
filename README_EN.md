@@ -1,5 +1,5 @@
 <div align="center">
-	<img src='Jyunrcaea/Jyunrcaea!FrameworkIcon.png' alt='Jyunrcaea! Framework Icon'>
+	<img src="Jyunrcaea! Framework/src/Icon.png" alt='Jyunrcaea! Framework Icon'>
 </div>
 
 2D Framework for make app or game.
@@ -20,3 +20,18 @@ C# framework help to make 2D game or application easy.
 * Can't handle window more than two.
 * Rendering is process in single thread. So if you add many object, you'r program may become shrink of frames.
 
+# Scheduled release date
+Estimated early 2024
+
+# Support Platform
+## Windows
+Jyunrcaea! Framework support Windows OS 7 or higher<br>
+(Actually, This framework just need to installed .NET 6.0 Runtime)
+## MacOS, iOS
+Never, I'm not about to support this.
+## Linux
+I don't know yet. But I will try support it.<br>
+(Maybe, I think can run if .DLL file of SDL2 Library replace .SO file)
+## Android
+Never... .NET Runtime can't running on android.<br>
+also Latest Mono not support C# 10.0
