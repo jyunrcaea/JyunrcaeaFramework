@@ -42,6 +42,9 @@ Visual Studio 에서 C# 프로젝트를 생성합니다.<br>
 아직 지원하진 않으며, 추후 지원해볼 예정입니다.<br>
 SDL2 라이브러리를 .dll 대신 .so 를 사용하면 실행 가능할것으로 보고 있습니다.<br>
 (실행은 .NET Runtime 만 있으면 되므로, Wine 은 필요하지 않겠습니다.)
+### Android
+.NET 6.0 Runtime도 안되고, 최신 Mono도 C# 8.0 밖에 지원 안해서 (Jyunrcaea! Framework는 C# 10.0 을 씀)<br>
+지원하고 싶어도 못함... Xamarin 또는 Osu! Framework 쓰셈;;
 
 ## 라이선스
 이 프로젝트 및 코드들은 MIT License가 적용됩니다.<br><br>
