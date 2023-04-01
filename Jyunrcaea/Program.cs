@@ -120,6 +120,8 @@ namespace Jyunrcaea
         {
             base.Start();
             Window.Show = true;
+            //Window.Resize(1900, 1000);
+            //Input.TextInput.Enable = true;
         }
 
         public override void WindowQuit()
@@ -128,19 +130,34 @@ namespace Jyunrcaea
             Framework.Stop();
         }
 
+        public override void WindowMove()
+        {
+            base.WindowMove();
+        }
+
         public static bool fullscreenswicthed = false;
 
-        public override void KeyDown(Keycode e)
+        public override void KeyDown(Input.Keycode e)
         {
-            if (e == Keycode.F1)
+            if (e == Input.Keycode.F1)
                 Debug.ObjectDrawDebuging = !Debug.ObjectDrawDebuging;
-            else if (e == Keycode.F11)
+            else if (e == Input.Keycode.F11)
             {
                 fullscreenswicthed = true;
                 Window.Fullscreen = !Window.Fullscreen;
-            } else if (e == Keycode.ESCAPE)
+            } else if (e == Input.Keycode.ESCAPE)
             {
                 Framework.Stop();
+            } else if (e== Input.Keycode.F2)
+            {
+                Window.Resize(Window.DefaultWidth, Window.DefaultHeight);
+            } else if (e == Input.Keycode.F4)
+            {
+                Window.Move(null, null);
+            } else if (e == Input.Keycode.F12)
+            {
+                while (Debug.LogCount != 0)
+                    Console.WriteLine(Debug.GetLog);
             }
             base.KeyDown(e);
         }

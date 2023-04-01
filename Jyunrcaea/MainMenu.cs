@@ -114,8 +114,8 @@ namespace Jyunrcaea
 
             public void MouseMove()
             {
-                this.X = (int)((Mouse.X - Window.Width * 0.5f) * 0.1f);
-                this.Y = (int)((Mouse.Y - Window.Height * 0.5f) * 0.1f);
+                this.X = (int)((Input.Mouse.X - Window.Width * 0.5f) * 0.1f);
+                this.Y = (int)((Input.Mouse.Y - Window.Height * 0.5f) * 0.1f);
             }
         }
 
@@ -276,9 +276,9 @@ namespace Jyunrcaea
                 base.Resize();
             }
             
-            public void MouseButtonDown(Mousecode key)
+            public void MouseButtonDown(Input.Mouse.Key key)
             {
-                if (key != Mousecode.Left) return;
+                if (key != Input.Mouse.Key.Left) return;
                 if (Convenience.MouseOver(this))
                 {
                     MainScene sc = (MainScene)this.InheritedObject;
@@ -319,9 +319,9 @@ namespace Jyunrcaea
                 base.Resize();
             }
 
-            public void MouseButtonDown(Mousecode key)
+            public void MouseButtonDown(Input.Mouse.Key key)
             {
-                if (key == Mousecode.Left && Convenience.MouseOver(this)) Framework.Stop(); 
+                if (key == Input.Mouse.Key.Left && Convenience.MouseOver(this)) Framework.Stop(); 
             }
         }
 

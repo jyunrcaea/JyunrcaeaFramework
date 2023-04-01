@@ -44,9 +44,9 @@ namespace Jyunrcaea.TitleBar
 
         }
 
-        public void MouseButtonDown(Mousecode key)
+        public void MouseButtonDown(Input.Mouse.Key key)
         {
-            if (key != Mousecode.Left) return;
+            if (key != Input.Mouse.Key.Left) return;
             if (Convenience.MouseOver(this)) Framework.Stop();
         }
     }
@@ -81,9 +81,9 @@ namespace Jyunrcaea.TitleBar
 
         }
 
-        public void MouseButtonDown(Mousecode key)
+        public void MouseButtonDown(Input.Mouse.Key key)
         {
-            if (key != Mousecode.Left) return;
+            if (key != Input.Mouse.Key.Left) return;
             if (Convenience.MouseOver(this)) Framework.Stop();
         }
     }

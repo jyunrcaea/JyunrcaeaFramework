@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -31,6 +32,7 @@ namespace Jyunrcaea.Setting
 
         public SettingScene()
         {
+            this.Hide = true;
             this.AddSprites(
                     new Blind(),
                     bb = new Background()

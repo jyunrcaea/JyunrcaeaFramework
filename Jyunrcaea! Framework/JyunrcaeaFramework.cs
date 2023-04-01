@@ -1,6 +1,8 @@
 ﻿#define WINDOWS
 using SDL2;
+using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
+using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -30,6 +32,16 @@ namespace JyunrcaeaFramework
         //internal static float[] drawtimelist = Array.Empty<float>();
         //public static float[] DrawTimeList => drawtimelist;
 
+        static Queue<string> logginglist = new();
+
+        public static int LogCount => logginglist.Count;
+
+        public static void Log(string loglist,params object?[] obj)
+        {
+            logginglist.Enqueue($"{Framework.RunningTimeToSecond}:{string.Format(loglist,obj)}");
+        }
+
+        public static string GetLog => logginglist.Dequeue();
     }
 #endif
 
@@ -88,6 +100,7 @@ namespace JyunrcaeaFramework
             #region 값 검사
             if (audio_option.ch > 8) throw new JyunrcaeaFrameworkException("지원하지 않는 스테레오 ( AudioOption.Channls > 8)");
             #endregion
+            #region SDL 라이브러리 초기화
             if (SDL.SDL_Init(SDL.SDL_INIT_EVERYTHING) != 0)
             {
                 throw new JyunrcaeaFrameworkException($"SDL2 라이브러리 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
@@ -145,11 +158,13 @@ namespace JyunrcaeaFramework
                 }
                 else setting = false;
             }
+#endregion
 #if WINDOWS
             SDL.SDL_SetEventFilter((_, eventPtr) =>
             {
                 // ReSharper disable once PossibleNullReferenceException
                 var e = (SDL.SDL_Event)System.Runtime.InteropServices.Marshal.PtrToStructure(eventPtr, typeof(SDL.SDL_Event))!;
+                //if (e.type == SDL.SDL_EventType.SDL_KEYDOWN && Input.TextInput.Enable && e.key.keysym.sym == SDL.SDL_Keycode.SDLK_BACKSPACE)  
                 if (e.key.repeat != 0) return 0;
                 if (e.type != SDL.SDL_EventType.SDL_WINDOWEVENT) return 1;
                 switch (e.window.windowEvent)
@@ -172,9 +187,9 @@ namespace JyunrcaeaFramework
                 Framework.Function.Draw();
                 return 1;
             }, IntPtr.Zero);
+#endif
 
             SDL_mixer.Mix_HookMusicFinished(Music.Finished);
-#endif
             if ((option.option & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) Window.fullscreenoption = true;
             if ((option.option & SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) == SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) Window.windowborderless = true;
             TextureSharing.resourcelist = new();
@@ -187,24 +202,19 @@ namespace JyunrcaeaFramework
             }
             SDL.SDL_SetHint(SDL.SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4, "1");
             SDL.SDL_SetHint(SDL.SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "1");
-            SDL.SDL_SetHint(SDL.SDL_HINT_IME_SHOW_UI, "1");
+            SDL.SDL_SetHint(SDL.SDL_HINT_IME_SHOW_UI, "0");
+            SDL.SDL_EventState(SDL.SDL_EventType.SDL_DROPTEXT,SDL.SDL_ENABLE);
         }
-        /// <summary>
-        /// 실행
-        /// </summary>
         internal static bool running = false;
-        /// <summary>
-        /// SDL Event
-        /// </summary>
         internal static SDL.SDL_Event sdle;
-        /// <summary>
-        /// For limit Framelate
-        /// </summary>
         internal static System.Diagnostics.Stopwatch frametimer = new();
         /// <summary>
         /// 프레임워크가 지금까지 작동된 시간을 밀리초(ms)로 반환합니다.
         /// </summary>
         public static float RunningTime => frametimer.ElapsedTicks * 0.0001f;
+
+        public static double RunningTimeToSecond => frametimer.ElapsedTicks * 0.0000001d;
+
         /// <summary>
         /// Framework.Stop(); 을 호출할때까지 창을 띄웁니다. (또는 오류가 날때까지...)
         /// </summary>
@@ -213,7 +223,6 @@ namespace JyunrcaeaFramework
         {
             if (running) throw new JyunrcaeaFrameworkException("이 함수는 이미 실행중인 함수입니다. (함수가 종료될때까지 호출할수 없습니다.)");
             running = true;
-
             Framework.Function.Start();
             FrameworkFunction.updatetime = 0;
             FrameworkFunction.endtime = Display.framelatelimit;
@@ -242,11 +251,28 @@ namespace JyunrcaeaFramework
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
                                     Framework.Function.WindowQuit();
                                     break;
-                                    //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
-                                    //    Console.WriteLine("size: {0} x {1}",sdle.window.data1,sdle.window.data2);
-                                    //    //SDL.SDL_RenderSetLogicalSize(renderer, sdle.window.data1, sdle.window.data2);
-                                    //    SDL.SDL_PumpEvents();
-                                    //    break;
+                                //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
+                                //    Console.WriteLine("size: {0} x {1}",sdle.window.data1,sdle.window.data2);
+                                //    //SDL.SDL_RenderSetLogicalSize(renderer, sdle.window.data1, sdle.window.data2);
+                                //    SDL.SDL_PumpEvents();
+                                //    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SHOWN:
+                                    Console.WriteLine("shown");
+                                    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_HIDDEN:
+                                    Console.WriteLine("hidden");
+                                    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MINIMIZED:
+                                    Console.WriteLine("min");
+                                    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MAXIMIZED:
+                                    Console.WriteLine("max");
+                                    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_EXPOSED:
+                                    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESTORED:
+                                    Console.WriteLine("restore");
+                                    break;
 #if !WINDOWS
                                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
                                                     //SDL.SDL_GetWindowSize(window, out var w, out var h);
@@ -270,25 +296,55 @@ namespace JyunrcaeaFramework
                         case SDL.SDL_EventType.SDL_DROPFILE:
                             Framework.Function.FileDropped(SDL.UTF8_ToManaged(sdle.drop.file, true));
                             break;
-                        case SDL.SDL_EventType.SDL_DROPTEXT:
-                            break;
-                        case SDL.SDL_EventType.SDL_DROPCOMPLETE:
-                            break;
+                        //case SDL.SDL_EventType.SDL_DROPTEXT:
+                        //    Console.WriteLine("whatisthat");
+                        //    break;
+                        //case SDL.SDL_EventType.SDL_DROPCOMPLETE:
+                        //    Console.WriteLine("complete");
+                        //    break;
+                        //case SDL.SDL_EventType.SDL_DROPBEGIN:
+                        //    Console.WriteLine("begin");
+                        //    break;
                         case SDL.SDL_EventType.SDL_KEYDOWN:
                             //Console.WriteLine(sdle.key.keysym.sym.ToString());
-                            Framework.Function.KeyDown((Keycode)sdle.key.keysym.sym);
-                            break;
+                            if (Input.TextInput.Enable)
+                            {
+                                int l;
+                                if (sdle.key.keysym.sym == SDL.SDL_Keycode.SDLK_BACKSPACE && (l =  Input.TextInput.InputedText.Length) > 0)
+                                    Input.TextInput.InputedText = Input.TextInput.InputedText.Substring(0,l-1);
+                                Console.WriteLine(Input.TextInput.InputedText);
+                            };
+                            Framework.Function.KeyDown((Input.Keycode)sdle.key.keysym.sym);
+                            break;  
                         case SDL.SDL_EventType.SDL_MOUSEMOTION:
                             Framework.Function.MouseMove();
                             break;
                         case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                            Framework.Function.MouseButtonDown((Mousecode)sdle.button.button);
+                            Framework.Function.MouseButtonDown((Input.Mouse.Key)sdle.button.button);
+
                             break;
                         case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
-                            Framework.Function.MouseButtonUp((Mousecode)sdle.button.button);
+                            Framework.Function.MouseButtonUp((Input.Mouse.Key)sdle.button.button);
+
                             break;
                         case SDL.SDL_EventType.SDL_KEYUP:
-                            Framework.Function.KeyUp((Keycode)sdle.key.keysym.sym);
+                            Framework.Function.KeyUp((Input.Keycode)sdle.key.keysym.sym);
+                            break;
+                        case SDL.SDL_EventType.SDL_TEXTINPUT:
+                            unsafe
+                            {
+                                fixed (byte * b = sdle.text.text)
+                                {
+                                    Input.TextInput.InputedText += new string((sbyte*)b);
+                                }
+                            }
+                            Console.WriteLine(Input.TextInput.InputedText);
+                            break;
+                        case SDL.SDL_EventType.SDL_TEXTEDITING:
+                            unsafe
+                            {
+                                fixed (byte* b = sdle.edit.text) Console.WriteLine("Edit Text: {0}\nCursor Pos: {1}\nSelected Line {2}",new string((sbyte*)b),sdle.edit.start,sdle.edit.length);
+                            }
                             break;
                     }
                 }
@@ -358,19 +414,19 @@ namespace JyunrcaeaFramework
                     break;
                 case SDL.SDL_EventType.SDL_KEYDOWN:
                     //Console.WriteLine(sdle.key.keysym.sym.ToString());
-                    Framework.Function.KeyDown((Keycode)sdle.key.keysym.sym);
+                    Framework.Function.KeyDown((Input.Keycode)sdle.key.keysym.sym);
                     break;
                 case SDL.SDL_EventType.SDL_MOUSEMOTION:
                     Framework.Function.MouseMove();
                     break;
                 case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                    Framework.Function.MouseButtonDown((Mousecode)sdle.button.button);
+                    Framework.Function.MouseButtonDown((Input.Mouse.Key)sdle.button.button);
                     break;
                 case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
-                    Framework.Function.MouseButtonUp((Mousecode)sdle.button.button);
+                    Framework.Function.MouseButtonUp((Input.Mouse.Key)sdle.button.button);
                     break;
                 case SDL.SDL_EventType.SDL_KEYUP:
-                    Framework.Function.KeyUp((Keycode)sdle.key.keysym.sym);
+                    Framework.Function.KeyUp((Input.Keycode)sdle.key.keysym.sym);
                     break;
             }
         }
@@ -454,22 +510,26 @@ namespace JyunrcaeaFramework
                     if (dm.refresh_rate == 0) throw new JyunrcaeaFrameworkException("알수없는 디스플레이 정보");
                     fps = dm.refresh_rate;
                 }
-                framelatelimit = (long)(1f / fps * 10000000);
+                framelatelimit = (long)(1d / fps * 10000000);
             }
         }
     }
 
     public static class Window {
         internal static SDL.SDL_Rect size = new();
-
         internal static SDL.SDL_Point position = new();
-
         internal static SDL.SDL_Point default_size = new();
-
+        /// <summary>
+        /// 기본 가로값
+        /// </summary>
         public static int DefaultWidth => default_size.x;
-
+        /// <summary>
+        /// 기본 세로값
+        /// </summary>
         public static int DefaultHeight => default_size.y;
-
+        /// <summary>
+        /// 창을 조절해도 적당한 위치에 있을수 있도록 제공하는 적정 사이즈입니다.
+        /// </summary>
         public static float AppropriateSize { get; internal set; } = 1;
 
         /// <summary>
@@ -477,17 +537,25 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static Color BackgroundColor = new(31, 30, 51);
 
-        //internal static uint h = 0;
         internal static float wh = 0, hh = 0;
-        //internal static int Y = 0;
-
+        /// <summary>
+        /// 창의 수평 위치
+        /// </summary>
         public static int X => position.x;
+        /// <summary>
+        /// 창의 수직 위치
+        /// </summary>
         public static int Y => position.y;
 
         public static uint UWidth => (uint)size.w;
         public static uint UHeight => (uint)size.h;
-
+        /// <summary>
+        /// 창의 너비
+        /// </summary>
         public static int Width => size.w;
+        /// <summary>
+        /// 창의 높이
+        /// </summary>
         public static int Height => size.h;
 
         //internal static FullscreenOption fullscreenstate;
@@ -500,6 +568,9 @@ namespace JyunrcaeaFramework
         //    }
         //}
         internal static bool fullscreenoption = false;
+        /// <summary>
+        /// 전체화면 여부
+        /// </summary>
         public static bool Fullscreen
         {
             get => fullscreenoption; set
@@ -510,6 +581,9 @@ namespace JyunrcaeaFramework
         }
 
         internal static bool windowborderless = false;
+        /// <summary>
+        /// 창의 테두리 제거여부
+        /// </summary>
         public static bool Borderless
         {
             get => windowborderless;
@@ -547,9 +621,15 @@ namespace JyunrcaeaFramework
                 SDL.SDL_SetWindowOpacity(Framework.window, value);
             }
         }
-
+        /// <summary>
+        /// 창 표시여부
+        /// </summary>
         public static bool Show { set { if (value) SDL.SDL_ShowWindow(Framework.window); else SDL.SDL_HideWindow(Framework.window); } }
-
+        /// <summary>
+        /// 창의 아이콘을 설정합니다.
+        /// </summary>
+        /// <param name="filename">파일명</param>
+        /// <exception cref="JyunrcaeaFrameworkException">파일을 불러올수 없을때</exception>
         public static void Icon(string filename)
         {
             IntPtr surface = SDL_image.IMG_Load(filename);
@@ -557,21 +637,50 @@ namespace JyunrcaeaFramework
             SDL.SDL_SetWindowIcon(Framework.window, surface);
             SDL.SDL_FreeSurface(surface);
         }
-
+        /// <summary>
+        /// 창의 크기를 조절합니다.
+        /// </summary>
+        /// <param name="width">너비</param>
+        /// <param name="height">높이</param>
         public static void Resize(int width, int height)
         {
             SDL.SDL_SetWindowSize(Framework.window, width, height);
             Window.size.w = width;
             Window.size.h = height;
-            Framework.Function.Resize();
+            SDL.SDL_Event e = new()
+            {
+                type = SDL.SDL_EventType.SDL_WINDOWEVENT,
+                window = new()
+                {
+                    type = SDL.SDL_EventType.SDL_WINDOWEVENT,
+                    windowEvent = SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED,
+                    data1 = width,
+                    data2 = height,
+                    windowID = SDL.SDL_GetWindowID(Framework.window),
+                    timestamp = SDL.SDL_GetTicks()
+                }
+            };
+            SDL.SDL_PushEvent(ref e);
+            e.window.windowEvent = SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED;
+            SDL.SDL_PushEvent(ref e);
         }
 
+        /// <summary>
+        /// 창의 위치를 이동합니다.
+        /// </summary>
+        /// <param name="x">수평 위치</param>
+        /// <param name="y">수직 위치</param>
         public static void Move(int? x = null, int? y = null)
         {
             SDL.SDL_SetWindowPosition(Framework.window, x ?? SDL.SDL_WINDOWPOS_CENTERED, y ?? SDL.SDL_WINDOWPOS_CENTERED);
+            SDL.SDL_GetWindowPosition(Framework.window, out Window.position.x, out Window.position.y);
+            Framework.Function.WindowMove();
         }
 
-        [Obsolete("프레임워크 미지원 기능 사용을 위한것입니다. 정식 버전에서 사라질 예정입니다.")]
+        /// <summary>
+        /// SDL에서 사용할수 있는 창의 ID 값을 얻습니다. 
+        /// 정식 버전에서 삭제될 기능입니다.
+        /// </summary>
         public static uint ID => SDL.SDL_GetWindowID(Framework.window);
     }
 
@@ -770,7 +879,7 @@ namespace JyunrcaeaFramework
         /// 키보드의 특정 키가 눌렸을때 실행되는 함수입니다.
         /// </summary>
         /// <param name="e"></param>
-        public virtual void KeyDown(Keycode e)
+        public virtual void KeyDown(Input.Keycode e)
         {
             for (ikd = 0; ikd < Display.scenes.Count; ikd++)
                 if (!Display.scenes[ikd].EventRejection) Display.scenes[ikd].KeyDown(e);
@@ -782,7 +891,7 @@ namespace JyunrcaeaFramework
         /// </summary>
         public virtual void MouseMove()
         {
-            SDL.SDL_GetMouseState(out Mouse.position.x, out Mouse.position.y);
+            SDL.SDL_GetMouseState(out Input.Mouse.position.x, out Input.Mouse.position.y);
             for (imm = 0; imm < Display.scenes.Count; imm++)
             {
                 if (!Display.scenes[imm].EventRejection) Display.scenes[imm].MouseMove();
@@ -791,7 +900,7 @@ namespace JyunrcaeaFramework
 
         static int imd, imu, iku;
 
-        public virtual void MouseButtonDown(Mousecode key)
+        public virtual void MouseButtonDown(Input.Mouse.Key key)
         {
             if (Framework.MultiCoreProcess)
             {
@@ -806,7 +915,7 @@ namespace JyunrcaeaFramework
             }
         }
 
-        public virtual void MouseButtonUp(Mousecode key)
+        public virtual void MouseButtonUp(Input.Mouse.Key key)
         {
             if (Framework.MultiCoreProcess)
             {
@@ -821,7 +930,7 @@ namespace JyunrcaeaFramework
             }
         }
 
-        public virtual void KeyUp(Keycode key)
+        public virtual void KeyUp(Input.Keycode key)
         {
             if (Framework.MultiCoreProcess)
             {
@@ -1106,17 +1215,17 @@ namespace JyunrcaeaFramework
 
         public abstract void WindowMove();
 
-        public abstract void KeyDown(Keycode e);
+        public abstract void KeyDown(Input.Keycode e);
 
         public abstract void MouseMove();
 
         public abstract void WindowQuit();
 
-        public abstract void KeyUp(Keycode e);
+        public abstract void KeyUp(Input.Keycode e);
 
-        public abstract void MouseButtonDown(Mousecode e);
+        public abstract void MouseButtonDown(Input.Mouse.Key e);
 
-        public abstract void MouseButtonUp(Mousecode e);
+        public abstract void MouseButtonUp(Input.Mouse.Key e);
     }
 
     public interface DefaultObjectPositionInterface
@@ -1270,7 +1379,7 @@ namespace JyunrcaeaFramework
 
     public interface KeyDownEventInterface
     {
-        public void KeyDown(Keycode key);
+        public void KeyDown(Input.Keycode key);
     }
 
     public interface MouseMoveEventInterface
@@ -1285,17 +1394,17 @@ namespace JyunrcaeaFramework
 
     public interface MouseButtonDownEventInterface
     {
-        public void MouseButtonDown(Mousecode key);
+        public void MouseButtonDown(Input.Mouse.Key key);
     }
 
     public interface MouseButtonUpEventInterface
     {
-        public void MouseButtonUp(Mousecode key);
+        public void MouseButtonUp(Input.Mouse.Key key);
     }
 
     public interface KeyUpEventInterface
     {
-        public void KeyUp(Keycode key);
+        public void KeyUp(Input.Keycode key);
     }
 
 #if DEBUG
@@ -1552,7 +1661,7 @@ namespace JyunrcaeaFramework
                 windowMovedInterfaces[i].WindowMove();
         }
 
-        public override void KeyDown(Keycode e)
+        public override void KeyDown(Input.Keycode e)
         {
             for (int i = 0; i < keyDownEvents.Count; i++)
                 keyDownEvents[i].KeyDown(e);
@@ -1570,19 +1679,19 @@ namespace JyunrcaeaFramework
                 windowQuits[i].WindowQuit();
         }
 
-        public override void KeyUp(Keycode e)
+        public override void KeyUp(Input.Keycode e)
         {
             for (int i = 0; i < keyUpEvents.Count; i++)
                 keyUpEvents[i].KeyUp(e);
         }
 
-        public override void MouseButtonDown(Mousecode e)
+        public override void MouseButtonDown(Input.Mouse.Key e)
         {
             for (int i = 0; i < mouseButtonDownEvents.Count; i++)
                 mouseButtonDownEvents[i].MouseButtonDown(e);
         }
 
-        public override void MouseButtonUp(Mousecode e)
+        public override void MouseButtonUp(Input.Mouse.Key e)
         {
             for (int i = 0; i < mouseButtonUpEvents.Count; i++)
                 mouseButtonUpEvents[i].MouseButtonUp(e);
@@ -1690,22 +1799,22 @@ namespace JyunrcaeaFramework
 
         }
 
-        public override void KeyDown(Keycode e)
+        public override void KeyDown(Input.Keycode e)
         {
 
         }
 
-        public override void KeyUp(Keycode e)
+        public override void KeyUp(Input.Keycode e)
         {
 
         }
 
-        public override void MouseButtonDown(Mousecode e)
+        public override void MouseButtonDown(Input.Mouse.Key e)
         {
 
         }
 
-        public override void MouseButtonUp(Mousecode e)
+        public override void MouseButtonUp(Input.Mouse.Key e)
         {
 
         }
@@ -1982,9 +2091,7 @@ namespace JyunrcaeaFramework
 
     /// <summary>
     /// 오브젝트들 끼리 묶는 용도로 이용됩니다.
-    /// (0.5부터) GroupObject에 다른 GroupObject를 추가할수 있습니다.
     /// </summary>
-    [Obsolete("실험버전, 장기간 업데이트 예정 (구조가 자주 바뀔수 있음)")]
     public class GroupObject : DrawableObject
     {
         List<DrawableObject> sprites = new();
@@ -2898,27 +3005,351 @@ namespace JyunrcaeaFramework
         internal SDL.SDL_Color colorbase = new();
     }
 
-
-
-    public static class Mouse
+    /// <summary>
+    /// 입력과 관련된 대부분의 클래스가 있습니다.
+    /// </summary>
+    public static class Input
     {
-        internal static SDL.SDL_Point position = new();
-
-        public static int X => position.x;
-
-        public static int Y => position.y;
-
-        static bool cursorhide = false;
-
-        public static bool HideCursor
+        /// <summary>
+        /// 마우스와 관련된 클래스입니다.
+        /// </summary>
+        public static class Mouse
         {
-            get => false;
-            set
+            internal static SDL.SDL_Point position = new();
+
+            public static int X => position.x;
+
+            public static int Y => position.y;
+
+            static bool cursorhide = false;
+
+            public static bool HideCursor
             {
-                SDL.SDL_ShowCursor((cursorhide = value) ? 0 : 1);
+                get => false;
+                set
+                {
+                    SDL.SDL_ShowCursor((cursorhide = value) ? 0 : 1);
+                }
+            }
+
+
+
+            /// <summary>
+            /// 마우스 버튼 목록
+            /// </summary>
+            public enum Key : byte
+            {
+                /// <summary>
+                /// 왼쪽
+                /// </summary>
+                Left = 1,
+                /// <summary>
+                /// 중간 (마우스 휠)
+                /// </summary>
+                Middle = 2,
+                /// <summary>
+                /// 오른쪽
+                /// </summary>
+                Right = 3
             }
         }
+        /// <summary>
+        /// 텍스트 입력과 관련된 클래스입니다.
+        /// 한국어 및 여러 문자들을 입력받기 위한 기능이 존재합니다.
+        /// </summary>
+        public static class TextInput
+        {
+            public static string InputedText = string.Empty;
+
+            public static int CursorPosition = 0;
+            public static int SelectionLenght = 0;
+            public static string SelectedText = string.Empty;
+
+            static bool ti = false; 
+            public static bool Enable
+            {
+                get => ti;
+                set
+                {
+                    if (ti = value) SDL.SDL_StartTextInput();
+                    else SDL.SDL_StopTextInput();
+                }
+            }
+        }
+
+        public enum Keycode
+        {
+            UNKNOWN = 0,
+
+            RETURN = '\r',
+            ESCAPE = 27, // '\033'
+            BACKSPACE = '\b',
+            TAB = '\t',
+            SPACE = ' ',
+            EXCLAIM = '!',
+            QUOTEDBL = '"',
+            HASH = '#',
+            PERCENT = '%',
+            DOLLAR = '$',
+            AMPERSAND = '&',
+            QUOTE = '\'',
+            LEFTPAREN = '(',
+            RIGHTPAREN = ')',
+            ASTERISK = '*',
+            PLUS = '+',
+            COMMA = ',',
+            MINUS = '-',
+            PERIOD = '.',
+            SLASH = '/',
+            _0 = '0',
+            _1 = '1',
+            _2 = '2',
+            _3 = '3',
+            _4 = '4',
+            _5 = '5',
+            _6 = '6',
+            _7 = '7',
+            _8 = '8',
+            _9 = '9',
+            COLON = ':',
+            SEMICOLON = ';',
+            LESS = '<',
+            EQUALS = '=',
+            GREATER = '>',
+            QUESTION = '?',
+            AT = '@',
+            /*
+            Skip uppercase letters
+            */
+            LEFTBRACKET = '[',
+            BACKSLASH = '\\',
+            RIGHTBRACKET = ']',
+            CARET = '^',
+            UNDERSCORE = '_',
+            BACKQUOTE = '`',
+            a = 'a',
+            b = 'b',
+            c = 'c',
+            d = 'd',
+            e = 'e',
+            f = 'f',
+            g = 'g',
+            h = 'h',
+            i = 'i',
+            j = 'j',
+            k = 'k',
+            l = 'l',
+            m = 'm',
+            n = 'n',
+            o = 'o',
+            p = 'p',
+            q = 'q',
+            r = 'r',
+            s = 's',
+            t = 't',
+            u = 'u',
+            v = 'v',
+            w = 'w',
+            x = 'x',
+            y = 'y',
+            z = 'z',
+
+            CAPSLOCK = SDL.SDL_Keycode.SDLK_CAPSLOCK,
+
+            F1 = SDL.SDL_Keycode.SDLK_F1,
+            F2 = SDL.SDL_Keycode.SDLK_F2,
+            F3 = SDL.SDL_Keycode.SDLK_F3,
+            F4 = SDL.SDL_Keycode.SDLK_F4,
+            F5 = SDL.SDL_Keycode.SDLK_F5,
+            F6 = SDL.SDL_Keycode.SDLK_F6,
+            F7 = SDL.SDL_Keycode.SDLK_F7,
+            F8 = SDL.SDL_Keycode.SDLK_F8,
+            F9 = SDL.SDL_Keycode.SDLK_F9,
+            F10 = SDL.SDL_Keycode.SDLK_F10,
+            F11 = SDL.SDL_Keycode.SDLK_F11,
+            F12 = SDL.SDL_Keycode.SDLK_F12,
+
+            PRINTSCREEN = SDL.SDL_Keycode.SDLK_PRINTSCREEN,
+            SCROLLLOCK = SDL.SDL_Keycode.SDLK_SCROLLLOCK,
+            PAUSE = SDL.SDL_Keycode.SDLK_PAUSE,
+            INSERT = SDL.SDL_Keycode.SDLK_INSERT,
+            HOME = SDL.SDL_Keycode.SDLK_HOME,
+            PAGEUP = SDL.SDL_Keycode.SDLK_PAGEUP,
+            DELETE = 127,
+            END = SDL.SDL_Keycode.SDLK_END,
+            PAGEDOWN = SDL.SDL_Keycode.SDLK_PAGEDOWN,
+            RIGHT = SDL.SDL_Keycode.SDLK_RIGHT,
+            LEFT = SDL.SDL_Keycode.SDLK_LEFT,
+            DOWN = SDL.SDL_Keycode.SDLK_DOWN,
+            UP = SDL.SDL_Keycode.SDLK_UP,
+
+            // NUMLOCKCLEAR = (int)SDL_Scancode.SDL_SCANCODE_NUMLOCKCLEAR |  SCANCODE_MASK,
+            // KP_DIVIDE = (int)SDL_Scancode.SDL_SCANCODE_KP_DIVIDE |  SCANCODE_MASK,
+            // KP_MULTIPLY = (int)SDL_Scancode.SDL_SCANCODE_KP_MULTIPLY |  SCANCODE_MASK,
+            // KP_MINUS = (int)SDL_Scancode.SDL_SCANCODE_KP_MINUS |  SCANCODE_MASK,
+            KP_PLUS = SDL.SDL_Keycode.SDLK_KP_PLUS,
+            NUM_ENTER = SDL.SDL_Keycode.SDLK_KP_ENTER,
+            NUM_1 = SDL.SDL_Keycode.SDLK_KP_1,
+            NUM_2 = SDL.SDL_Keycode.SDLK_KP_2,
+            NUM_3 = SDL.SDL_Keycode.SDLK_KP_3,
+            NUM_4 = SDL.SDL_Keycode.SDLK_KP_4,
+            NUM_5 = SDL.SDL_Keycode.SDLK_KP_5,
+            NUM_6 = SDL.SDL_Keycode.SDLK_KP_6,
+            NUM_7 = SDL.SDL_Keycode.SDLK_KP_7,
+            NUM_8 = SDL.SDL_Keycode.SDLK_KP_8,
+            NUM_9 = SDL.SDL_Keycode.SDLK_KP_9,
+            NUM_0 = SDL.SDL_Keycode.SDLK_KP_0,
+            // KP_PERIOD = (int)SDL_Scancode.SDL_SCANCODE_KP_PERIOD |  SCANCODE_MASK,
+
+            // APPLICATION = (int)SDL_Scancode.SDL_SCANCODE_APPLICATION |  SCANCODE_MASK,
+            // POWER = (int)SDL_Scancode.SDL_SCANCODE_POWER |  SCANCODE_MASK,
+            // KP_EQUALS = (int)SDL_Scancode.SDL_SCANCODE_KP_EQUALS |  SCANCODE_MASK,
+            // F13 = (int)SDL_Scancode.SDL_SCANCODE_F13 |  SCANCODE_MASK,
+            // F14 = (int)SDL_Scancode.SDL_SCANCODE_F14 |  SCANCODE_MASK,
+            // F15 = (int)SDL_Scancode.SDL_SCANCODE_F15 |  SCANCODE_MASK,
+            // F16 = (int)SDL_Scancode.SDL_SCANCODE_F16 |  SCANCODE_MASK,
+            // F17 = (int)SDL_Scancode.SDL_SCANCODE_F17 |  SCANCODE_MASK,
+            // F18 = (int)SDL_Scancode.SDL_SCANCODE_F18 |  SCANCODE_MASK,
+            // F19 = (int)SDL_Scancode.SDL_SCANCODE_F19 |  SCANCODE_MASK,
+            // F20 = (int)SDL_Scancode.SDL_SCANCODE_F20 |  SCANCODE_MASK,
+            // F21 = (int)SDL_Scancode.SDL_SCANCODE_F21 |  SCANCODE_MASK,
+            // F22 = (int)SDL_Scancode.SDL_SCANCODE_F22 |  SCANCODE_MASK,
+            // F23 = (int)SDL_Scancode.SDL_SCANCODE_F23 |  SCANCODE_MASK,
+            // F24 = (int)SDL_Scancode.SDL_SCANCODE_F24 |  SCANCODE_MASK,
+            // EXECUTE = (int)SDL_Scancode.SDL_SCANCODE_EXECUTE |  SCANCODE_MASK,
+            // HELP = (int)SDL_Scancode.SDL_SCANCODE_HELP |  SCANCODE_MASK,
+            // MENU = (int)SDL_Scancode.SDL_SCANCODE_MENU |  SCANCODE_MASK,
+            // SELECT = (int)SDL_Scancode.SDL_SCANCODE_SELECT |  SCANCODE_MASK,
+            // STOP = (int)SDL_Scancode.SDL_SCANCODE_STOP |  SCANCODE_MASK,
+            // AGAIN = (int)SDL_Scancode.SDL_SCANCODE_AGAIN |  SCANCODE_MASK,
+            // UNDO = (int)SDL_Scancode.SDL_SCANCODE_UNDO |  SCANCODE_MASK,
+            // CUT = (int)SDL_Scancode.SDL_SCANCODE_CUT |  SCANCODE_MASK,
+            // COPY = (int)SDL_Scancode.SDL_SCANCODE_COPY |  SCANCODE_MASK,
+            // PASTE = (int)SDL_Scancode.SDL_SCANCODE_PASTE |  SCANCODE_MASK,
+            // FIND = (int)SDL_Scancode.SDL_SCANCODE_FIND |  SCANCODE_MASK,
+            // MUTE = (int)SDL_Scancode.SDL_SCANCODE_MUTE |  SCANCODE_MASK,
+            // VOLUMEUP = (int)SDL_Scancode.SDL_SCANCODE_VOLUMEUP |  SCANCODE_MASK,
+            // VOLUMEDOWN = (int)SDL_Scancode.SDL_SCANCODE_VOLUMEDOWN |  SCANCODE_MASK,
+            // KP_COMMA = (int)SDL_Scancode.SDL_SCANCODE_KP_COMMA |  SCANCODE_MASK,
+            // KP_EQUALSAS400 =
+            //(int)SDL_Scancode.SDL_SCANCODE_KP_EQUALSAS400 |  SCANCODE_MASK,
+
+            // ALTERASE = (int)SDL_Scancode.SDL_SCANCODE_ALTERASE |  SCANCODE_MASK,
+            // SYSREQ = (int)SDL_Scancode.SDL_SCANCODE_SYSREQ |  SCANCODE_MASK,
+            // CANCEL = (int)SDL_Scancode.SDL_SCANCODE_CANCEL |  SCANCODE_MASK,
+            // CLEAR = (int)SDL_Scancode.SDL_SCANCODE_CLEAR |  SCANCODE_MASK,
+            // PRIOR = (int)SDL_Scancode.SDL_SCANCODE_PRIOR |  SCANCODE_MASK,
+            // RETURN2 = (int)SDL_Scancode.SDL_SCANCODE_RETURN2 |  SCANCODE_MASK,
+            // SEPARATOR = (int)SDL_Scancode.SDL_SCANCODE_SEPARATOR |  SCANCODE_MASK,
+            // OUT = (int)SDL_Scancode.SDL_SCANCODE_OUT |  SCANCODE_MASK,
+            // OPER = (int)SDL_Scancode.SDL_SCANCODE_OPER |  SCANCODE_MASK,
+            // CLEARAGAIN = (int)SDL_Scancode.SDL_SCANCODE_CLEARAGAIN |  SCANCODE_MASK,
+            // CRSEL = (int)SDL_Scancode.SDL_SCANCODE_CRSEL |  SCANCODE_MASK,
+            // EXSEL = (int)SDL_Scancode.SDL_SCANCODE_EXSEL |  SCANCODE_MASK,
+
+            // KP_00 = (int)SDL_Scancode.SDL_SCANCODE_KP_00 |  SCANCODE_MASK,
+            // KP_000 = (int)SDL_Scancode.SDL_SCANCODE_KP_000 |  SCANCODE_MASK,
+            // THOUSANDSSEPARATOR =
+            //(int)SDL_Scancode.SDL_SCANCODE_THOUSANDSSEPARATOR |  SCANCODE_MASK,
+            // DECIMALSEPARATOR =
+            //(int)SDL_Scancode.SDL_SCANCODE_DECIMALSEPARATOR |  SCANCODE_MASK,
+            // CURRENCYUNIT = (int)SDL_Scancode.SDL_SCANCODE_CURRENCYUNIT |  SCANCODE_MASK,
+            // CURRENCYSUBUNIT =
+            //(int)SDL_Scancode.SDL_SCANCODE_CURRENCYSUBUNIT |  SCANCODE_MASK,
+            // KP_LEFTPAREN = (int)SDL_Scancode.SDL_SCANCODE_KP_LEFTPAREN |  SCANCODE_MASK,
+            // KP_RIGHTPAREN = (int)SDL_Scancode.SDL_SCANCODE_KP_RIGHTPAREN |  SCANCODE_MASK,
+            // KP_LEFTBRACE = (int)SDL_Scancode.SDL_SCANCODE_KP_LEFTBRACE |  SCANCODE_MASK,
+            // KP_RIGHTBRACE = (int)SDL_Scancode.SDL_SCANCODE_KP_RIGHTBRACE |  SCANCODE_MASK,
+            // KP_TAB = (int)SDL_Scancode.SDL_SCANCODE_KP_TAB |  SCANCODE_MASK,
+            // KP_BACKSPACE = (int)SDL_Scancode.SDL_SCANCODE_KP_BACKSPACE |  SCANCODE_MASK,
+            // KP_A = (int)SDL_Scancode.SDL_SCANCODE_KP_A |  SCANCODE_MASK,
+            // KP_B = (int)SDL_Scancode.SDL_SCANCODE_KP_B |  SCANCODE_MASK,
+            // KP_C = (int)SDL_Scancode.SDL_SCANCODE_KP_C |  SCANCODE_MASK,
+            // KP_D = (int)SDL_Scancode.SDL_SCANCODE_KP_D |  SCANCODE_MASK,
+            // KP_E = (int)SDL_Scancode.SDL_SCANCODE_KP_E |  SCANCODE_MASK,
+            // KP_F = (int)SDL_Scancode.SDL_SCANCODE_KP_F |  SCANCODE_MASK,
+            // KP_XOR = (int)SDL_Scancode.SDL_SCANCODE_KP_XOR |  SCANCODE_MASK,
+            // KP_POWER = (int)SDL_Scancode.SDL_SCANCODE_KP_POWER |  SCANCODE_MASK,
+            // KP_PERCENT = (int)SDL_Scancode.SDL_SCANCODE_KP_PERCENT |  SCANCODE_MASK,
+            // KP_LESS = (int)SDL_Scancode.SDL_SCANCODE_KP_LESS |  SCANCODE_MASK,
+            // KP_GREATER = (int)SDL_Scancode.SDL_SCANCODE_KP_GREATER |  SCANCODE_MASK,
+            // KP_AMPERSAND = (int)SDL_Scancode.SDL_SCANCODE_KP_AMPERSAND |  SCANCODE_MASK,
+            // KP_DBLAMPERSAND =
+            //(int)SDL_Scancode.SDL_SCANCODE_KP_DBLAMPERSAND |  SCANCODE_MASK,
+            // KP_VERTICALBAR =
+            //(int)SDL_Scancode.SDL_SCANCODE_KP_VERTICALBAR |  SCANCODE_MASK,
+            // KP_DBLVERTICALBAR =
+            //(int)SDL_Scancode.SDL_SCANCODE_KP_DBLVERTICALBAR |  SCANCODE_MASK,
+            // KP_COLON = (int)SDL_Scancode.SDL_SCANCODE_KP_COLON |  SCANCODE_MASK,
+            // KP_HASH = (int)SDL_Scancode.SDL_SCANCODE_KP_HASH |  SCANCODE_MASK,
+            // KP_SPACE = (int)SDL_Scancode.SDL_SCANCODE_KP_SPACE |  SCANCODE_MASK,
+            // KP_AT = (int)SDL_Scancode.SDL_SCANCODE_KP_AT |  SCANCODE_MASK,
+            // KP_EXCLAM = (int)SDL_Scancode.SDL_SCANCODE_KP_EXCLAM |  SCANCODE_MASK,
+            // KP_MEMSTORE = (int)SDL_Scancode.SDL_SCANCODE_KP_MEMSTORE |  SCANCODE_MASK,
+            // KP_MEMRECALL = (int)SDL_Scancode.SDL_SCANCODE_KP_MEMRECALL |  SCANCODE_MASK,
+            // KP_MEMCLEAR = (int)SDL_Scancode.SDL_SCANCODE_KP_MEMCLEAR |  SCANCODE_MASK,
+            // KP_MEMADD = (int)SDL_Scancode.SDL_SCANCODE_KP_MEMADD |  SCANCODE_MASK,
+            // KP_MEMSUBTRACT =
+            //(int)SDL_Scancode.SDL_SCANCODE_KP_MEMSUBTRACT |  SCANCODE_MASK,
+            // KP_MEMMULTIPLY =
+            //(int)SDL_Scancode.SDL_SCANCODE_KP_MEMMULTIPLY |  SCANCODE_MASK,
+            // KP_MEMDIVIDE = (int)SDL_Scancode.SDL_SCANCODE_KP_MEMDIVIDE |  SCANCODE_MASK,
+            // KP_PLUSMINUS = (int)SDL_Scancode.SDL_SCANCODE_KP_PLUSMINUS |  SCANCODE_MASK,
+            // KP_CLEAR = (int)SDL_Scancode.SDL_SCANCODE_KP_CLEAR |  SCANCODE_MASK,
+            // KP_CLEARENTRY = (int)SDL_Scancode.SDL_SCANCODE_KP_CLEARENTRY |  SCANCODE_MASK,
+            // KP_BINARY = (int)SDL_Scancode.SDL_SCANCODE_KP_BINARY |  SCANCODE_MASK,
+            // KP_OCTAL = (int)SDL_Scancode.SDL_SCANCODE_KP_OCTAL |  SCANCODE_MASK,
+            // KP_DECIMAL = (int)SDL_Scancode.SDL_SCANCODE_KP_DECIMAL |  SCANCODE_MASK,
+            // KP_HEXADECIMAL =
+            //(int)SDL_Scancode.SDL_SCANCODE_KP_HEXADECIMAL |  SCANCODE_MASK,
+
+            LCTRL = SDL.SDL_Scancode.SDL_SCANCODE_LCTRL,
+            LSHIFT = SDL.SDL_Keycode.SDLK_LSHIFT,
+            LALT = SDL.SDL_Scancode.SDL_SCANCODE_LALT,
+            LGUI = SDL.SDL_Keycode.SDLK_LGUI,
+            RCTRL = SDL.SDL_Keycode.SDLK_RCTRL,
+            RSHIFT = SDL.SDL_Keycode.SDLK_RSHIFT,
+            RALT = SDL.SDL_Keycode.SDLK_RALT,
+            RGUI = SDL.SDL_Keycode.SDLK_RGUI,
+
+            // MODE = (int)SDL_Scancode.SDL_SCANCODE_MODE |  SCANCODE_MASK,
+
+            // AUDIONEXT = (int)SDL_Scancode.SDL_SCANCODE_AUDIONEXT |  SCANCODE_MASK,
+            // AUDIOPREV = (int)SDL_Scancode.SDL_SCANCODE_AUDIOPREV |  SCANCODE_MASK,
+            // AUDIOSTOP = (int)SDL_Scancode.SDL_SCANCODE_AUDIOSTOP |  SCANCODE_MASK,
+            // AUDIOPLAY = (int)SDL_Scancode.SDL_SCANCODE_AUDIOPLAY |  SCANCODE_MASK,
+            // AUDIOMUTE = (int)SDL_Scancode.SDL_SCANCODE_AUDIOMUTE |  SCANCODE_MASK,
+            // MEDIASELECT = (int)SDL_Scancode.SDL_SCANCODE_MEDIASELECT |  SCANCODE_MASK,
+            // WWW = (int)SDL_Scancode.SDL_SCANCODE_WWW |  SCANCODE_MASK,
+            // MAIL = (int)SDL_Scancode.SDL_SCANCODE_MAIL |  SCANCODE_MASK,
+            // CALCULATOR = (int)SDL_Scancode.SDL_SCANCODE_CALCULATOR |  SCANCODE_MASK,
+            // COMPUTER = (int)SDL_Scancode.SDL_SCANCODE_COMPUTER |  SCANCODE_MASK,
+            // AC_SEARCH = (int)SDL_Scancode.SDL_SCANCODE_AC_SEARCH |  SCANCODE_MASK,
+            // AC_HOME = (int)SDL_Scancode.SDL_SCANCODE_AC_HOME |  SCANCODE_MASK,
+            // AC_BACK = (int)SDL_Scancode.SDL_SCANCODE_AC_BACK |  SCANCODE_MASK,
+            // AC_FORWARD = (int)SDL_Scancode.SDL_SCANCODE_AC_FORWARD |  SCANCODE_MASK,
+            // AC_STOP = (int)SDL_Scancode.SDL_SCANCODE_AC_STOP |  SCANCODE_MASK,
+            // AC_REFRESH = (int)SDL_Scancode.SDL_SCANCODE_AC_REFRESH |  SCANCODE_MASK,
+            // AC_BOOKMARKS = (int)SDL_Scancode.SDL_SCANCODE_AC_BOOKMARKS |  SCANCODE_MASK,
+
+            // BRIGHTNESSDOWN =
+            //(int)SDL_Scancode.SDL_SCANCODE_BRIGHTNESSDOWN |  SCANCODE_MASK,
+            // BRIGHTNESSUP = (int)SDL_Scancode.SDL_SCANCODE_BRIGHTNESSUP |  SCANCODE_MASK,
+            // DISPLAYSWITCH = (int)SDL_Scancode.SDL_SCANCODE_DISPLAYSWITCH |  SCANCODE_MASK,
+            // KBDILLUMTOGGLE =
+            //(int)SDL_Scancode.SDL_SCANCODE_KBDILLUMTOGGLE |  SCANCODE_MASK,
+            // KBDILLUMDOWN = (int)SDL_Scancode.SDL_SCANCODE_KBDILLUMDOWN |  SCANCODE_MASK,
+            // KBDILLUMUP = (int)SDL_Scancode.SDL_SCANCODE_KBDILLUMUP |  SCANCODE_MASK,
+            // EJECT = (int)SDL_Scancode.SDL_SCANCODE_EJECT |  SCANCODE_MASK,
+            // SLEEP = (int)SDL_Scancode.SDL_SCANCODE_SLEEP |  SCANCODE_MASK,
+            // APP1 = (int)SDL_Scancode.SDL_SCANCODE_APP1 |  SCANCODE_MASK,
+            // APP2 = (int)SDL_Scancode.SDL_SCANCODE_APP2 |  SCANCODE_MASK,
+
+            // AUDIOREWIND = (int)SDL_Scancode.SDL_SCANCODE_AUDIOREWIND |  SCANCODE_MASK,
+            // AUDIOFASTFORWARD = (int)SDL_Scancode.SDL_SCANCODE_AUDIOFASTFORWARD |  SCANCODE_MASK
+        }
     }
+
 
     /// <summary>
     /// 수학 공식을 까먹은 당신을 위해... 편리한 기능을 제공하는 함수들이 모여있습니다.
@@ -2954,7 +3385,7 @@ namespace JyunrcaeaFramework
         public static bool MouseOver(DrawableObject Sprite)
         {
             if (Sprite.InheritedObject == null || ((Scene)Sprite.InheritedObject).RenderRange == null)
-                return SDL.SDL_PointInRect(ref Mouse.position, ref Sprite.dst) == SDL.SDL_bool.SDL_TRUE;
+                return SDL.SDL_PointInRect(ref Input.Mouse.position, ref Sprite.dst) == SDL.SDL_bool.SDL_TRUE;
             SDL.SDL_Rect part = new()
             {
                 w = Sprite.dst.w,
@@ -2962,7 +3393,7 @@ namespace JyunrcaeaFramework
                 x = ((Scene)Sprite.InheritedObject).RenderRange!.size.x + Sprite.dst.x,
                 y = ((Scene)Sprite.InheritedObject).RenderRange!.size.y + Sprite.dst.y
             };
-            return SDL.SDL_PointInRect(ref Mouse.position, ref part) == SDL.SDL_bool.SDL_TRUE;
+            return SDL.SDL_PointInRect(ref Input.Mouse.position, ref part) == SDL.SDL_bool.SDL_TRUE;
         }
 
         /// <summary>
@@ -3425,295 +3856,6 @@ namespace JyunrcaeaFramework
         Strikethrough = SDL_ttf.TTF_STYLE_STRIKETHROUGH
     }
 
-    public enum Keycode
-    {
-         UNKNOWN = 0,
-
-         RETURN = '\r',
-         ESCAPE = 27, // '\033'
-         BACKSPACE = '\b',
-         TAB = '\t',
-         SPACE = ' ',
-         EXCLAIM = '!',
-         QUOTEDBL = '"',
-         HASH = '#',
-         PERCENT = '%',
-         DOLLAR = '$',
-         AMPERSAND = '&',
-         QUOTE = '\'',
-         LEFTPAREN = '(',
-         RIGHTPAREN = ')',
-         ASTERISK = '*',
-         PLUS = '+',
-         COMMA = ',',
-         MINUS = '-',
-         PERIOD = '.',
-         SLASH = '/',
-         _0 = '0',
-         _1 = '1',
-         _2 = '2',
-         _3 = '3',
-         _4 = '4',
-         _5 = '5',
-         _6 = '6',
-         _7 = '7',
-         _8 = '8',
-         _9 = '9',
-         COLON = ':',
-         SEMICOLON = ';',
-         LESS = '<',
-         EQUALS = '=',
-         GREATER = '>',
-         QUESTION = '?',
-         AT = '@',
-        /*
-        Skip uppercase letters
-        */
-         LEFTBRACKET = '[',
-         BACKSLASH = '\\',
-         RIGHTBRACKET = ']',
-         CARET = '^',
-         UNDERSCORE = '_',
-         BACKQUOTE = '`',
-         a = 'a',
-         b = 'b',
-         c = 'c',
-         d = 'd',
-         e = 'e',
-         f = 'f',
-         g = 'g',
-         h = 'h',
-         i = 'i',
-         j = 'j',
-         k = 'k',
-         l = 'l',
-         m = 'm',
-         n = 'n',
-         o = 'o',
-         p = 'p',
-         q = 'q',
-         r = 'r',
-         s = 's',
-         t = 't',
-         u = 'u',
-         v = 'v',
-         w = 'w',
-         x = 'x',
-         y = 'y',
-         z = 'z',
-
-         CAPSLOCK = SDL.SDL_Keycode.SDLK_CAPSLOCK,
-
-         F1 = SDL.SDL_Keycode.SDLK_F1,
-         F2 = SDL.SDL_Keycode.SDLK_F2,
-         F3 = SDL.SDL_Keycode.SDLK_F3,
-         F4 = SDL.SDL_Keycode.SDLK_F4,
-         F5 = SDL.SDL_Keycode.SDLK_F5,
-         F6 = SDL.SDL_Keycode.SDLK_F6,
-         F7 = SDL.SDL_Keycode.SDLK_F7,
-         F8 = SDL.SDL_Keycode.SDLK_F8,
-         F9 = SDL.SDL_Keycode.SDLK_F9,
-         F10 = SDL.SDL_Keycode.SDLK_F10,
-         F11 = SDL.SDL_Keycode.SDLK_F11,
-         F12 = SDL.SDL_Keycode.SDLK_F12,
-
-         PRINTSCREEN = SDL.SDL_Keycode.SDLK_PRINTSCREEN,
-         SCROLLLOCK = SDL.SDL_Keycode.SDLK_SCROLLLOCK,
-         PAUSE = SDL.SDL_Keycode.SDLK_PAUSE,
-         INSERT = SDL.SDL_Keycode.SDLK_INSERT,
-         HOME = SDL.SDL_Keycode.SDLK_HOME,
-         PAGEUP = SDL.SDL_Keycode.SDLK_PAGEUP,
-         DELETE = 127,
-         END = SDL.SDL_Keycode.SDLK_END,
-         PAGEDOWN = SDL.SDL_Keycode.SDLK_PAGEDOWN,
-         RIGHT = SDL.SDL_Keycode.SDLK_RIGHT,
-         LEFT = SDL.SDL_Keycode.SDLK_LEFT,
-         DOWN = SDL.SDL_Keycode.SDLK_DOWN,
-         UP = SDL.SDL_Keycode.SDLK_UP,
-
-        // NUMLOCKCLEAR = (int)SDL_Scancode.SDL_SCANCODE_NUMLOCKCLEAR |  SCANCODE_MASK,
-        // KP_DIVIDE = (int)SDL_Scancode.SDL_SCANCODE_KP_DIVIDE |  SCANCODE_MASK,
-        // KP_MULTIPLY = (int)SDL_Scancode.SDL_SCANCODE_KP_MULTIPLY |  SCANCODE_MASK,
-        // KP_MINUS = (int)SDL_Scancode.SDL_SCANCODE_KP_MINUS |  SCANCODE_MASK,
-        KP_PLUS = SDL.SDL_Keycode.SDLK_KP_PLUS,
-        NUM_ENTER = SDL.SDL_Keycode.SDLK_KP_ENTER,
-        NUM_1 = SDL.SDL_Keycode.SDLK_KP_1,
-        NUM_2 = SDL.SDL_Keycode.SDLK_KP_2,
-        NUM_3 = SDL.SDL_Keycode.SDLK_KP_3,
-        NUM_4 = SDL.SDL_Keycode.SDLK_KP_4,
-        NUM_5 = SDL.SDL_Keycode.SDLK_KP_5,
-        NUM_6 = SDL.SDL_Keycode.SDLK_KP_6,
-        NUM_7 = SDL.SDL_Keycode.SDLK_KP_7,
-        NUM_8 = SDL.SDL_Keycode.SDLK_KP_8,
-        NUM_9 = SDL.SDL_Keycode.SDLK_KP_9,
-        NUM_0 = SDL.SDL_Keycode.SDLK_KP_0,
-        // KP_PERIOD = (int)SDL_Scancode.SDL_SCANCODE_KP_PERIOD |  SCANCODE_MASK,
-
-        // APPLICATION = (int)SDL_Scancode.SDL_SCANCODE_APPLICATION |  SCANCODE_MASK,
-        // POWER = (int)SDL_Scancode.SDL_SCANCODE_POWER |  SCANCODE_MASK,
-        // KP_EQUALS = (int)SDL_Scancode.SDL_SCANCODE_KP_EQUALS |  SCANCODE_MASK,
-        // F13 = (int)SDL_Scancode.SDL_SCANCODE_F13 |  SCANCODE_MASK,
-        // F14 = (int)SDL_Scancode.SDL_SCANCODE_F14 |  SCANCODE_MASK,
-        // F15 = (int)SDL_Scancode.SDL_SCANCODE_F15 |  SCANCODE_MASK,
-        // F16 = (int)SDL_Scancode.SDL_SCANCODE_F16 |  SCANCODE_MASK,
-        // F17 = (int)SDL_Scancode.SDL_SCANCODE_F17 |  SCANCODE_MASK,
-        // F18 = (int)SDL_Scancode.SDL_SCANCODE_F18 |  SCANCODE_MASK,
-        // F19 = (int)SDL_Scancode.SDL_SCANCODE_F19 |  SCANCODE_MASK,
-        // F20 = (int)SDL_Scancode.SDL_SCANCODE_F20 |  SCANCODE_MASK,
-        // F21 = (int)SDL_Scancode.SDL_SCANCODE_F21 |  SCANCODE_MASK,
-        // F22 = (int)SDL_Scancode.SDL_SCANCODE_F22 |  SCANCODE_MASK,
-        // F23 = (int)SDL_Scancode.SDL_SCANCODE_F23 |  SCANCODE_MASK,
-        // F24 = (int)SDL_Scancode.SDL_SCANCODE_F24 |  SCANCODE_MASK,
-        // EXECUTE = (int)SDL_Scancode.SDL_SCANCODE_EXECUTE |  SCANCODE_MASK,
-        // HELP = (int)SDL_Scancode.SDL_SCANCODE_HELP |  SCANCODE_MASK,
-        // MENU = (int)SDL_Scancode.SDL_SCANCODE_MENU |  SCANCODE_MASK,
-        // SELECT = (int)SDL_Scancode.SDL_SCANCODE_SELECT |  SCANCODE_MASK,
-        // STOP = (int)SDL_Scancode.SDL_SCANCODE_STOP |  SCANCODE_MASK,
-        // AGAIN = (int)SDL_Scancode.SDL_SCANCODE_AGAIN |  SCANCODE_MASK,
-        // UNDO = (int)SDL_Scancode.SDL_SCANCODE_UNDO |  SCANCODE_MASK,
-        // CUT = (int)SDL_Scancode.SDL_SCANCODE_CUT |  SCANCODE_MASK,
-        // COPY = (int)SDL_Scancode.SDL_SCANCODE_COPY |  SCANCODE_MASK,
-        // PASTE = (int)SDL_Scancode.SDL_SCANCODE_PASTE |  SCANCODE_MASK,
-        // FIND = (int)SDL_Scancode.SDL_SCANCODE_FIND |  SCANCODE_MASK,
-        // MUTE = (int)SDL_Scancode.SDL_SCANCODE_MUTE |  SCANCODE_MASK,
-        // VOLUMEUP = (int)SDL_Scancode.SDL_SCANCODE_VOLUMEUP |  SCANCODE_MASK,
-        // VOLUMEDOWN = (int)SDL_Scancode.SDL_SCANCODE_VOLUMEDOWN |  SCANCODE_MASK,
-        // KP_COMMA = (int)SDL_Scancode.SDL_SCANCODE_KP_COMMA |  SCANCODE_MASK,
-        // KP_EQUALSAS400 =
-        //(int)SDL_Scancode.SDL_SCANCODE_KP_EQUALSAS400 |  SCANCODE_MASK,
-
-        // ALTERASE = (int)SDL_Scancode.SDL_SCANCODE_ALTERASE |  SCANCODE_MASK,
-        // SYSREQ = (int)SDL_Scancode.SDL_SCANCODE_SYSREQ |  SCANCODE_MASK,
-        // CANCEL = (int)SDL_Scancode.SDL_SCANCODE_CANCEL |  SCANCODE_MASK,
-        // CLEAR = (int)SDL_Scancode.SDL_SCANCODE_CLEAR |  SCANCODE_MASK,
-        // PRIOR = (int)SDL_Scancode.SDL_SCANCODE_PRIOR |  SCANCODE_MASK,
-        // RETURN2 = (int)SDL_Scancode.SDL_SCANCODE_RETURN2 |  SCANCODE_MASK,
-        // SEPARATOR = (int)SDL_Scancode.SDL_SCANCODE_SEPARATOR |  SCANCODE_MASK,
-        // OUT = (int)SDL_Scancode.SDL_SCANCODE_OUT |  SCANCODE_MASK,
-        // OPER = (int)SDL_Scancode.SDL_SCANCODE_OPER |  SCANCODE_MASK,
-        // CLEARAGAIN = (int)SDL_Scancode.SDL_SCANCODE_CLEARAGAIN |  SCANCODE_MASK,
-        // CRSEL = (int)SDL_Scancode.SDL_SCANCODE_CRSEL |  SCANCODE_MASK,
-        // EXSEL = (int)SDL_Scancode.SDL_SCANCODE_EXSEL |  SCANCODE_MASK,
-
-        // KP_00 = (int)SDL_Scancode.SDL_SCANCODE_KP_00 |  SCANCODE_MASK,
-        // KP_000 = (int)SDL_Scancode.SDL_SCANCODE_KP_000 |  SCANCODE_MASK,
-        // THOUSANDSSEPARATOR =
-        //(int)SDL_Scancode.SDL_SCANCODE_THOUSANDSSEPARATOR |  SCANCODE_MASK,
-        // DECIMALSEPARATOR =
-        //(int)SDL_Scancode.SDL_SCANCODE_DECIMALSEPARATOR |  SCANCODE_MASK,
-        // CURRENCYUNIT = (int)SDL_Scancode.SDL_SCANCODE_CURRENCYUNIT |  SCANCODE_MASK,
-        // CURRENCYSUBUNIT =
-        //(int)SDL_Scancode.SDL_SCANCODE_CURRENCYSUBUNIT |  SCANCODE_MASK,
-        // KP_LEFTPAREN = (int)SDL_Scancode.SDL_SCANCODE_KP_LEFTPAREN |  SCANCODE_MASK,
-        // KP_RIGHTPAREN = (int)SDL_Scancode.SDL_SCANCODE_KP_RIGHTPAREN |  SCANCODE_MASK,
-        // KP_LEFTBRACE = (int)SDL_Scancode.SDL_SCANCODE_KP_LEFTBRACE |  SCANCODE_MASK,
-        // KP_RIGHTBRACE = (int)SDL_Scancode.SDL_SCANCODE_KP_RIGHTBRACE |  SCANCODE_MASK,
-        // KP_TAB = (int)SDL_Scancode.SDL_SCANCODE_KP_TAB |  SCANCODE_MASK,
-        // KP_BACKSPACE = (int)SDL_Scancode.SDL_SCANCODE_KP_BACKSPACE |  SCANCODE_MASK,
-        // KP_A = (int)SDL_Scancode.SDL_SCANCODE_KP_A |  SCANCODE_MASK,
-        // KP_B = (int)SDL_Scancode.SDL_SCANCODE_KP_B |  SCANCODE_MASK,
-        // KP_C = (int)SDL_Scancode.SDL_SCANCODE_KP_C |  SCANCODE_MASK,
-        // KP_D = (int)SDL_Scancode.SDL_SCANCODE_KP_D |  SCANCODE_MASK,
-        // KP_E = (int)SDL_Scancode.SDL_SCANCODE_KP_E |  SCANCODE_MASK,
-        // KP_F = (int)SDL_Scancode.SDL_SCANCODE_KP_F |  SCANCODE_MASK,
-        // KP_XOR = (int)SDL_Scancode.SDL_SCANCODE_KP_XOR |  SCANCODE_MASK,
-        // KP_POWER = (int)SDL_Scancode.SDL_SCANCODE_KP_POWER |  SCANCODE_MASK,
-        // KP_PERCENT = (int)SDL_Scancode.SDL_SCANCODE_KP_PERCENT |  SCANCODE_MASK,
-        // KP_LESS = (int)SDL_Scancode.SDL_SCANCODE_KP_LESS |  SCANCODE_MASK,
-        // KP_GREATER = (int)SDL_Scancode.SDL_SCANCODE_KP_GREATER |  SCANCODE_MASK,
-        // KP_AMPERSAND = (int)SDL_Scancode.SDL_SCANCODE_KP_AMPERSAND |  SCANCODE_MASK,
-        // KP_DBLAMPERSAND =
-        //(int)SDL_Scancode.SDL_SCANCODE_KP_DBLAMPERSAND |  SCANCODE_MASK,
-        // KP_VERTICALBAR =
-        //(int)SDL_Scancode.SDL_SCANCODE_KP_VERTICALBAR |  SCANCODE_MASK,
-        // KP_DBLVERTICALBAR =
-        //(int)SDL_Scancode.SDL_SCANCODE_KP_DBLVERTICALBAR |  SCANCODE_MASK,
-        // KP_COLON = (int)SDL_Scancode.SDL_SCANCODE_KP_COLON |  SCANCODE_MASK,
-        // KP_HASH = (int)SDL_Scancode.SDL_SCANCODE_KP_HASH |  SCANCODE_MASK,
-        // KP_SPACE = (int)SDL_Scancode.SDL_SCANCODE_KP_SPACE |  SCANCODE_MASK,
-        // KP_AT = (int)SDL_Scancode.SDL_SCANCODE_KP_AT |  SCANCODE_MASK,
-        // KP_EXCLAM = (int)SDL_Scancode.SDL_SCANCODE_KP_EXCLAM |  SCANCODE_MASK,
-        // KP_MEMSTORE = (int)SDL_Scancode.SDL_SCANCODE_KP_MEMSTORE |  SCANCODE_MASK,
-        // KP_MEMRECALL = (int)SDL_Scancode.SDL_SCANCODE_KP_MEMRECALL |  SCANCODE_MASK,
-        // KP_MEMCLEAR = (int)SDL_Scancode.SDL_SCANCODE_KP_MEMCLEAR |  SCANCODE_MASK,
-        // KP_MEMADD = (int)SDL_Scancode.SDL_SCANCODE_KP_MEMADD |  SCANCODE_MASK,
-        // KP_MEMSUBTRACT =
-        //(int)SDL_Scancode.SDL_SCANCODE_KP_MEMSUBTRACT |  SCANCODE_MASK,
-        // KP_MEMMULTIPLY =
-        //(int)SDL_Scancode.SDL_SCANCODE_KP_MEMMULTIPLY |  SCANCODE_MASK,
-        // KP_MEMDIVIDE = (int)SDL_Scancode.SDL_SCANCODE_KP_MEMDIVIDE |  SCANCODE_MASK,
-        // KP_PLUSMINUS = (int)SDL_Scancode.SDL_SCANCODE_KP_PLUSMINUS |  SCANCODE_MASK,
-        // KP_CLEAR = (int)SDL_Scancode.SDL_SCANCODE_KP_CLEAR |  SCANCODE_MASK,
-        // KP_CLEARENTRY = (int)SDL_Scancode.SDL_SCANCODE_KP_CLEARENTRY |  SCANCODE_MASK,
-        // KP_BINARY = (int)SDL_Scancode.SDL_SCANCODE_KP_BINARY |  SCANCODE_MASK,
-        // KP_OCTAL = (int)SDL_Scancode.SDL_SCANCODE_KP_OCTAL |  SCANCODE_MASK,
-        // KP_DECIMAL = (int)SDL_Scancode.SDL_SCANCODE_KP_DECIMAL |  SCANCODE_MASK,
-        // KP_HEXADECIMAL =
-        //(int)SDL_Scancode.SDL_SCANCODE_KP_HEXADECIMAL |  SCANCODE_MASK,
-
-        LCTRL = SDL.SDL_Scancode.SDL_SCANCODE_LCTRL,
-        LSHIFT = SDL.SDL_Keycode.SDLK_LSHIFT,
-        LALT = SDL.SDL_Scancode.SDL_SCANCODE_LALT,
-        LGUI = SDL.SDL_Keycode.SDLK_LGUI,
-        RCTRL = SDL.SDL_Keycode.SDLK_RCTRL,
-        RSHIFT = SDL.SDL_Keycode.SDLK_RSHIFT,
-        RALT = SDL.SDL_Keycode.SDLK_RALT,
-        RGUI = SDL.SDL_Keycode.SDLK_RGUI,
-
-        // MODE = (int)SDL_Scancode.SDL_SCANCODE_MODE |  SCANCODE_MASK,
-
-        // AUDIONEXT = (int)SDL_Scancode.SDL_SCANCODE_AUDIONEXT |  SCANCODE_MASK,
-        // AUDIOPREV = (int)SDL_Scancode.SDL_SCANCODE_AUDIOPREV |  SCANCODE_MASK,
-        // AUDIOSTOP = (int)SDL_Scancode.SDL_SCANCODE_AUDIOSTOP |  SCANCODE_MASK,
-        // AUDIOPLAY = (int)SDL_Scancode.SDL_SCANCODE_AUDIOPLAY |  SCANCODE_MASK,
-        // AUDIOMUTE = (int)SDL_Scancode.SDL_SCANCODE_AUDIOMUTE |  SCANCODE_MASK,
-        // MEDIASELECT = (int)SDL_Scancode.SDL_SCANCODE_MEDIASELECT |  SCANCODE_MASK,
-        // WWW = (int)SDL_Scancode.SDL_SCANCODE_WWW |  SCANCODE_MASK,
-        // MAIL = (int)SDL_Scancode.SDL_SCANCODE_MAIL |  SCANCODE_MASK,
-        // CALCULATOR = (int)SDL_Scancode.SDL_SCANCODE_CALCULATOR |  SCANCODE_MASK,
-        // COMPUTER = (int)SDL_Scancode.SDL_SCANCODE_COMPUTER |  SCANCODE_MASK,
-        // AC_SEARCH = (int)SDL_Scancode.SDL_SCANCODE_AC_SEARCH |  SCANCODE_MASK,
-        // AC_HOME = (int)SDL_Scancode.SDL_SCANCODE_AC_HOME |  SCANCODE_MASK,
-        // AC_BACK = (int)SDL_Scancode.SDL_SCANCODE_AC_BACK |  SCANCODE_MASK,
-        // AC_FORWARD = (int)SDL_Scancode.SDL_SCANCODE_AC_FORWARD |  SCANCODE_MASK,
-        // AC_STOP = (int)SDL_Scancode.SDL_SCANCODE_AC_STOP |  SCANCODE_MASK,
-        // AC_REFRESH = (int)SDL_Scancode.SDL_SCANCODE_AC_REFRESH |  SCANCODE_MASK,
-        // AC_BOOKMARKS = (int)SDL_Scancode.SDL_SCANCODE_AC_BOOKMARKS |  SCANCODE_MASK,
-
-        // BRIGHTNESSDOWN =
-        //(int)SDL_Scancode.SDL_SCANCODE_BRIGHTNESSDOWN |  SCANCODE_MASK,
-        // BRIGHTNESSUP = (int)SDL_Scancode.SDL_SCANCODE_BRIGHTNESSUP |  SCANCODE_MASK,
-        // DISPLAYSWITCH = (int)SDL_Scancode.SDL_SCANCODE_DISPLAYSWITCH |  SCANCODE_MASK,
-        // KBDILLUMTOGGLE =
-        //(int)SDL_Scancode.SDL_SCANCODE_KBDILLUMTOGGLE |  SCANCODE_MASK,
-        // KBDILLUMDOWN = (int)SDL_Scancode.SDL_SCANCODE_KBDILLUMDOWN |  SCANCODE_MASK,
-        // KBDILLUMUP = (int)SDL_Scancode.SDL_SCANCODE_KBDILLUMUP |  SCANCODE_MASK,
-        // EJECT = (int)SDL_Scancode.SDL_SCANCODE_EJECT |  SCANCODE_MASK,
-        // SLEEP = (int)SDL_Scancode.SDL_SCANCODE_SLEEP |  SCANCODE_MASK,
-        // APP1 = (int)SDL_Scancode.SDL_SCANCODE_APP1 |  SCANCODE_MASK,
-        // APP2 = (int)SDL_Scancode.SDL_SCANCODE_APP2 |  SCANCODE_MASK,
-
-        // AUDIOREWIND = (int)SDL_Scancode.SDL_SCANCODE_AUDIOREWIND |  SCANCODE_MASK,
-        // AUDIOFASTFORWARD = (int)SDL_Scancode.SDL_SCANCODE_AUDIOFASTFORWARD |  SCANCODE_MASK
-    }
-    /// <summary>
-    /// 마우스 버튼 목록
-    /// </summary>
-    public enum Mousecode : byte
-    {
-        /// <summary>
-        /// 왼쪽
-        /// </summary>
-        Left = 1,
-        /// <summary>
-        /// 중간 (마우스 휠)
-        /// </summary>
-        Middle = 2,
-        /// <summary>
-        /// 오른쪽
-        /// </summary>
-        Right = 3
-    }
     /// <summary>
     /// 객체에 대한 자세한 정보를 얻어냅니다.
     /// 객체는 렌더링 때 좌표나 크기 등 값들이 새로고침 되므로, 업데이트 도중에 변경사항이 있어도 그 사항이 적용된 값을 제공하지 않는다는점 주의해주세요.
