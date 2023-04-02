@@ -89,7 +89,7 @@ namespace Jyunrcaea
             }
         }
 
-        public class Background : Sprite, MouseMoveEventInterface
+        public class Background : Sprite, EventInterfaces.MouseMoveEventInterface
         {
             
 
@@ -262,7 +262,7 @@ namespace Jyunrcaea
             }
         }
 
-        public class StartRange : GhostObject, MouseButtonDownEventInterface
+        public class StartRange : GhostObject, EventInterfaces.MouseButtonDownEventInterface
         {
             public StartRange()
             {
@@ -288,7 +288,7 @@ namespace Jyunrcaea
             }
         }
 
-        public class SettingRange : GhostObject
+        public class SettingRange : GhostObject, EventInterfaces.MouseButtonDownEventInterface
         {
             public SettingRange()
             {
@@ -302,9 +302,18 @@ namespace Jyunrcaea
                 this.Y = this.Height + 1;
                 base.Resize();
             }
+
+            public void MouseButtonDown(Input.Mouse.Key key)
+            {
+                if (key != Input.Mouse.Key.Left || !Program.ss.Hide) return;
+                if (Convenience.MouseOver(this))
+                {
+                    Program.ss.Shown();
+                }
+            }
         }
 
-        public class ExitRange : GhostObject, MouseButtonDownEventInterface
+        public class ExitRange : GhostObject, EventInterfaces.MouseButtonDownEventInterface
         {
             public ExitRange()
             {

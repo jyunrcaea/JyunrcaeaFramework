@@ -73,6 +73,8 @@ namespace Jyunrcaea
 
         public static WindowState ws = null!;
 
+        public static Setting.SettingScene ss = null!;
+
         static void Main(string[] args)
         {
             Framework.SavingPerformance = false;
@@ -102,7 +104,7 @@ namespace Jyunrcaea
             Display.AddScene(new MainMenu.MainScene());
             Display.AddScene(musiclistscene = new MusicList.MainScene());
             //Display.AddScene(new GoodBackground());
-            Display.AddScene(new Setting.SettingScene());
+            Display.AddScene(ss = new Setting.SettingScene());
             Display.AddScene(ws = new WindowState());
             //Display.AddScene(new TitleBar.Border());
             Framework.Function = new CustomFrameworkFunction();
@@ -120,8 +122,6 @@ namespace Jyunrcaea
         {
             base.Start();
             Window.Show = true;
-            //Window.Resize(1900, 1000);
-            //Input.TextInput.Enable = true;
         }
 
         public override void WindowQuit()
@@ -139,6 +139,7 @@ namespace Jyunrcaea
 
         public override void KeyDown(Input.Keycode e)
         {
+            base.KeyDown(e);
             if (e == Input.Keycode.F1)
                 Debug.ObjectDrawDebuging = !Debug.ObjectDrawDebuging;
             else if (e == Input.Keycode.F11)
@@ -159,7 +160,7 @@ namespace Jyunrcaea
                 while (Debug.LogCount != 0)
                     Console.WriteLine(Debug.GetLog);
             }
-            base.KeyDown(e);
+
         }
     }
 

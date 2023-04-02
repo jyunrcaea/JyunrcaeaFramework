@@ -17,7 +17,7 @@ namespace Jyunrcaea.TitleBar
         }
     }
 
-    class TitleBar : RectangleForAnimation, MouseMoveEventInterface, MouseButtonDownEventInterface
+    class TitleBar : RectangleForAnimation, EventInterfaces.MouseMoveEventInterface, EventInterfaces.MouseButtonDownEventInterface
     {
         public TitleBar() : base(400, 30)
         {
@@ -51,7 +51,7 @@ namespace Jyunrcaea.TitleBar
         }
     }
 
-    class ExitButton : RectangleForAnimation, MouseMoveEventInterface, MouseButtonDownEventInterface
+    class ExitButton : RectangleForAnimation, EventInterfaces.MouseMoveEventInterface, EventInterfaces.MouseButtonDownEventInterface
     {
         public ExitButton() : base(30,30)
         {
