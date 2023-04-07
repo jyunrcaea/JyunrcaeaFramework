@@ -31,6 +31,7 @@ namespace Jyunrcaea.Setting
 
         Background bb;
         Blind bd;
+        HoverButton hb;
 
         public SettingScene()
         {
@@ -38,7 +39,7 @@ namespace Jyunrcaea.Setting
             this.AddSprites(
                     bd = new Blind(),
                     bb = new Background(),
-                    new HoverButton("< Exit")
+                    hb = new HoverButton("< Exit")
                 );
             this.AddSprites(settingList.ToArray());
         }
@@ -68,6 +69,8 @@ namespace Jyunrcaea.Setting
             this.Hide = false;
             bd.Opacity(100, 300f);
             bb.Opacity(255, 200f);
+            //hb.Shown();
+            ((SupportOpacity)hb).Shown();
             settingList.ForEach((a) =>
             {
                 if (a is not SupportOpacity) a.Hide = false;
@@ -83,8 +86,10 @@ namespace Jyunrcaea.Setting
                 if (a is not SupportOpacity) a.Hide = true;
                 else ((SupportOpacity)a).Hidden();
             });
+            hb.Hidden();
             bd.Opacity(0, 300f);
             bb.Opacity(0, 200f);
+
         }
 
         bool ctrl = false;
@@ -178,7 +183,7 @@ namespace Jyunrcaea.Setting
 
         public void Shown()
         {
-            Title.Hide = Text.Hide = false;
+            //Title.Hide = Text.Hide = false;
             Title.Opacity(255, 200f,100f);
             Text.Opacity(255, 200f,100f);
         }
@@ -187,11 +192,11 @@ namespace Jyunrcaea.Setting
         {
             Title.Opacity(0, 200f,100f);
             Text.Opacity(0, 200f,100f);
-            Title.Hide = Text.Hide = true;
+            //Title.Hide = Text.Hide = true;
         }
     }
 
-    class TitleForSetting : TextboxForAnimation
+    class TitleForSetting : TextboxForAnimation, SupportOpacity
     {
         int defaultsize;
 
@@ -212,14 +217,14 @@ namespace Jyunrcaea.Setting
 
         public void Shown()
         {
-            this.Hide =  false;
+            //this.Hide =  false;
             this.Opacity(255, 200f, 100f);
         }
 
         public void Hidden()
         {
             this.Opacity(0, 200f, 100f);
-            this.Hide = true;
+            //this.Hide = true;
         }
     }
 
@@ -242,18 +247,9 @@ namespace Jyunrcaea.Setting
         }
     }
 
-    class Cust : RectangleForAnimation
+    class HoverButton : GroupObject, SupportOpacity, Events.MouseMove, Events.MouseKeyDown
     {
-        public override void Update(float ms)
-        {
-            base.Update(ms);
-            Console.WriteLine("alpha: {0}",this.Color.Alpha);
-        }
-    }
-
-    class HoverButton : GroupObject, SupportOpacity, EventInterfaces.MouseMoveEventInterface, EventInterfaces.MouseButtonDownEventInterface
-    {
-        Cust rt = new() { Color = new(alpha: 0) };
+        RectangleForAnimation rt = new() { Color = new(alpha: 0) };
 
         TextboxForAnimation ta = new("cache/font.ttf", 0) { FontColor = new(0,0,0)};
 
@@ -292,7 +288,7 @@ namespace Jyunrcaea.Setting
 
         public void Shown()
         {
-            rt.Opacity(0);
+            ((RectangleForAnimation)rt).Opacity(0);
             ta.Opacity(255, 200f);
         }
 
@@ -309,22 +305,22 @@ namespace Jyunrcaea.Setting
             bool hov = Convenience.MouseOver(rt);
             if (hoverd && !hov)
             {
-
                 hoverd = false;
-                rt.Opacity(0, 100f);
+                ((RectangleForAnimation)rt).Opacity(0, 100f);
             } else if (!hoverd && hov)
             {
-                Console.WriteLine("opa: {0}", rt.Color.Alpha);
                 hoverd = true;
-                rt.Opacity(100, 100f);
+                ((RectangleForAnimation)rt).Opacity(100, 100f);
             }
         }
 
-        public void MouseButtonDown(Input.Mouse.Key e)
+        public void MouseKeyDown(Input.Mouse.Key e)
         {
             if (e != Input.Mouse.Key.Left) return;
             if (hoverd) ((SettingScene)this.InheritedObject).Hidden();
         }
+
+        
     }
 }
 

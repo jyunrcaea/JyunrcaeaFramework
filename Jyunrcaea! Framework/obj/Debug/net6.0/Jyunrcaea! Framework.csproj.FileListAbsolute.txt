@@ -20,26 +20,26 @@ E:\쥰르케아\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2.dll
 E:\쥰르케아\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2_image.dll
 E:\쥰르케아\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2_mixer.dll
 E:\쥰르케아\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2_ttf.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2_image.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2_mixer.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2_ttf.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\libfreetype-6.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\libjpeg-9.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\libpng16-16.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\libtiff-5.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\libwebp-7.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\zlib1.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\Jyunrcaea! Framework.deps.json
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\Jyunrcaea! Framework.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\Jyunrcaea! Framework.pdb
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.csproj.AssemblyReference.cache
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.AssemblyInfoInputs.cache
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.AssemblyInfo.cs
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.csproj.CoreCompileInputs.cache
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\refint\Jyunrcaea! Framework.dll
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.pdb
-C:\Users\박대호\Source\Repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\ref\Jyunrcaea! Framework.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2.dll
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2_gfx.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2_image.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2_mixer.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\dll\SDL2_ttf.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\libfreetype-6.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\libjpeg-9.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\libpng16-16.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\libtiff-5.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\libwebp-7.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\zlib1.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\Jyunrcaea! Framework.deps.json
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\Jyunrcaea! Framework.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\Jyunrcaea! Framework.pdb
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.csproj.AssemblyReference.cache
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.AssemblyInfoInputs.cache
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.AssemblyInfo.cs
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.csproj.CoreCompileInputs.cache
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\refint\Jyunrcaea! Framework.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.pdb
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\ref\Jyunrcaea! Framework.dll

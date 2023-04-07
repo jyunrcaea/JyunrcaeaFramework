@@ -89,7 +89,7 @@ namespace Jyunrcaea
             }
         }
 
-        public class Background : Sprite, EventInterfaces.MouseMoveEventInterface
+        public class Background : Sprite, Events.MouseMove
         {
             
 
@@ -262,7 +262,7 @@ namespace Jyunrcaea
             }
         }
 
-        public class StartRange : GhostObject, EventInterfaces.MouseButtonDownEventInterface
+        public class StartRange : GhostObject, Events.MouseKeyDown
         {
             public StartRange()
             {
@@ -276,7 +276,7 @@ namespace Jyunrcaea
                 base.Resize();
             }
             
-            public void MouseButtonDown(Input.Mouse.Key key)
+            public void MouseKeyDown(Input.Mouse.Key key)
             {
                 if (key != Input.Mouse.Key.Left) return;
                 if (Convenience.MouseOver(this))
@@ -288,7 +288,7 @@ namespace Jyunrcaea
             }
         }
 
-        public class SettingRange : GhostObject, EventInterfaces.MouseButtonDownEventInterface
+        public class SettingRange : GhostObject, Events.MouseKeyDown
         {
             public SettingRange()
             {
@@ -303,7 +303,7 @@ namespace Jyunrcaea
                 base.Resize();
             }
 
-            public void MouseButtonDown(Input.Mouse.Key key)
+            public void MouseKeyDown(Input.Mouse.Key key)
             {
                 if (key != Input.Mouse.Key.Left || !Program.ss.Hide) return;
                 if (Convenience.MouseOver(this))
@@ -313,7 +313,7 @@ namespace Jyunrcaea
             }
         }
 
-        public class ExitRange : GhostObject, EventInterfaces.MouseButtonDownEventInterface
+        public class ExitRange : GhostObject, Events.MouseKeyDown
         {
             public ExitRange()
             {
@@ -328,7 +328,7 @@ namespace Jyunrcaea
                 base.Resize();
             }
 
-            public void MouseButtonDown(Input.Mouse.Key key)
+            public void MouseKeyDown(Input.Mouse.Key key)
             {
                 if (key == Input.Mouse.Key.Left && Convenience.MouseOver(this)) Framework.Stop(); 
             }

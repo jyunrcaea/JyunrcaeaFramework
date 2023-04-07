@@ -1,13 +1,5 @@
 ﻿#define WINDOWS
 using SDL2;
-using System.Diagnostics;
-using System.Diagnostics.SymbolStore;
-using System.Globalization;
-using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security.AccessControl;
-using System.Text;
 
 namespace JyunrcaeaFramework
 {
@@ -70,7 +62,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly System.Version Version = new(0, 5, 1);
+        public static readonly System.Version Version = new(0, 6, 1);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
@@ -245,18 +237,9 @@ namespace JyunrcaeaFramework
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED:
                                     Function.Resized();
                                     break;
-
-                                //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_NONE:
-                                //    Console.WriteLine("none");
-                                //    break;
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
                                     Framework.Function.WindowQuit();
                                     break;
-                                //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
-                                //    Console.WriteLine("size: {0} x {1}",sdle.window.data1,sdle.window.data2);
-                                //    //SDL.SDL_RenderSetLogicalSize(renderer, sdle.window.data1, sdle.window.data2);
-                                //    SDL.SDL_PumpEvents();
-                                //    break;
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SHOWN:
                                     Console.WriteLine("shown");
                                     break;
@@ -296,59 +279,46 @@ namespace JyunrcaeaFramework
                             }
                             break;
                         case SDL.SDL_EventType.SDL_DROPFILE:
-                            Framework.Function.FileDropped(SDL.UTF8_ToManaged(sdle.drop.file, true));
+                            Framework.Function.DropFile(SDL.UTF8_ToManaged(sdle.drop.file, true));
                             break;
-                        //case SDL.SDL_EventType.SDL_DROPTEXT:
-                        //    Console.WriteLine("whatisthat");
-                        //    break;
-                        //case SDL.SDL_EventType.SDL_DROPCOMPLETE:
-                        //    Console.WriteLine("complete");
-                        //    break;
-                        //case SDL.SDL_EventType.SDL_DROPBEGIN:
-                        //    Console.WriteLine("begin");
-                        //    break;
                         case SDL.SDL_EventType.SDL_KEYDOWN:
-                            //Console.WriteLine(sdle.key.keysym.sym.ToString());
-                            if (Input.TextInput.Enable)
-                            {
-                                int l;
-                                if (sdle.key.keysym.sym == SDL.SDL_Keycode.SDLK_BACKSPACE && (l =  Input.TextInput.InputedText.Length) > 0)
-                                    Input.TextInput.InputedText = Input.TextInput.InputedText.Substring(0,l-1);
-                                Console.WriteLine(Input.TextInput.InputedText);
-                            };
-
+                            //if (Input.TextInput.Enable)
+                            //{
+                            //    int l;
+                            //    if (sdle.key.keysym.sym == SDL.SDL_Keycode.SDLK_BACKSPACE && (l =  Input.TextInput.InputedText.Length) > 0)
+                            //        Input.TextInput.InputedText = Input.TextInput.InputedText.Substring(0,l-1);
+                            //    Console.WriteLine(Input.TextInput.InputedText);
+                            //};
                             Framework.Function.KeyDown((Input.Keycode)sdle.key.keysym.sym);
                             break;  
                         case SDL.SDL_EventType.SDL_MOUSEMOTION:
                             Framework.Function.MouseMove();
                             break;
                         case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                            Framework.Function.MouseButtonDown((Input.Mouse.Key)sdle.button.button);
-
+                            Framework.Function.MouseKeyDown((Input.Mouse.Key)sdle.button.button);
                             break;
                         case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
-                            Framework.Function.MouseButtonUp((Input.Mouse.Key)sdle.button.button);
-
+                            Framework.Function.MouseKeyUp((Input.Mouse.Key)sdle.button.button);
                             break;
                         case SDL.SDL_EventType.SDL_KEYUP:
                             Framework.Function.KeyUp((Input.Keycode)sdle.key.keysym.sym);
                             break;
-                        case SDL.SDL_EventType.SDL_TEXTINPUT:
-                            unsafe
-                            {
-                                fixed (byte * b = sdle.text.text)
-                                {
-                                    Input.TextInput.InputedText += new string((sbyte*)b);
-                                }
-                            }
-                            Console.WriteLine(Input.TextInput.InputedText);
-                            break;
-                        case SDL.SDL_EventType.SDL_TEXTEDITING:
-                            unsafe
-                            {
-                                fixed (byte* b = sdle.edit.text) Console.WriteLine("Edit Text: {0}\nCursor Pos: {1}\nSelected Line {2}",new string((sbyte*)b),sdle.edit.start,sdle.edit.length);
-                            }
-                            break;
+                        //case SDL.SDL_EventType.SDL_TEXTINPUT:
+                        //    unsafe
+                        //    {
+                        //        fixed (byte * b = sdle.text.text)
+                        //        {
+                        //            Input.TextInput.InputedText += new string((sbyte*)b);
+                        //        }
+                        //    }
+                        //    Console.WriteLine(Input.TextInput.InputedText);
+                        //    break;
+                        //case SDL.SDL_EventType.SDL_TEXTEDITING:
+                        //    unsafe
+                        //    {
+                        //        fixed (byte* b = sdle.edit.text) Console.WriteLine("Edit Text: {0}\nCursor Pos: {1}\nSelected Line {2}",new string((sbyte*)b),sdle.edit.start,sdle.edit.length);
+                        //    }
+                        //    break;
                     }
                 }
                 #endregion
@@ -376,18 +346,9 @@ namespace JyunrcaeaFramework
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED:
                             Function.Resized();
                             break;
-
-                        //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_NONE:
-                        //    Console.WriteLine("none");
-                        //    break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
                             Framework.Function.WindowQuit();
                             break;
-                            //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
-                            //    Console.WriteLine("size: {0} x {1}",sdle.window.data1,sdle.window.data2);
-                            //    //SDL.SDL_RenderSetLogicalSize(renderer, sdle.window.data1, sdle.window.data2);
-                            //    SDL.SDL_PumpEvents();
-                            //    break;
 #if !WINDOWS
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
                                     //SDL.SDL_GetWindowSize(window, out var w, out var h);
@@ -409,24 +370,23 @@ namespace JyunrcaeaFramework
                     }
                     break;
                 case SDL.SDL_EventType.SDL_DROPFILE:
-                    Framework.Function.FileDropped(SDL.UTF8_ToManaged(sdle.drop.file, true));
+                    Framework.Function.DropFile(SDL.UTF8_ToManaged(sdle.drop.file, true));
                     break;
                 case SDL.SDL_EventType.SDL_DROPTEXT:
                     break;
                 case SDL.SDL_EventType.SDL_DROPCOMPLETE:
                     break;
                 case SDL.SDL_EventType.SDL_KEYDOWN:
-                    //Console.WriteLine(sdle.key.keysym.sym.ToString());
                     Framework.Function.KeyDown((Input.Keycode)sdle.key.keysym.sym);
                     break;
                 case SDL.SDL_EventType.SDL_MOUSEMOTION:
                     Framework.Function.MouseMove();
                     break;
                 case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                    Framework.Function.MouseButtonDown((Input.Mouse.Key)sdle.button.button);
+                    Framework.Function.MouseKeyDown((Input.Mouse.Key)sdle.button.button);
                     break;
                 case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
-                    Framework.Function.MouseButtonUp((Input.Mouse.Key)sdle.button.button);
+                    Framework.Function.MouseKeyUp((Input.Mouse.Key)sdle.button.button);
                     break;
                 case SDL.SDL_EventType.SDL_KEYUP:
                     Framework.Function.KeyUp((Input.Keycode)sdle.key.keysym.sym);
@@ -688,19 +648,19 @@ namespace JyunrcaeaFramework
     }
 
     public interface AllEventInterface :
-        EventInterfaces.ResizeEndEventInterface,
-        EventInterfaces.WindowMoveEventInterface,
-        EventInterfaces.DropFileEventInterface,
-        EventInterfaces.UpdateEventInterface,
-        EventInterfaces.KeyDownEventInterface,
-        EventInterfaces.MouseMoveEventInterface,
-        EventInterfaces.WindowQuitEventInterface,
-        EventInterfaces.MouseButtonDownEventInterface,
-        EventInterfaces.MouseButtonUpEventInterface,
-        EventInterfaces.KeyUpEventInterface,
-        EventInterfaces.WindowMaximized,
-        EventInterfaces.WindowMinimized,
-        EventInterfaces.WindowRestore
+        Events.Resized,
+        Events.WindowMove,
+        Events.DropFile,
+        Events.Update,
+        Events.KeyDown,
+        Events.MouseMove,
+        Events.WindowQuit,
+        Events.MouseKeyDown,
+        Events.MouseKeyUp,
+        Events.KeyUp,
+        Events.WindowMaximized,
+        Events.WindowMinimized,
+        Events.WindowRestore
     {
 
     }
@@ -925,10 +885,10 @@ namespace JyunrcaeaFramework
         /// 파일이 드래그 드롭될때 호출되는 함수입니다.
         /// </summary>
         /// <param name="filename"></param>
-        public virtual void FileDropped(string filename)
+        public virtual void DropFile(string filename)
         {
             for (ifd = 0; ifd < Display.scenes.Count; ifd++)
-                if (!Display.scenes[ifd].EventRejection) Display.scenes[ifd].FileDropped(filename);
+                if (!Display.scenes[ifd].EventRejection) Display.scenes[ifd].DropFile(filename);
         }
 
         static int ikd;
@@ -957,32 +917,32 @@ namespace JyunrcaeaFramework
 
         static int imd, imu, iku;
 
-        public virtual void MouseButtonDown(Input.Mouse.Key key)
+        public virtual void MouseKeyDown(Input.Mouse.Key key)
         {
             if (Framework.MultiCoreProcess)
             {
-                Parallel.For(0, Display.scenes.Count, (i, _) => { if (!Display.scenes[i].EventRejection) Display.scenes[i].MouseButtonDown(key); });
+                Parallel.For(0, Display.scenes.Count, (i, _) => { if (!Display.scenes[i].EventRejection) Display.scenes[i].MouseKeyDown(key); });
             }
             else
             {
                 for (imd = 0; imd < Display.scenes.Count; imd++)
                 {
-                    if (!Display.scenes[imd].EventRejection) Display.scenes[imd].MouseButtonDown(key);
+                    if (!Display.scenes[imd].EventRejection) Display.scenes[imd].MouseKeyDown(key);
                 }
             }
         }
 
-        public virtual void MouseButtonUp(Input.Mouse.Key key)
+        public virtual void MouseKeyUp(Input.Mouse.Key key)
         {
             if (Framework.MultiCoreProcess)
             {
-                Parallel.For(0, Display.scenes.Count, (i, _) => { if (!Display.scenes[i].EventRejection) Display.scenes[i].MouseButtonUp(key); });
+                Parallel.For(0, Display.scenes.Count, (i, _) => { if (!Display.scenes[i].EventRejection) Display.scenes[i].MouseKeyUp(key); });
             }
             else
             {
                 for (imu = 0; imu < Display.scenes.Count; imu++)
                 {
-                    if (!Display.scenes[imu].EventRejection) Display.scenes[imu].MouseButtonUp(key);
+                    if (!Display.scenes[imu].EventRejection) Display.scenes[imu].MouseKeyUp(key);
                 }
             }
         }
@@ -1221,7 +1181,7 @@ namespace JyunrcaeaFramework
     /// </summary>
     public abstract class ObjectInterface
 #if  DEBUG
-        : EventInterfaces.ODDInterface
+        : Events.ODDInterface
 #endif
     {
         public abstract void Resize();
@@ -1252,7 +1212,7 @@ namespace JyunrcaeaFramework
         /// </summary>
         public bool UpdateRejection = false;
 
-        public abstract void FileDropped(string filename);
+        public abstract void DropFile(string filename);
 
         public abstract void Resized();
 
@@ -1268,9 +1228,9 @@ namespace JyunrcaeaFramework
 
         public abstract void KeyUp(Input.Keycode e);
 
-        public abstract void MouseButtonDown(Input.Mouse.Key e);
+        public abstract void MouseKeyDown(Input.Mouse.Key e);
 
-        public abstract void MouseButtonUp(Input.Mouse.Key e);
+        public abstract void MouseKeyUp(Input.Mouse.Key e);
 
         public abstract void WindowMaximized();
 
@@ -1411,54 +1371,55 @@ namespace JyunrcaeaFramework
 
     /// <summary>
     /// 이벤트 인터페이스가 모여있는 곳입니다.
+    /// (인터페이스 이름과 그 안에 있는 함수와 이름이 같습니다. 편하게 코딩하세요!)
     /// </summary>
-    public class EventInterfaces
+    public class Events
     {
-        public interface DropFileEventInterface {
-            public void FileDropped(string filename);
+        public interface DropFile {
+            public void DropFile(string filename);
         }
 
-        public interface ResizeEndEventInterface
+        public interface Resized
         {
             public void Resized();
         }
 
-        public interface UpdateEventInterface
+        public interface Update
         {
             public void Update(float millisecond);
         }
 
-        public interface WindowMoveEventInterface
+        public interface WindowMove
         {
             public void WindowMove();
         }
 
-        public interface KeyDownEventInterface
+        public interface KeyDown
         {
             public void KeyDown(Input.Keycode key);
         }
 
-        public interface MouseMoveEventInterface
+        public interface MouseMove
         {
             public void MouseMove();
         }
 
-        public interface WindowQuitEventInterface
+        public interface WindowQuit
         {
             public void WindowQuit();
         }
 
-        public interface MouseButtonDownEventInterface
+        public interface MouseKeyDown
         {
-            public void MouseButtonDown(Input.Mouse.Key key);
+            public void MouseKeyDown(Input.Mouse.Key key);
         }
 
-        public interface MouseButtonUpEventInterface
+        public interface MouseKeyUp
         {
-            public void MouseButtonUp(Input.Mouse.Key key);
+            public void MouseKeyUp(Input.Mouse.Key key);
         }
 
-        public interface KeyUpEventInterface
+        public interface KeyUp
         {
             public void KeyUp(Input.Keycode key);
         }
@@ -1518,46 +1479,52 @@ namespace JyunrcaeaFramework
         public DrawableObject[] SpriteList => sprites.ToArray();
 
         private protected List<DrawableObject> sprites = new();
-        List<EventInterfaces.DropFileEventInterface> drops = new();
-        List<EventInterfaces.ResizeEndEventInterface> resizes = new();
-        List<EventInterfaces.UpdateEventInterface> updates = new();
-        List<EventInterfaces.WindowMoveEventInterface> windowMovedInterfaces = new();
-        List<EventInterfaces.KeyDownEventInterface> keyDownEvents = new();
-        List<EventInterfaces.MouseMoveEventInterface> mouseMoves = new();
-        List<EventInterfaces.WindowQuitEventInterface> windowQuits = new();
-        List<EventInterfaces.KeyUpEventInterface> keyUpEvents = new();
-        List<EventInterfaces.MouseButtonDownEventInterface> mouseButtonDownEvents = new();
-        List<EventInterfaces.MouseButtonUpEventInterface> mouseButtonUpEvents = new();
-        List<EventInterfaces.WindowRestore> windowRestores = new();
-        List<EventInterfaces.WindowMaximized> windowMaximizeds = new();
-        List<EventInterfaces.WindowMinimized> windowMinimizeds = new();
+        List<Events.DropFile> drops = new();
+        List<Events.Resized> resizes = new();
+        List<Events.Update> updates = new();
+        List<Events.WindowMove> windowMovedInterfaces = new();
+        List<Events.KeyDown> keyDownEvents = new();
+        List<Events.MouseMove> mouseMoves = new();
+        List<Events.WindowQuit> windowQuits = new();
+        List<Events.KeyUp> keyUpEvents = new();
+        List<Events.MouseKeyDown> mouseButtonDownEvents = new();
+        List<Events.MouseKeyUp> mouseButtonUpEvents = new();
+        List<Events.WindowRestore> windowRestores = new();
+        List<Events.WindowMaximized> windowMaximizeds = new();
+        List<Events.WindowMinimized> windowMinimizeds = new();
 
         internal void AddAtEventList(DrawableObject NewSprite)
         {
-            if (NewSprite is EventInterfaces.DropFileEventInterface) drops.Add((EventInterfaces.DropFileEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.ResizeEndEventInterface) resizes.Add((EventInterfaces.ResizeEndEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.UpdateEventInterface) updates.Add((EventInterfaces.UpdateEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.WindowMoveEventInterface) windowMovedInterfaces.Add((EventInterfaces.WindowMoveEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.KeyDownEventInterface) keyDownEvents.Add((EventInterfaces.KeyDownEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.MouseMoveEventInterface) mouseMoves.Add((EventInterfaces.MouseMoveEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.WindowQuitEventInterface) windowQuits.Add((EventInterfaces.WindowQuitEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.KeyUpEventInterface) keyUpEvents.Add((EventInterfaces.KeyUpEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.MouseButtonDownEventInterface) mouseButtonDownEvents.Add((EventInterfaces.MouseButtonDownEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.MouseButtonUpEventInterface) mouseButtonUpEvents.Add((EventInterfaces.MouseButtonUpEventInterface)NewSprite);
+            if (NewSprite is Events.DropFile) drops.Add((Events.DropFile)NewSprite);
+            if (NewSprite is Events.Resized) resizes.Add((Events.Resized)NewSprite);
+            if (NewSprite is Events.Update) updates.Add((Events.Update)NewSprite);
+            if (NewSprite is Events.WindowMove) windowMovedInterfaces.Add((Events.WindowMove)NewSprite);
+            if (NewSprite is Events.KeyDown) keyDownEvents.Add((Events.KeyDown)NewSprite);
+            if (NewSprite is Events.MouseMove) mouseMoves.Add((Events.MouseMove)NewSprite);
+            if (NewSprite is Events.WindowQuit) windowQuits.Add((Events.WindowQuit)NewSprite);
+            if (NewSprite is Events.KeyUp) keyUpEvents.Add((Events.KeyUp)NewSprite);
+            if (NewSprite is Events.MouseKeyDown) mouseButtonDownEvents.Add((Events.MouseKeyDown)NewSprite);
+            if (NewSprite is Events.MouseKeyUp) mouseButtonUpEvents.Add((Events.MouseKeyUp)NewSprite);
+            if (NewSprite is Events.WindowMaximized) windowMaximizeds.Add((Events.WindowMaximized)NewSprite);
+            if (NewSprite is Events.WindowMinimized) windowMinimizeds.Add((Events.WindowMinimized)NewSprite);
+            if (NewSprite is Events.WindowRestore) windowRestores.Add((Events.WindowRestore)NewSprite);
         }
 
         internal void RemoveAtEventList(DrawableObject RemovedObject)
         {
-            if (RemovedObject is EventInterfaces.DropFileEventInterface) drops.Remove((EventInterfaces.DropFileEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.ResizeEndEventInterface) resizes.Remove((EventInterfaces.ResizeEndEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.UpdateEventInterface) updates.Remove((EventInterfaces.UpdateEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.WindowMoveEventInterface) windowMovedInterfaces.Remove((EventInterfaces.WindowMoveEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.KeyDownEventInterface) keyDownEvents.Remove((EventInterfaces.KeyDownEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.MouseMoveEventInterface) mouseMoves.Remove((EventInterfaces.MouseMoveEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.WindowQuitEventInterface) windowQuits.Remove((EventInterfaces.WindowQuitEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.KeyUpEventInterface) keyUpEvents.Remove((EventInterfaces.KeyUpEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.MouseButtonDownEventInterface) mouseButtonDownEvents.Remove((EventInterfaces.MouseButtonDownEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.MouseButtonUpEventInterface) mouseButtonUpEvents.Remove((EventInterfaces.MouseButtonUpEventInterface)RemovedObject);
+            if (RemovedObject is Events.DropFile) drops.Remove((Events.DropFile)RemovedObject);
+            if (RemovedObject is Events.Resized) resizes.Remove((Events.Resized)RemovedObject);
+            if (RemovedObject is Events.Update) updates.Remove((Events.Update)RemovedObject);
+            if (RemovedObject is Events.WindowMove) windowMovedInterfaces.Remove((Events.WindowMove)RemovedObject);
+            if (RemovedObject is Events.KeyDown) keyDownEvents.Remove((Events.KeyDown)RemovedObject);
+            if (RemovedObject is Events.MouseMove) mouseMoves.Remove((Events.MouseMove)RemovedObject);
+            if (RemovedObject is Events.WindowQuit) windowQuits.Remove((Events.WindowQuit)RemovedObject);
+            if (RemovedObject is Events.KeyUp) keyUpEvents.Remove((Events.KeyUp)RemovedObject);
+            if (RemovedObject is Events.MouseKeyDown) mouseButtonDownEvents.Remove((Events.MouseKeyDown)RemovedObject);
+            if (RemovedObject is Events.MouseKeyUp) mouseButtonUpEvents.Remove((Events.MouseKeyUp)RemovedObject);
+            if (RemovedObject is Events.WindowMaximized) windowMaximizeds.Remove((Events.WindowMaximized)RemovedObject);
+            if (RemovedObject is Events.WindowMinimized) windowMinimizeds.Remove((Events.WindowMinimized)RemovedObject);
+            if (RemovedObject is Events.WindowRestore) windowRestores.Remove((Events.WindowRestore)RemovedObject);
         } 
 
         /// <summary>
@@ -1570,16 +1537,19 @@ namespace JyunrcaeaFramework
         {
             if (NewSprite.InheritedObject != null) throw new JyunrcaeaFrameworkException("이 객체는 이미 다른 장면에 추가되었습니다.");
             NewSprite.inheritobj = this;
-            if (NewSprite is EventInterfaces.DropFileEventInterface) drops.Add((EventInterfaces.DropFileEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.ResizeEndEventInterface) resizes.Add((EventInterfaces.ResizeEndEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.UpdateEventInterface) updates.Add((EventInterfaces.UpdateEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.WindowMoveEventInterface) windowMovedInterfaces.Add((EventInterfaces.WindowMoveEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.KeyDownEventInterface) keyDownEvents.Add((EventInterfaces.KeyDownEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.MouseMoveEventInterface) mouseMoves.Add((EventInterfaces.MouseMoveEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.WindowQuitEventInterface) windowQuits.Add((EventInterfaces.WindowQuitEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.KeyUpEventInterface) keyUpEvents.Add((EventInterfaces.KeyUpEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.MouseButtonDownEventInterface) mouseButtonDownEvents.Add((EventInterfaces.MouseButtonDownEventInterface)NewSprite);
-            if (NewSprite is EventInterfaces.MouseButtonUpEventInterface) mouseButtonUpEvents.Add((EventInterfaces.MouseButtonUpEventInterface)NewSprite);
+            if (NewSprite is Events.DropFile) drops.Add((Events.DropFile)NewSprite);
+            if (NewSprite is Events.Resized) resizes.Add((Events.Resized)NewSprite);
+            if (NewSprite is Events.Update) updates.Add((Events.Update)NewSprite);
+            if (NewSprite is Events.WindowMove) windowMovedInterfaces.Add((Events.WindowMove)NewSprite);
+            if (NewSprite is Events.KeyDown) keyDownEvents.Add((Events.KeyDown)NewSprite);
+            if (NewSprite is Events.MouseMove) mouseMoves.Add((Events.MouseMove)NewSprite);
+            if (NewSprite is Events.WindowQuit) windowQuits.Add((Events.WindowQuit)NewSprite);
+            if (NewSprite is Events.KeyUp) keyUpEvents.Add((Events.KeyUp)NewSprite);
+            if (NewSprite is Events.MouseKeyDown) mouseButtonDownEvents.Add((Events.MouseKeyDown)NewSprite);
+            if (NewSprite is Events.MouseKeyUp) mouseButtonUpEvents.Add((Events.MouseKeyUp)NewSprite);
+            if (NewSprite is Events.WindowMaximized) windowMaximizeds.Add((Events.WindowMaximized)NewSprite);
+            if (NewSprite is Events.WindowMinimized) windowMinimizeds.Add((Events.WindowMinimized)NewSprite);
+            if (NewSprite is Events.WindowRestore) windowRestores.Add((Events.WindowRestore)NewSprite);
             if (Index < 0)
             {
                 if (Index == -1) {
@@ -1610,16 +1580,19 @@ namespace JyunrcaeaFramework
         {
             if (!sprites.Remove(RemovedObject)) return false;
             RemovedObject.inheritobj = null;
-            if (RemovedObject is EventInterfaces.DropFileEventInterface) drops.Remove((EventInterfaces.DropFileEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.ResizeEndEventInterface) resizes.Remove((EventInterfaces.ResizeEndEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.UpdateEventInterface) updates.Remove((EventInterfaces.UpdateEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.WindowMoveEventInterface) windowMovedInterfaces.Remove((EventInterfaces.WindowMoveEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.KeyDownEventInterface) keyDownEvents.Remove((EventInterfaces.KeyDownEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.MouseMoveEventInterface) mouseMoves.Remove((EventInterfaces.MouseMoveEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.WindowQuitEventInterface) windowQuits.Remove((EventInterfaces.WindowQuitEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.KeyUpEventInterface) keyUpEvents.Remove((EventInterfaces.KeyUpEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.MouseButtonDownEventInterface) mouseButtonDownEvents.Remove((EventInterfaces.MouseButtonDownEventInterface)RemovedObject);
-            if (RemovedObject is EventInterfaces.MouseButtonUpEventInterface) mouseButtonUpEvents.Remove((EventInterfaces.MouseButtonUpEventInterface)RemovedObject);
+            if (RemovedObject is Events.DropFile) drops.Remove((Events.DropFile)RemovedObject);
+            if (RemovedObject is Events.Resized) resizes.Remove((Events.Resized)RemovedObject);
+            if (RemovedObject is Events.Update) updates.Remove((Events.Update)RemovedObject);
+            if (RemovedObject is Events.WindowMove) windowMovedInterfaces.Remove((Events.WindowMove)RemovedObject);
+            if (RemovedObject is Events.KeyDown) keyDownEvents.Remove((Events.KeyDown)RemovedObject);
+            if (RemovedObject is Events.MouseMove) mouseMoves.Remove((Events.MouseMove)RemovedObject);
+            if (RemovedObject is Events.WindowQuit) windowQuits.Remove((Events.WindowQuit)RemovedObject);
+            if (RemovedObject is Events.KeyUp) keyUpEvents.Remove((Events.KeyUp)RemovedObject);
+            if (RemovedObject is Events.MouseKeyDown) mouseButtonDownEvents.Remove((Events.MouseKeyDown)RemovedObject);
+            if (RemovedObject is Events.MouseKeyUp) mouseButtonUpEvents.Remove((Events.MouseKeyUp)RemovedObject);
+            if (RemovedObject is Events.WindowMaximized) windowMaximizeds.Remove((Events.WindowMaximized)RemovedObject);
+            if (RemovedObject is Events.WindowMinimized) windowMinimizeds.Remove((Events.WindowMinimized)RemovedObject);
+            if (RemovedObject is Events.WindowRestore) windowRestores.Remove((Events.WindowRestore)RemovedObject);
             RemovedObject.Stop();
             return true;
         }
@@ -1675,7 +1648,7 @@ namespace JyunrcaeaFramework
 
         public override void WindowMaximized()
         {
-            for (int i=0;i<sprites.Count;i++)
+            for (int i=0;i<windowMaximizeds.Count;i++)
             {
                 windowMaximizeds[i].WindowMaximized();
             }
@@ -1683,7 +1656,7 @@ namespace JyunrcaeaFramework
 
         public override void WindowMinimized()
         {
-            for (int i = 0; i < sprites.Count; i++)
+            for (int i = 0; i < windowMinimizeds.Count; i++)
             {
                 windowMinimizeds[i].WindowMinimized();
             }
@@ -1691,7 +1664,7 @@ namespace JyunrcaeaFramework
 
         public override void WindowRestore()
         {
-            for (int i = 0; i < sprites.Count; i++)
+            for (int i = 0; i < windowRestores.Count; i++)
             {
                 windowRestores[i].WindowRestore();
             }
@@ -1743,10 +1716,10 @@ namespace JyunrcaeaFramework
             //if (this.resetpos) resetpos = false;
         }
 
-        public override void FileDropped(string filename)
+        public override void DropFile(string filename)
         {
             for (int i = 0; i < drops.Count; i++)
-                drops[i].FileDropped(filename);
+                drops[i].DropFile(filename);
         }
 
         public override void Resized()
@@ -1785,16 +1758,16 @@ namespace JyunrcaeaFramework
                 keyUpEvents[i].KeyUp(e);
         }
 
-        public override void MouseButtonDown(Input.Mouse.Key e)
+        public override void MouseKeyDown(Input.Mouse.Key e)
         {
             for (int i = 0; i < mouseButtonDownEvents.Count; i++)
-                mouseButtonDownEvents[i].MouseButtonDown(e);
+                mouseButtonDownEvents[i].MouseKeyDown(e);
         }
 
-        public override void MouseButtonUp(Input.Mouse.Key e)
+        public override void MouseKeyUp(Input.Mouse.Key e)
         {
             for (int i = 0; i < mouseButtonUpEvents.Count; i++)
-                mouseButtonUpEvents[i].MouseButtonUp(e);
+                mouseButtonUpEvents[i].MouseKeyUp(e);
         }
     }
 
@@ -1950,7 +1923,7 @@ namespace JyunrcaeaFramework
             SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
         }
 
-        public override void FileDropped(string filename)
+        public override void DropFile(string filename)
         {
 
         }
@@ -1965,12 +1938,12 @@ namespace JyunrcaeaFramework
 
         }
 
-        public override void MouseButtonDown(Input.Mouse.Key e)
+        public override void MouseKeyDown(Input.Mouse.Key e)
         {
 
         }
 
-        public override void MouseButtonUp(Input.Mouse.Key e)
+        public override void MouseKeyUp(Input.Mouse.Key e)
         {
 
         }
@@ -2325,7 +2298,7 @@ namespace JyunrcaeaFramework
 
         int d,r;
 
-        SDL.SDL_Rect drawrect=new();
+        //SDL.SDL_Rect drawrect=new();
 
         internal override void Draw()
         {
@@ -2365,20 +2338,14 @@ namespace JyunrcaeaFramework
     /// <summary>
     /// 이미지를 출력하는 객체입니다.
     /// </summary>
-    public class Sprite : DrawableObject , IDisposable, CanGetLenght
+    public class Sprite : DrawableObject, IDisposable, CanGetLenght
     {
-        //string filename = string.Empty;
 
-        //string[]? xpm = null;
+        DrawableTexture targettexture = null!;
 
-        //IntPtr source = IntPtr.Zero;
-
-        //SDL.SDL_Rect src = new();
-
-        //public Color? BlendColor = null;
-
-        DrawableTexture targettexture  = null!;
-
+        /// <summary>
+        /// 출력할 이미지를 지정합니다.
+        /// </summary>
         public DrawableTexture Texture
         {
             get => targettexture;
@@ -2402,40 +2369,40 @@ namespace JyunrcaeaFramework
             get => targettexture.Opacity;
             set => targettexture.Opacity = value;
         }
-
-        //SDL.SDL_Rect dst = new();
-
         int px = 0, py = 0;
         /// <summary>
         /// 수평 원점을 설정합니다.
         /// </summary>
         /// 
         public double Rotation = 0;
-
-        //public int TextureWidth => src.w;
-
-        //public int TextureHeight => src.h;
         /// <summary>
         /// 해당 객체의 너비
+        /// (설정시 Size가 -1로 초기화됩니다.)
+        /// (설정한 이후, 그 길이가 계속 고정됩니다. 해제할려면 Size 값을 수정하세요.)
         /// </summary>
-        public int Width => dst.w;
+        public int Width { get => dst.w; set { dst.w = value; sz = -1; } }
         /// <summary>
         /// 해당 객체의 높이
+        /// (설정시 Size가 -1로 초기화됩니다.)
+        /// (설정한 이후, 그 길이가 계속 고정됩니다. 해제할려면 Size 값을 수정하세요.)
         /// </summary>
-        public int Height => dst.h; 
+        public int Height { get => dst.h; set { dst.h = value; sz = -1; } }
 
-        float sz = 1;
+        double sz = 1;
         /// <summary>
-        /// 크기를 설정합니다.
+        /// 원본 크기에 비례해 크기를 설정합니다.
+        /// (설정시 Width,Height가 Size값에 맞게 초기화됩니다.)
         /// </summary>
-        public float Size { get => sz; set {
+        public double Size
+        {
+            get => sz; set
+            {
                 sz = value;
-                //dst.w = (int)(src.w * value);
-                //dst.h = (int)(src.h * value);
                 dst.w = (int)(targettexture.src.w * value);
                 dst.h = (int)(targettexture.src.h * value);
                 needresetsize = true;
-         }}
+            }
+        }
 
         bool fh = false, fv = false;
         /// <summary>
@@ -2456,16 +2423,6 @@ namespace JyunrcaeaFramework
         /// <exception cref="JyunrcaeaFrameworkException">이미지 불러오기 실패시</exception>
         public override void Start()
         {
-            //if(xpm == null) this.source = SDL_image.IMG_LoadTexture(Framework.renderer,filename);
-            //else
-            //{
-            //    IntPtr surface = SDL_image.IMG_ReadXPMFromArray(this.xpm);
-            //    if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"XPM 형식 이미지 로드에 실패하였습니다. (SDL_image Error: {SDL_image.IMG_GetError()})");
-            //    this.source = SDL.SDL_CreateTextureFromSurface(Framework.renderer,surface);
-            //    SDL.SDL_FreeSurface(surface);
-            //}
-            //if (this.source == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"이미지 로드에 실패하였습니다. (SDL_image Error: {SDL_image.IMG_GetError()})");
-            //SDL.SDL_QueryTexture(source, out _, out _, out src.w, out src.h);
             this.targettexture.Ready();
             dst.w = (int)( targettexture.src.w * this.sz);
             dst.h = (int)(targettexture.src.h * this.sz);
@@ -2514,52 +2471,30 @@ namespace JyunrcaeaFramework
         {
             if (this.targettexture.needresettexture)
             {
-                dst.w = (int)(targettexture.src.w * this.sz);
-                dst.h = (int)(targettexture.src.h * this.sz);
-                needresetposition=needresetsize=true;
+                if (this.Size != -1)
+                {
+                    dst.w = (int)(targettexture.src.w * this.sz);
+                    dst.h = (int)(targettexture.src.h * this.sz);
+                }
+                needresetsize =true;
                 this.targettexture.needresettexture = false;
             }
             if (needresetposition) ResetPosition();
             if (needresetsize) ResetSize();
             if (needresetdrawposition) ResetDrawPosition();
-            //SDL.SDL_SetRenderTarget(Framework.renderer, this.Texture.texture);
-            //SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
-            //SDL.SDL_SetRenderDrawColor(Framework.renderer, BlendColor.Red, BlendColor.Green, BlendColor.Blue, BlendColor.Alpha);
             SDL.SDL_RenderCopyEx(Framework.renderer, this.targettexture.texture,ref this.targettexture.src,ref this.dst, Rotation, IntPtr.Zero, flip);
         }
 
-        //public void ImageLoad(string filename)
-        //{
-        //    this.filename = filename;
-        //    this.xpm = null;
-        //    if (this.source != IntPtr.Zero)
-        //    {
-        //        Stop();
-        //        Start();
-        //    }
-        //}
-
-        //public void ImageLoad(string[] xpm)
-        //{
-        //    this.xpm = xpm;
-        //    this.filename = string.Empty;
-        //    if (this.source != IntPtr.Zero)
-        //    {
-        //        Stop();
-        //        Start();
-        //    }
-        //}
-
         public Sprite() { }
-
-        //public Sprite(string filename)
-        //{
-        //    this.filename = filename;
-        //}
 
         public Sprite(DrawableTexture texture)
         {
             this.targettexture = texture;
+        }
+
+        public Sprite(string ImageFilename)
+        {
+            this.targettexture = new TextureFromFile(ImageFilename);
         }
 
 #if DEBUG
@@ -2634,7 +2569,7 @@ namespace JyunrcaeaFramework
         }
     }
 
-    public interface ObjectWithSupportAnimation : EventInterfaces.UpdateEventInterface
+    public interface ObjectWithSupportAnimation : Events.Update
     {
         public void Opacity(byte Opacity, float AnimationTime = 0f, float StartupDelay = 0f);
 
@@ -2774,7 +2709,7 @@ namespace JyunrcaeaFramework
         internal byte beforealpha;
         public byte TargetOpacity { get; internal set; }
         public FunctionForAnimation CalculationFunction = Animation.Nothing;
-        short distance;
+        byte distance;
         public float AnimationTime { get; internal set; } = 0;
         public bool Complete { get; internal set; } = true;
         public Action? CompleteFunction = null;
@@ -2785,7 +2720,7 @@ namespace JyunrcaeaFramework
             ArrivalTime = StartTime + animationtime;
             this.AnimationTime = animationtime;
             TargetOpacity = alpha;
-            distance = (short)((short)alpha - (short)beforealpha);
+            distance = (byte)(alpha - beforealpha);
             Complete = false;
         }
 
@@ -2800,7 +2735,7 @@ namespace JyunrcaeaFramework
                 return TargetOpacity;
             }
 
-            return (byte)(beforealpha + (byte)(distance * CalculationFunction(nowtime / AnimationTime)));
+            return (byte)(beforealpha + Math.Round(distance * CalculationFunction(nowtime / AnimationTime)));
         }
     }
 
@@ -3018,13 +2953,17 @@ namespace JyunrcaeaFramework
         Color fc = new();
 
         Color? bc = null;
-
+        /// <summary>
+        /// 글자색
+        /// </summary>
         public Color FontColor { get =>this.fc; set {
                 this.fc = value;
                 this.rerender = true;
             }
         }
-
+        /// <summary>
+        /// 글자 배경색 (null로 설정시 없음)
+        /// </summary>
         public Color? BackgroundColor
         {
             get => this.bc;
@@ -3034,31 +2973,21 @@ namespace JyunrcaeaFramework
                 this.rerender = true;
             }
         }
-
+        /// <summary>
+        /// 회전값
+        /// </summary>
         public double Rotation = 0;
-
         bool fh = false, fv = false;
-
+        /// <summary>
+        /// 가로로 뒤집기 여부
+        /// </summary>
         public bool FlipHorizontal { get => fh; set => flip = ((fh = value) ? SDL.SDL_RendererFlip.SDL_FLIP_HORIZONTAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE) | (fv ? SDL.SDL_RendererFlip.SDL_FLIP_VERTICAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE); }
-
+        /// <summary>
+        /// 세로로 뒤집기 여부
+        /// </summary>
         public bool FlipVertical { get => fv; set => flip = (fh ? SDL.SDL_RendererFlip.SDL_FLIP_HORIZONTAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE) | ((fv = value) ? SDL.SDL_RendererFlip.SDL_FLIP_VERTICAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE); }
-
         SDL.SDL_RendererFlip flip = SDL.SDL_RendererFlip.SDL_FLIP_NONE;
-
-        //Font? ft = null;
-
         IntPtr tt = IntPtr.Zero;
-
-        //public Font? Font { get => font; set {
-        //        if (ft == value)
-        //        {
-        //            this.tt = IntPtr.Zero;
-        //            return;
-        //        }
-        //        ft = value;
-        //        this.rerender = true;
-        //    }
-        //}
         /// <summary>
         /// 
         /// </summary>
@@ -3126,12 +3055,7 @@ namespace JyunrcaeaFramework
                 return;
             }
             IntPtr surface = (this.bc == null) ?
-//#if WINDOWS
               (Blended ? SDL_ttf.TTF_RenderUTF8_Blended_Wrapped(this.fontsource, this.txt, fc.colorbase,wraplenght) : SDL_ttf.TTF_RenderUTF8_Solid_Wrapped(this.fontsource, this.txt, fc.colorbase,wraplenght)) : SDL_ttf.TTF_RenderUTF8_Shaded_Wrapped(this.fontsource, this.txt, fc.colorbase, this.bc.colorbase,wraplenght);
-//#else
-//              (Blended ? SDL_ttf.TTF_RenderUTF8_Blended(this.fontsource, this.txt, fc.colorbase) : SDL_ttf.TTF_RenderUTF8_Solid(this.fontsource,this.txt,fc.colorbase)) : SDL_ttf.TTF_RenderUTF8_Shaded(this.fontsource, this.txt, fc.colorbase,this.bc.colorbase);
-//#endif
-            //Console.WriteLine("{0}, {1}",this.bc == null,Blended);
             if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스트 렌더링에 실패하였습니다. SDL ttf Error : {SDL_ttf.TTF_GetError()}");
             this.tt = SDL.SDL_CreateTextureFromSurface(Framework.renderer, surface);
             SDL.SDL_FreeSurface(surface);
@@ -3242,6 +3166,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 텍스트 입력과 관련된 클래스입니다.
         /// 한국어 및 여러 문자들을 입력받기 위한 기능이 존재합니다.
+        /// (0.8 이후부터 지원될 예정입니다.)
         /// </summary>
         public static class TextInput
         {
@@ -3251,7 +3176,8 @@ namespace JyunrcaeaFramework
             public static int SelectionLenght = 0;
             public static string SelectedText = string.Empty;
 
-            static bool ti = false; 
+            static bool ti = false;
+            [Obsolete("아직 구현되지 않은 기능")]
             public static bool Enable
             {
                 get => ti;
@@ -3263,12 +3189,15 @@ namespace JyunrcaeaFramework
             }
         }
 
+        /// <summary>
+        /// 키보드 키코드
+        /// </summary>
         public enum Keycode
         {
             UNKNOWN = 0,
 
             RETURN = '\r',
-            ESCAPE = 27, // '\033'
+            ESCAPE = 27,
             BACKSPACE = '\b',
             TAB = '\t',
             SPACE = ' ',
@@ -3304,9 +3233,6 @@ namespace JyunrcaeaFramework
             GREATER = '>',
             QUESTION = '?',
             AT = '@',
-            /*
-            Skip uppercase letters
-            */
             LEFTBRACKET = '[',
             BACKSLASH = '\\',
             RIGHTBRACKET = ']',
@@ -3369,7 +3295,7 @@ namespace JyunrcaeaFramework
             DOWN = SDL.SDL_Keycode.SDLK_DOWN,
             UP = SDL.SDL_Keycode.SDLK_UP,
 
-            // NUMLOCKCLEAR = (int)SDL_Scancode.SDL_SCANCODE_NUMLOCKCLEAR |  SCANCODE_MASK,
+            NUMLOCKCLEAR = SDL.SDL_Keycode.SDLK_NUMLOCKCLEAR,
             // KP_DIVIDE = (int)SDL_Scancode.SDL_SCANCODE_KP_DIVIDE |  SCANCODE_MASK,
             // KP_MULTIPLY = (int)SDL_Scancode.SDL_SCANCODE_KP_MULTIPLY |  SCANCODE_MASK,
             // KP_MINUS = (int)SDL_Scancode.SDL_SCANCODE_KP_MINUS |  SCANCODE_MASK,
@@ -3388,7 +3314,7 @@ namespace JyunrcaeaFramework
             // KP_PERIOD = (int)SDL_Scancode.SDL_SCANCODE_KP_PERIOD |  SCANCODE_MASK,
 
             // APPLICATION = (int)SDL_Scancode.SDL_SCANCODE_APPLICATION |  SCANCODE_MASK,
-            // POWER = (int)SDL_Scancode.SDL_SCANCODE_POWER |  SCANCODE_MASK,
+            POWER = SDL.SDL_Keycode.SDLK_POWER,
             // KP_EQUALS = (int)SDL_Scancode.SDL_SCANCODE_KP_EQUALS |  SCANCODE_MASK,
             // F13 = (int)SDL_Scancode.SDL_SCANCODE_F13 |  SCANCODE_MASK,
             // F14 = (int)SDL_Scancode.SDL_SCANCODE_F14 |  SCANCODE_MASK,
@@ -3489,7 +3415,6 @@ namespace JyunrcaeaFramework
             // KP_HEXADECIMAL =
             //(int)SDL_Scancode.SDL_SCANCODE_KP_HEXADECIMAL |  SCANCODE_MASK,
 
-            //LCTRL = SDL.SDL_Scancode.SDL_SCANCODE_LCTRL,
             LCTRL = SDL.SDL_Keycode.SDLK_LCTRL,
             LSHIFT = SDL.SDL_Keycode.SDLK_LSHIFT,
             LALT = SDL.SDL_Keycode.SDLK_LALT,
@@ -3519,9 +3444,8 @@ namespace JyunrcaeaFramework
             // AC_REFRESH = (int)SDL_Scancode.SDL_SCANCODE_AC_REFRESH |  SCANCODE_MASK,
             // AC_BOOKMARKS = (int)SDL_Scancode.SDL_SCANCODE_AC_BOOKMARKS |  SCANCODE_MASK,
 
-            // BRIGHTNESSDOWN =
-            //(int)SDL_Scancode.SDL_SCANCODE_BRIGHTNESSDOWN |  SCANCODE_MASK,
-            // BRIGHTNESSUP = (int)SDL_Scancode.SDL_SCANCODE_BRIGHTNESSUP |  SCANCODE_MASK,
+            BrightnessDown = SDL.SDL_Keycode.SDLK_BRIGHTNESSDOWN,
+            BrightnessUp = SDL.SDL_Keycode.SDLK_BRIGHTNESSUP,
             // DISPLAYSWITCH = (int)SDL_Scancode.SDL_SCANCODE_DISPLAYSWITCH |  SCANCODE_MASK,
             // KBDILLUMTOGGLE =
             //(int)SDL_Scancode.SDL_SCANCODE_KBDILLUMTOGGLE |  SCANCODE_MASK,
@@ -3781,6 +3705,12 @@ namespace JyunrcaeaFramework
 
         public int Height => absolutesrc.y;
 
+        /// <summary>
+        /// 원본 이미지 크기에 맞게 조절되고 있는지에 대한 여부입니다.
+        /// RenderRange에 null 이외의 값을 넣을 경우 이 변수는 false가 됩니다.
+        /// </summary>
+        public bool AutoRange { get; internal set; } = true;
+
         internal byte alpha = 255;
 
         public byte Opacity
@@ -3802,13 +3732,22 @@ namespace JyunrcaeaFramework
             needresettexture = true;
         }
 
-        public RectSize RenderRange
+        public RectSize? RenderRange
         {
-            get => new(src.x, src.y, src.w, src.h);
+            get { if (AutoRange) return null; return new(src.x, src.y, src.w, src.h); }
             set
             {
-                this.src = value.size;
-                needresettexture = true;
+                    needresettexture = true;
+                if (value == null)
+                {
+                    AutoRange = true;
+                    src.x = src.y = 0;
+                    src.w = absolutesrc.x;
+                    src.h = absolutesrc.y;
+                    return;
+                }
+                AutoRange = false;
+                src = value.size;
             }
         }
 

@@ -17,7 +17,7 @@ namespace Jyunrcaea.TitleBar
         }
     }
 
-    class TitleBar : RectangleForAnimation, EventInterfaces.MouseMoveEventInterface, EventInterfaces.MouseButtonDownEventInterface
+    class TitleBar : RectangleForAnimation, Events.MouseMove, Events.MouseKeyDown
     {
         public TitleBar() : base(400, 30)
         {
@@ -44,14 +44,14 @@ namespace Jyunrcaea.TitleBar
 
         }
 
-        public void MouseButtonDown(Input.Mouse.Key key)
+        public void MouseKeyDown(Input.Mouse.Key key)
         {
             if (key != Input.Mouse.Key.Left) return;
             if (Convenience.MouseOver(this)) Framework.Stop();
         }
     }
 
-    class ExitButton : RectangleForAnimation, EventInterfaces.MouseMoveEventInterface, EventInterfaces.MouseButtonDownEventInterface
+    class ExitButton : RectangleForAnimation, Events.MouseMove, Events.MouseKeyDown
     {
         public ExitButton() : base(30,30)
         {
@@ -81,7 +81,7 @@ namespace Jyunrcaea.TitleBar
 
         }
 
-        public void MouseButtonDown(Input.Mouse.Key key)
+        public void MouseKeyDown(Input.Mouse.Key key)
         {
             if (key != Input.Mouse.Key.Left) return;
             if (Convenience.MouseOver(this)) Framework.Stop();

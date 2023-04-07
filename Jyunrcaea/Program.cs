@@ -5,7 +5,7 @@ namespace Jyunrcaea
 {
     public static class Store
     {
-        public const string Version = "0.2.1 Development Version";
+        public const string Version = "0.2.2 Development Version";
     }
 
     class GoodBackground : Canvas
