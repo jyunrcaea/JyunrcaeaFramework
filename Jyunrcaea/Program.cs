@@ -8,37 +8,6 @@ namespace Jyunrcaea
         public const string Version = "0.2.2 Development Version";
     }
 
-    class GoodBackground : Canvas
-    {
-        TextureFromFile t;
-        RectSize s = new();
-
-        public GoodBackground()
-        {
-            t = new("test.png");
-            t.Opacity = 100;
-            this.AddUsingTexture(t);
-        }
-
-        public override void Start()
-        {
-            Resize();
-            base.Start();
-        }
-
-        public override void Render()
-        {
-            Renderer.BlendMode(Renderer.BlendType.Mul);
-            Renderer.Texture(t,s);
-        }
-
-        public override void Resize()
-        {
-            s.Width = Window.Width;
-            s.Height = Window.Height;
-        }
-    }
-
     class JFIcon : Sprite
     {
         public JFIcon() : base(new TextureFromFile("Jyunrcaea!FrameworkIcon.png"))
@@ -48,22 +17,19 @@ namespace Jyunrcaea
 
         public override void Resize()
         {
-            this.Size = Window.AppropriateSize * 0.5f;
+            this.Width = 300;
+            this.Height = 300;
             base.Resize();
         }
     }
 
-    public class TestGruop : GroupObject
+    public class TestScene : Scene
     {
-        public TestGruop()
+        public static bool Test = false;
+
+        public TestScene()
         {
             this.AddSprite(new JFIcon());
-            
-        }
-
-        public override void Resize()
-        {
-            base.Resize();
         }
     }
 
@@ -75,12 +41,13 @@ namespace Jyunrcaea
 
         public static Setting.SettingScene ss = null!;
 
+        public static Framerate fr = null!;
+
         static void Main(string[] args)
         {
-            Framework.SavingPerformance = false;
+            //Framework.SavingPerformance = false;
             Framework.Init("Jyunrcaea!", 1080, 720, null, null, new(true,  false, false, true));
-            //Window.Resize((int)(Display.MonitorWidth * 0.7f), (int)(Display.MonitorHeight * 0.7f));
-            //Window.Move(null, null);
+            Window.BackgroundColor = new(225,223,252);
             if (!Directory.Exists("cache"))
             {
                 var df = Directory.CreateDirectory("cache");
@@ -99,14 +66,14 @@ namespace Jyunrcaea
                 File.WriteAllBytes("cache/background.png", Jyunrcaea.Properties.Resources.background);
             }
             Window.Icon("cache/icon.png");
-            Display.FrameLateLimit = 240;
-
+            Display.FrameLateLimit = 120;
+            //Framework.EventMultiThreading = true;
             Display.AddScene(new MainMenu.MainScene());
             Display.AddScene(musiclistscene = new MusicList.MainScene());
-            //Display.AddScene(new GoodBackground());
             Display.AddScene(ss = new Setting.SettingScene());
             Display.AddScene(ws = new WindowState());
-            //Display.AddScene(new TitleBar.Border());
+            Display.AddScene(fr = new Framerate());
+            if(TestScene.Test) Display.AddScene(new TestScene());
             Framework.Function = new CustomFrameworkFunction();
             Framework.Run();
         }
@@ -140,27 +107,53 @@ namespace Jyunrcaea
         public override void KeyDown(Input.Keycode e)
         {
             base.KeyDown(e);
-            if (e == Input.Keycode.F1)
-                Debug.ObjectDrawDebuging = !Debug.ObjectDrawDebuging;
-            else if (e == Input.Keycode.F11)
+            switch (e)
             {
-                fullscreenswicthed = true;
-                Window.Fullscreen = !Window.Fullscreen;
-            } else if (e == Input.Keycode.ESCAPE)
-            {
-                Framework.Stop();
-            } else if (e== Input.Keycode.F2)
-            {
-                Window.Resize(Window.DefaultWidth, Window.DefaultHeight);
-            } else if (e == Input.Keycode.F4)
-            {
-                Window.Move(null, null);
-            } else if (e == Input.Keycode.F12)
-            {
-                while (Debug.LogCount != 0)
-                    Console.WriteLine(Debug.GetLog);
+#if DEBUG
+                case Input.Keycode.F1:
+                    Debug.ObjectDrawDebuging = !Debug.ObjectDrawDebuging;
+                    break;
+#endif
+                case Input.Keycode.F2:
+                    Window.Resize(Window.DefaultWidth, Window.DefaultHeight);
+                    break;
+                case Input.Keycode.F3:
+                    break;
+                case Input.Keycode.F4:
+                    Program.fr.Hide = !Program.fr.Hide;
+                    break;
+#if DEBUG
+                case Input.Keycode.F5:
+                    while (Debug.LogCount != 0)
+                        Console.WriteLine(Debug.GetLog);
+                    break;
+#endif
+                case Input.Keycode.F6:
+                    Window.Move(null, null);
+                    break;
+#if DEBUG
+                case Input.Keycode.F7:
+                    Console.WriteLine(Debug.TextRenderCount);
+                    break;
+#endif
+                case Input.Keycode.F8:
+                    Framework.SavingPerformance = !Framework.SavingPerformance;
+                    break;
+                case Input.Keycode.F9:
+                    Framework.SavingPerformanceLevel = 255;
+                    break;
+                case Input.Keycode.F10:
+                    break;
+                case Input.Keycode.F11:
+                    fullscreenswicthed = true;
+                    Window.Fullscreen = !Window.Fullscreen;
+                    break;
+                case Input.Keycode.F12:
+                    break;
+                case Input.Keycode.ESCAPE:
+                    Framework.Stop();
+                    break;
             }
-
         }
     }
 

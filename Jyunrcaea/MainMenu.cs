@@ -87,6 +87,39 @@ namespace Jyunrcaea
                     else if (nowselect == 3) select.MoveAnimationState.ModifyArrivalPoint(select.X, exit.Y);
                 }
             }
+
+
+            bool ctrl = false;
+
+            public override void KeyDown(Input.Keycode e)
+            {
+                base.KeyDown(e);
+                if (e == Input.Keycode.LCTRL)
+                {
+                    ctrl = true;
+                }
+                else if (e == Input.Keycode.o && ctrl)
+                {
+                    //if (!Program.ss.bd.MoveAnimationState.Complete) return;
+                    if (Program.ss.Hide)
+                    {
+                        Program.ss.Shown();
+                    }
+                    else
+                    {
+                        Program.ss.Hidden();
+                    }
+                }
+            }
+
+            public override void KeyUp(Input.Keycode e)
+            {
+                base.KeyUp(e);
+                if (e == Input.Keycode.LCTRL)
+                {
+                    ctrl = false;
+                }
+            }
         }
 
         public class Background : Sprite, Events.MouseMove
@@ -119,9 +152,9 @@ namespace Jyunrcaea
             }
         }
 
-        public class Version : TextboxForAnimation
+        public class Version : CustomTextbox
         {
-            public Version() : base("cache/font.ttf", 20, $"Jyunrcaea! ({Jyunrcaea.Store.Version})")
+            public Version() : base(20, $"Jyunrcaea! ({Jyunrcaea.Store.Version})")
             {
                 OriginY = VerticalPositionType.Bottom;
                 DrawY = VerticalPositionType.Top;
@@ -138,16 +171,16 @@ namespace Jyunrcaea
                 this.Opacity(255, 300f, 500f);
             }
 
-            public override void Resize()
-            {
-                this.Size = (int)(20 * Window.AppropriateSize);
-                base.Resize();
-            }
+            //public override void Resize()
+            //{
+            //    this.Size = (int)(20 * Window.AppropriateSize);
+            //    base.Resize();
+            //}
         }
 
-        public class Title : TextboxForAnimation
+        public class Title : CustomTextbox
         {
-            public Title() : base("cache/font.ttf",48,"Jyunrcaea!")
+            public Title() : base(48,"Jyunrcaea!")
             {
                 this.OriginX = HorizontalPositionType.Left;
                 //this.DrawX = HorizontalPositionType.Right;
@@ -166,14 +199,14 @@ namespace Jyunrcaea
             public override void Resize()
             {
                 Y = (int)(100 * Window.AppropriateSize);
-                this.Size = (int)(48 * Window.AppropriateSize);
+                //this.Size = (int)(48 * Window.AppropriateSize);
                 base.Resize();
             }
         }
 
-        public class PlayGame : TextboxForAnimation
+        public class PlayGame : CustomTextbox
         {
-            public PlayGame() : base("cache/font.ttf", 30, "Music Play")
+            public PlayGame() : base(30, "Music Play")
             {
                 this.OriginX = HorizontalPositionType.Left;
                 this.FontColor = new(31, 30, 51);
@@ -186,16 +219,16 @@ namespace Jyunrcaea
                 this.Opacity(255, 300f, 500f);
             }
 
-            public override void Resize()
-            {
-                this.Size = (int)(30 * Window.AppropriateSize);
-                base.Resize();
-            }   
+            //public override void Resize()
+            //{
+            //    this.Size = (int)(30 * Window.AppropriateSize);
+            //    base.Resize();
+            //}   
         }
 
-        public class Setting : TextboxForAnimation
+        public class Setting : CustomTextbox
         {
-            public Setting() : base("cache/font.ttf",30,"Setting")
+            public Setting() : base(30,"Setting")
             {
                 this.OriginX = HorizontalPositionType.Left;
                 this.FontColor = new(31, 30, 51);
@@ -210,15 +243,16 @@ namespace Jyunrcaea
 
             public override void Resize()
             {
-                this.Size = (int)(30 * Window.AppropriateSize);
-                this.Y = this.Size + 1;
+                //this.Size = (int)(30 * Window.AppropriateSize);
                 base.Resize();
+                this.Y = (int)(this.Size * this.Scale) + 1;
+
             }
         }
 
-        public class Exit : TextboxForAnimation
+        public class Exit : CustomTextbox
         {
-            public Exit() : base("cache/font.ttf", 30, "Exit")
+            public Exit() : base(30, "Exit")
             {
                 this.OriginX = HorizontalPositionType.Left;
                 this.FontColor = new(31, 30, 51);
@@ -233,9 +267,9 @@ namespace Jyunrcaea
 
             public override void Resize()
             {
-                this.Size = (int)(30 * Window.AppropriateSize);
-                this.Y = this.Size * 2 + 2;
                 base.Resize();
+                //this.Size = (int)(30 * Window.AppropriateSize);
+                this.Y = (int)(this.Size * 2 * this.Scale) + 2;
             }
         }
 

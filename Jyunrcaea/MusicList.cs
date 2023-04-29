@@ -1,5 +1,5 @@
-﻿using Jyunrcaea.MainMenu;
-using JyunrcaeaFramework;
+﻿using JyunrcaeaFramework;
+
 
 namespace Jyunrcaea
 {
@@ -47,11 +47,12 @@ namespace Jyunrcaea
             public static int allworkcount = -1;
             public static int processedcount = -1;
 
-            public static void Arrange(string musicfolder_path)
+            public static void Arrange(string musicfolder_path,Scene sc)
             {
                 Console.WriteLine("비트맵 읽기 시작");
                 var directories = Directory.GetDirectories(musicfolder_path);
                 allworkcount = directories.Length;
+                int i = 0;
                 for (processedcount = 0; processedcount < allworkcount; processedcount++)
                 {
                     //string path = musicfolder_path + "\\" + path + "\\";
@@ -112,7 +113,7 @@ namespace Jyunrcaea
                     }
                     Console.WriteLine("성공적으로 읽었습니다.");
                     list.Add(bm);
-                    Thread.Sleep(1000);
+                    sc.AddSprite(new MusicBar(bm,i++));
                 }
             }
 
@@ -292,7 +293,7 @@ namespace Jyunrcaea
             public MainScene() {
                 this.EventRejection = true;
                 this.Hide = true;
-                arrangebitmap = new(LoadBitmap);
+                arrangebitmap = new(new (()=>LoadBitmap(this)));
                 this.AddSprite(new ArrangePrograss());
             }
 
@@ -303,9 +304,9 @@ namespace Jyunrcaea
                 Resize();
             }
 
-            public void LoadBitmap()
+            public void LoadBitmap(Scene sc)
             {
-                MusicList.Arrange("cache\\data\\music");
+                MusicList.Arrange("cache\\data\\music",sc);
                 Console.WriteLine("현재 불러온 비트맵 목록");
                 if (MusicList.list.Count == 0) 
                     Console.WriteLine("...이 없습니다...");
@@ -407,12 +408,61 @@ namespace Jyunrcaea
             }
         }
 
-        public class MusicBar : SpriteForAnimation
+        public class MusicBar : GroupObjectForAnimation, Events.MouseMove
         {
-            public MusicBar()
+            RectangleForAnimation background = new() { OriginX = HorizontalPositionType.Right, DrawX = HorizontalPositionType.Left };
+
+            TextboxForAnimation name = new("cache/font.ttf",0) { OriginX = HorizontalPositionType.Right, DrawX = HorizontalPositionType.Left, FontColor=new(0,0,0) };
+
+            internal BitMapInfo bmi;
+
+            int number;
+
+            bool alreadyhovered = false;
+
+            public void MouseMove()
             {
 
+                bool ii = Convenience.MouseOver(background);
+                if (!alreadyhovered && ii)
+                {
+                    alreadyhovered = true;
+                    this.Move(200,null, 150f);
+                } else if (alreadyhovered && !ii)
+                {
+                    alreadyhovered = false;
+                    this.Move(0, null, 150f);
+                }
+            }
+
+            public MusicBar(BitMapInfo bmi,int number)
+            {
+                this.AddSprite(background);
+                this.AddSprite(name);
+                this.bmi = bmi;
+                name.Text = bmi.name;
+                this.background.Color.Alpha = 150;
+                this.number = number;
+                this.X = 200;
+            }
+
+            public override void Start()
+            {
+                base.Start();
+                Resize();
+            }
+
+            public override void Resize()
+            {
+                background.Width = (int)(500 * Window.AppropriateSize);
+                background.Height = (int)(80 * Window.AppropriateSize);
+                background.Y = background.Height * number;
+                name.Size = (int)(20 * Window.AppropriateSize);
+                name.X = name.Width - background.Width;
+                base.Resize();
             }
         }
+
+     
     }
 }

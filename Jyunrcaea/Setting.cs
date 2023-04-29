@@ -1,12 +1,4 @@
-﻿using Jyunrcaea.MainMenu;
-using JyunrcaeaFramework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using JyunrcaeaFramework;
 
 namespace Jyunrcaea.Setting
 {
@@ -30,7 +22,7 @@ namespace Jyunrcaea.Setting
         };
 
         Background bb;
-        Blind bd;
+        public Blind bd;
         HoverButton hb;
 
         public SettingScene()
@@ -65,10 +57,13 @@ namespace Jyunrcaea.Setting
 
         public void Shown()
         {
+            this.EventRejection = false;
+            this.Resize();
+            this.Resized();
             bd.OpacityAnimationState.CompleteFunction = null;
             this.Hide = false;
-            bd.Opacity(100, 300f);
-            bb.Opacity(255, 200f);
+            bd.Opacity(100, 200f);
+            bb.Opacity(255, 100f);
             //hb.Shown();
             ((SupportOpacity)hb).Shown();
             settingList.ForEach((a) =>
@@ -80,7 +75,7 @@ namespace Jyunrcaea.Setting
 
         public void Hidden()
         {
-            bd.OpacityAnimationState.CompleteFunction = () => { this.Hide = true; };
+            bd.OpacityAnimationState.CompleteFunction = () => { this.Hide = true; this.EventRejection = true; };
             settingList.ForEach((a) =>
             {
                 if (a is not SupportOpacity) a.Hide = true;
@@ -92,35 +87,6 @@ namespace Jyunrcaea.Setting
 
         }
 
-        bool ctrl = false;
-
-        public override void KeyDown(Input.Keycode e)
-        {
-            base.KeyDown(e);
-            if (e == Input.Keycode.LCTRL)
-            {
-                ctrl = true;
-            } else if (e == Input.Keycode.o && ctrl)
-            {
-                if (!bd.MoveAnimationState.Complete) return;
-                if (this.Hide)
-                {
-                    this.Shown();
-                } else
-                {
-                    this.Hidden();
-                }
-            } 
-        }
-
-        public override void KeyUp(Input.Keycode e)
-        {
-            base.KeyUp(e);
-            if (e == Input.Keycode.LCTRL)
-            {
-                ctrl = false;
-            }
-        }
     }
 
     class Blind : RectangleForAnimation
@@ -162,9 +128,9 @@ namespace Jyunrcaea.Setting
 
     class TextboxForSetting : GroupObject, SupportOpacity
     {
-        public TextboxForAnimation Title = new("cache/font.ttf", 0) { FontColor = new(0,0,0), OriginX = HorizontalPositionType.Left, DrawX = HorizontalPositionType.Right, OriginY = VerticalPositionType.Top, DrawY = VerticalPositionType.Bottom };
+        public CustomTextbox Title = new(24) { FontColor = new(0,0,0), OriginX = HorizontalPositionType.Left, DrawX = HorizontalPositionType.Right, OriginY = VerticalPositionType.Top, DrawY = VerticalPositionType.Bottom };
 
-        public TextboxForAnimation Text = new("cache/font.ttf",0) { FontColor = new(0, 0, 0), OriginX = HorizontalPositionType.Left, DrawX = HorizontalPositionType.Right, OriginY = VerticalPositionType.Top, DrawY = VerticalPositionType.Bottom };
+        public CustomTextbox Text = new(24) { FontColor = new(0, 0, 0), OriginX = HorizontalPositionType.Left, DrawX = HorizontalPositionType.Right, OriginY = VerticalPositionType.Top, DrawY = VerticalPositionType.Bottom };
 
         public TextboxForSetting(string text1,string text2)
         {
@@ -176,7 +142,7 @@ namespace Jyunrcaea.Setting
 
         public override void Resize()
         {
-            this.Text.Size = this.Title.Size = (int)(Window.AppropriateSize * 24);
+            //this.Text.Size = this.Title.Size = (int)(Window.AppropriateSize * 24);
             this.Text.X = this.Title.Width;
             base.Resize();
         }
@@ -184,14 +150,14 @@ namespace Jyunrcaea.Setting
         public void Shown()
         {
             //Title.Hide = Text.Hide = false;
-            Title.Opacity(255, 200f,100f);
-            Text.Opacity(255, 200f,100f);
+            Title.Opacity(255, 100f,100f);
+            Text.Opacity(255, 100f,100f);
         }
 
         public void Hidden()
         {
-            Title.Opacity(0, 200f,100f);
-            Text.Opacity(0, 200f,100f);
+            Title.Opacity(0, 100f,100f);
+            Text.Opacity(0, 100f,100f);
             //Title.Hide = Text.Hide = true;
         }
     }
@@ -218,12 +184,12 @@ namespace Jyunrcaea.Setting
         public void Shown()
         {
             //this.Hide =  false;
-            this.Opacity(255, 200f, 100f);
+            this.Opacity(255, 100f, 100f);
         }
 
         public void Hidden()
         {
-            this.Opacity(0, 200f, 100f);
+            this.Opacity(0, 100f, 100f);
             //this.Hide = true;
         }
     }
@@ -247,9 +213,18 @@ namespace Jyunrcaea.Setting
         }
     }
 
+    class OpacityTest : RectangleForAnimation
+    {
+
+        public override void Update(float ms)
+        {
+            base.Update(ms);
+        }
+    }
+
     class HoverButton : GroupObject, SupportOpacity, Events.MouseMove, Events.MouseKeyDown
     {
-        RectangleForAnimation rt = new() { Color = new(alpha: 0) };
+        OpacityTest rt = new() { Color = new(alpha: 0), Radius = 5 };
 
         TextboxForAnimation ta = new("cache/font.ttf", 0) { FontColor = new(0,0,0)};
 
@@ -273,7 +248,7 @@ namespace Jyunrcaea.Setting
             rt.Opacity(0);
             rt.Width = ta.Width;
             rt.Height = ta.Height;
-            Console.WriteLine(((GroupObject)rt.InheritedObject).InheritedScene.RenderRange == null);
+            //Console.WriteLine(((GroupObject)rt.InheritedObject).InheritedScene.RenderRange == null);
         }
 
         public override void Resize()
@@ -288,14 +263,14 @@ namespace Jyunrcaea.Setting
 
         public void Shown()
         {
-            ((RectangleForAnimation)rt).Opacity(0);
-            ta.Opacity(255, 200f);
+            rt.Opacity(0);
+            ta.Opacity(255, 100f);
         }
 
         public void Hidden()
         {
-            rt.Opacity(0,200f);
-            ta.Opacity(0,200f);
+            rt.Opacity(0,100f);
+            ta.Opacity(0,100f);
         }
 
         bool hoverd = false;
@@ -306,12 +281,15 @@ namespace Jyunrcaea.Setting
             if (hoverd && !hov)
             {
                 hoverd = false;
-                ((RectangleForAnimation)rt).Opacity(0, 100f);
+                rt.Opacity(0, 100f);
+                //Console.WriteLine("꺼져랏");
             } else if (!hoverd && hov)
             {
                 hoverd = true;
-                ((RectangleForAnimation)rt).Opacity(100, 100f);
+                rt.Opacity(100, 100f);
+                //Console.WriteLine("켜져랏");
             }
+            //Console.WriteLine("opacity: {0}, Target: {1}", rt.Color.Alpha,rt.OpacityAnimationState.TargetOpacity);
         }
 
         public void MouseKeyDown(Input.Mouse.Key e)

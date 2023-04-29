@@ -1,11 +1,22 @@
 ﻿#define WINDOWS
 using SDL2;
+using System.Diagnostics.SymbolStore;
 
 namespace JyunrcaeaFramework
 {
 #if DEBUG
     public static class Debug
     {
+        public static Version SDL2Version
+        {
+            get
+            {
+                SDL.SDL_GetVersion(out var v);
+                return new(v.major, v.minor, v.patch);
+            }
+        }
+
+        public static ulong TextRenderCount = 0;
 
         /// <summary>
         /// ODD 를 실행할지에 대한 여부입니다.
@@ -45,9 +56,18 @@ namespace JyunrcaeaFramework
     {
         /// <summary>
         /// 가능한 CPU 사용량을 줄입니다. 안정적인 초당 프레임을 내는데에 방해가 될수 있습니다.
-        /// (컴퓨터 사양이 별로 좋지 못하거나, 초당 프레임을 240 이상 뽑아야될 경우 끄는게 좋습니다.)
         /// </summary>
         public static bool SavingPerformance = true;
+        /// <summary>
+        /// CPU 사용량의 줄이는 수준을 조정합니다.
+        /// 높을수록 사용량을 더 많이 줄입니다. 그대신 프레임이 더욱 불안정해질수 있습니다.
+        /// </summary>
+        public static byte SavingPerformanceLevel { get => (byte)((1600 - savelevel) / 2); set {
+                savelevel = 1600 - value * 2;
+            } 
+        }
+
+        internal static int savelevel = 1600;
         /// <summary>
         /// 업데이트와 렌더링을 서로 다른 스레드에서 작업시킵니다.
         /// 프레임이 낮은 상태에선 잘하면 나쁘지 않은 성능을 얻을순 있지만, SDL2 라이브러리에 문제를 일으킬수 있습니다.
@@ -62,7 +82,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly System.Version Version = new(0, 6, 1);
+        public static readonly System.Version Version = new(0, 6, 2);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
@@ -201,10 +221,16 @@ namespace JyunrcaeaFramework
         internal static SDL.SDL_Event sdle;
         internal static System.Diagnostics.Stopwatch frametimer = new();
         /// <summary>
+        /// 프레임워크가 지금까지 작동된 시간을 틱(tick)으로 반환합니다.
+        /// </summary>
+        public static long RunningTimeTick => frametimer.ElapsedTicks;
+        /// <summary>
         /// 프레임워크가 지금까지 작동된 시간을 밀리초(ms)로 반환합니다.
         /// </summary>
         public static float RunningTime => frametimer.ElapsedTicks * 0.0001f;
-
+        /// <summary>
+        /// 프레임워크가 지금까지 작동된 시간을 초(second)로 반환합니다.
+        /// </summary>
         public static double RunningTimeToSecond => frametimer.ElapsedTicks * 0.0000001d;
 
         /// <summary>
@@ -224,7 +250,16 @@ namespace JyunrcaeaFramework
             {
                 Framework.Function.Draw();
                 #region 이벤트
-                while (SDL.SDL_PollEvent(out sdle) == 1)
+                if (EventMultiThreading)
+                {
+                    List<Thread> tl = new();
+                    while (SDL.SDL_PollEvent(out var e) == 1)
+                    {
+                        Thread t = new((e) => EventProcess(e)); t.Start(e);
+                        tl.Add(t);
+                    }
+                }
+                else while (SDL.SDL_PollEvent(out sdle) == 1)
                 {
                     switch (sdle.type)
                     {
@@ -241,10 +276,10 @@ namespace JyunrcaeaFramework
                                     Framework.Function.WindowQuit();
                                     break;
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SHOWN:
-                                    Console.WriteLine("shown");
+                                    //Console.WriteLine("shown");
                                     break;
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_HIDDEN:
-                                    Console.WriteLine("hidden");
+                                    //Console.WriteLine("hidden");
                                     break;
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MINIMIZED:
                                     Framework.Function.WindowMinimized();
@@ -332,10 +367,11 @@ namespace JyunrcaeaFramework
             SDL.SDL_Quit();
         }
 
+        public static bool EventMultiThreading = false;
 
-        public static void EventProcess()
+        public static void EventProcess(object? e)
         {
-            switch (sdle.type)
+            switch (((SDL.SDL_Event)e!).type)
             {
                 case SDL.SDL_EventType.SDL_QUIT:
                     Framework.Function.WindowQuit();
@@ -349,32 +385,44 @@ namespace JyunrcaeaFramework
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
                             Framework.Function.WindowQuit();
                             break;
-#if !WINDOWS
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
-                                    //SDL.SDL_GetWindowSize(window, out var w, out var h);
-                                    //Window.w = (uint)w;
-                                    //Window.h = (uint)h;
-                                    //Window.wh = w * 0.5f;
-                                    //Window.hh = h * 0.5f;
-                                    //function.Resize();
-                                    Framework.function.Resize();
-                                    break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SHOWN:
+                            break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_HIDDEN:
+                            break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MINIMIZED:
+                            Framework.Function.WindowMinimized();
+                            break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MAXIMIZED:
+                            Framework.Function.WindowMaximized();
+                            break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_EXPOSED:
 
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
-                                    SDL.SDL_GetWindowPosition(window, out var x, out var y);
-                                    Window.x = x;
-                                    Window.y = y;
-                                    function.WindowMove();
-                                    break;
+                            break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESTORED:
+                            Framework.Function.WindowRestore();
+                            break;
+#if !WINDOWS
+                                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
+                                                    //SDL.SDL_GetWindowSize(window, out var w, out var h);
+                                                    //Window.w = (uint)w;
+                                                    //Window.h = (uint)h;
+                                                    //Window.wh = w * 0.5f;
+                                                    //Window.hh = h * 0.5f;
+                                                    //function.Resize();
+                                                    Framework.function.Resize();
+                                                    break;
+
+                                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
+                                                    SDL.SDL_GetWindowPosition(window, out var x, out var y);
+                                                    Window.x = x;
+                                                    Window.y = y;
+                                                    function.WindowMove();
+                                                    break;
 #endif
                     }
                     break;
                 case SDL.SDL_EventType.SDL_DROPFILE:
                     Framework.Function.DropFile(SDL.UTF8_ToManaged(sdle.drop.file, true));
-                    break;
-                case SDL.SDL_EventType.SDL_DROPTEXT:
-                    break;
-                case SDL.SDL_EventType.SDL_DROPCOMPLETE:
                     break;
                 case SDL.SDL_EventType.SDL_KEYDOWN:
                     Framework.Function.KeyDown((Input.Keycode)sdle.key.keysym.sym);
@@ -640,11 +688,39 @@ namespace JyunrcaeaFramework
             Framework.Function.WindowMove();
         }
 
+        public static void SetMaximizeSize(int Width,int Height)
+        {
+            SDL.SDL_SetWindowMaximumSize(Framework.window, Width, Height);
+        }
+
+        public static void SetMinimizeSize(int Width,int Height)
+        {
+            SDL.SDL_SetWindowMinimumSize(Framework.window, Width, Height);
+        }
+
+        public static void GetMaximizeSize(out int Width,out int Height) => SDL.SDL_GetWindowMaximumSize(Framework.window,out Width,out Height);
+
+        public static void GetMinimizeSize(out int Width,out int Height) => SDL.SDL_GetWindowMinimumSize(Framework.window,out Width,out Height);
+
+        public static void Maximize() => SDL.SDL_MaximizeWindow(Framework.window);
+
+        public static void Minimize() => SDL.SDL_MinimizeWindow(Framework.window);
+
+        public static bool AlwaysOnTop
+        {
+            set
+            {
+                SDL.SDL_SetWindowAlwaysOnTop(Framework.window, value ? SDL.SDL_bool.SDL_TRUE : SDL.SDL_bool.SDL_FALSE);
+            }
+        }
+
         /// <summary>
         /// SDL에서 사용할수 있는 창의 ID 값을 얻습니다. 
         /// 정식 버전에서 삭제될 기능입니다.
         /// </summary>
         public static uint ID => SDL.SDL_GetWindowID(Framework.window);
+
+        
     }
 
     public interface AllEventInterface :
@@ -737,7 +813,7 @@ namespace JyunrcaeaFramework
         internal override void Draw()
         {
             if (endtime > Framework.frametimer.ElapsedTicks) {
-                if (Framework.SavingPerformance && endtime > Framework.frametimer.ElapsedTicks + 1400) Thread.Sleep(1);
+                if (Framework.SavingPerformance && endtime > Framework.frametimer.ElapsedTicks + Framework.savelevel) Thread.Sleep(1);
                 return;
             }
             Update(((updatems = Framework.frametimer.ElapsedTicks) - updatetime) * 0.0001f);
@@ -751,8 +827,9 @@ namespace JyunrcaeaFramework
                 ODD();
             }
 #endif
-            SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
+            if (SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size) != 0) throw new JyunrcaeaFrameworkException($"SDL Error: {SDL.SDL_GetError()}");
             SDL.SDL_RenderPresent(Framework.renderer);
+            //Console.WriteLine("hi");
             SDL.SDL_SetRenderDrawColor(Framework.renderer, Window.BackgroundColor.Red, Window.BackgroundColor.Green, Window.BackgroundColor.Blue, Window.BackgroundColor.Alpha);
             SDL.SDL_RenderClear(Framework.renderer);
             if (endtime <= Framework.frametimer.ElapsedTicks - Display.framelatelimit)
@@ -2274,8 +2351,15 @@ namespace JyunrcaeaFramework
         {
             this.sprites.Add(NewSprite);
             NewSprite.inheritobj = this;
+            if (alreadyload)
+            {
+                InheritToScene(NewSprite);
+                NewSprite.Start();
+            }
             return this.sprites.Count - 1;
         }
+
+        bool alreadyload = false;
 
         public override void Start()
         {
@@ -2284,6 +2368,7 @@ namespace JyunrcaeaFramework
                 InheritToScene(sprites[i]);
                 sprites[i].Start();
             }
+            alreadyload = true;
         }
 
         public override void Resize()
@@ -2292,6 +2377,7 @@ namespace JyunrcaeaFramework
             this.needresetsize = true;
             for (r = 0;r<sprites.Count;r++)
             {
+                sprites[r].needresetdrawposition = true;
                 sprites[r].Resize();
             }
         }
@@ -2317,6 +2403,7 @@ namespace JyunrcaeaFramework
 
         public override void Stop()
         {
+            alreadyload = false;
             for(int i=0;i<sprites.Count;i++)
             {
                 sprites[i].Stop();
@@ -2333,6 +2420,39 @@ namespace JyunrcaeaFramework
             }
         }
 #endif
+    }
+
+    public class GroupObjectForAnimation : GroupObject, Events.Update
+    {
+        /// <summary>
+        /// 객체의 이동을 관리합니다.
+        /// </summary>
+        public MoveAnimationManager MoveAnimationState = new();
+        /// <summary>
+        /// 원하는 좌표로 부드럽게 이동합니다.
+        /// </summary>
+        /// <param name="x">도착지점의 x좌표</param>
+        /// <param name="y">도착지점의 y좌표</param>
+        /// <param name="AnimationTime">이동시간 (밀리초)</param>
+        /// <param name="StartupDelay">시작 지연시간 (밀리초)</param>
+        public void Move(int? x, int? y, float AnimationTime = 0f, float StartupDelay = 0f)
+        {
+
+            if (AnimationTime == 0f && StartupDelay == 0f)
+            {
+                if (x != null) base.X = (int)x;
+                if (y != null) base.Y = (int)y;
+                return;
+            }
+            MoveAnimationState.bpx = base.X;
+            MoveAnimationState.bpy = base.Y;
+            MoveAnimationState.Start(x, y, AnimationTime, StartupDelay);
+        }
+
+        public virtual void Update(float ms)
+        {
+            if (!MoveAnimationState.Complete) { MoveAnimationState.Update(ref base.mx, ref base.my); base.needresetdrawposition = true; }
+        }
     }
 
     /// <summary>
@@ -2380,13 +2500,13 @@ namespace JyunrcaeaFramework
         /// (설정시 Size가 -1로 초기화됩니다.)
         /// (설정한 이후, 그 길이가 계속 고정됩니다. 해제할려면 Size 값을 수정하세요.)
         /// </summary>
-        public int Width { get => dst.w; set { dst.w = value; sz = -1; } }
+        public int Width { get => dst.w; set { dst.w = value; sz = -1; this.targettexture.needresettexture = true; } }
         /// <summary>
         /// 해당 객체의 높이
         /// (설정시 Size가 -1로 초기화됩니다.)
         /// (설정한 이후, 그 길이가 계속 고정됩니다. 해제할려면 Size 값을 수정하세요.)
         /// </summary>
-        public int Height { get => dst.h; set { dst.h = value; sz = -1; } }
+        public int Height { get => dst.h; set { dst.h = value; sz = -1; this.targettexture.needresettexture = true; } }
 
         double sz = 1;
         /// <summary>
@@ -2563,7 +2683,7 @@ namespace JyunrcaeaFramework
 
         public virtual void Update(float ms)
         {
-            float nowtime = Framework.frametimer.ElapsedTicks * 0.0001f;
+            //float nowtime = Framework.frametimer.ElapsedTicks * 0.0001f;
             if (!MoveAnimationState.Complete) { MoveAnimationState.Update(ref base.mx, ref base.my); base.needresetdrawposition = true; }
             if (!OpacityAnimationState.Complete) { base.TextOpacity = OpacityAnimationState.Update(); if (OpacityAnimationState.Complete && OpacityAnimationState.CompleteFunction != null) OpacityAnimationState.CompleteFunction(); }
         }
@@ -2709,18 +2829,35 @@ namespace JyunrcaeaFramework
         internal byte beforealpha;
         public byte TargetOpacity { get; internal set; }
         public FunctionForAnimation CalculationFunction = Animation.Nothing;
-        byte distance;
+        //음수도 저장해야되므로 그냥 int
+        int distance;
         public float AnimationTime { get; internal set; } = 0;
         public bool Complete { get; internal set; } = true;
         public Action? CompleteFunction = null;
 
         internal void Start(byte alpha,float animationtime,float startupdelay = 0f)
         {
+            //시작 시간 구하기
             StartTime = Framework.RunningTime + startupdelay;
+            //종료 시간 구하기
             ArrivalTime = StartTime + animationtime;
+            //이동시간 저장
             this.AnimationTime = animationtime;
+            //목표 투명도 값 저장
             TargetOpacity = alpha;
-            distance = (byte)(alpha - beforealpha);
+            //차이값 저장
+            /*
+             예시:
+                현재 50, 목표 100 일경우
+                100 - 50 = 50, 으로 distance 변수엔 50이 저장되고
+                시간에 맞춰서 조금씩 합계하는 식으로 애니메이션 구현
+            반대로:
+                현재 100 목표 50 일경우
+                50 - 100 = -50 이므로
+                똑같이 시간에 맞춰서 기본값에 더하면 된다.
+                그리고 이래서 distance는 byte변수가 아닌거임, 음수도 저장되야됨
+             */
+            distance = alpha - beforealpha;
             Complete = false;
         }
 
@@ -3062,6 +3199,9 @@ namespace JyunrcaeaFramework
             if (this.tt == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스쳐로 변환하는데 실패했습니다. SDL Error : {SDL.SDL_GetError()}");
             if (SDL.SDL_SetTextureBlendMode(this.tt, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) < 0) throw new JyunrcaeaFrameworkException($"텍스쳐의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             if (alpha != 255) SDL.SDL_SetTextureAlphaMod(tt, alpha);
+#if DEBUG
+            Debug.TextRenderCount++;
+#endif
             SDL.SDL_QueryTexture(this.tt, out _, out _, out src.w, out src.h);
             dst.w = (int)(src.w * this.sz);
             dst.h = (int)(src.h * this.sz);
