@@ -108,7 +108,7 @@ namespace JyunrcaeaFramework
         /// <param name="option">초기 창 생성옵션</param>
         /// <param name="render_option">렌더러 옵션</param>
         /// <exception cref="JyunrcaeaFrameworkException">초기화 실패시</exception>
-        public static void Init(string title, uint width, uint height, int? x, int? y, WindowOption option, RenderOption render_option = default, AudioOption audio_option = default)
+        public static void Init(string title, uint width, uint height, int? x = null, int? y = null, WindowOption option = default, RenderOption render_option = default, AudioOption audio_option = default)
         {
             #region 값 검사
             if (audio_option.ch > 8) throw new JyunrcaeaFrameworkException("지원하지 않는 스테레오 ( AudioOption.Channls > 8)");
@@ -604,8 +604,16 @@ namespace JyunrcaeaFramework
         internal override int RealHeight => (int)((AbsoluteSize is null ? Texture.Height : AbsoluteSize.Height) * Scale.Y);
     }
 
-    public class ZeneretyList : List<ZeneretyObject>
+    /// <summary>
+    /// Zenerety 객체를 위한 리스트입니다.
+    /// 추가 및 제거시 자동으로 리소스를 할당/해제 해줍니다.
+    /// </summary>
+    public class ZeneretyList : List<ZeneretyObject>, IDisposable
     {
+        /// <summary>
+        /// 객체를 추가합니다.
+        /// </summary>
+        /// <param name="obj">객체</param>
         public new void Add(ZeneretyObject obj)
         {
             base.Add(obj);
@@ -624,6 +632,10 @@ namespace JyunrcaeaFramework
             }
         }
 
+        /// <summary>
+        /// 객체를 제거합니다.
+        /// </summary>
+        /// <param name="obj">객체</param>
         public new void Remove(ZeneretyObject obj)
         {
             base.Remove(obj);
@@ -636,6 +648,24 @@ namespace JyunrcaeaFramework
             {
                 ((Image)obj).Texture.Free();
                 return;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (Framework.running)
+            foreach(var obj in this)
+            {
+                if (obj is Group)
+                {
+                    FrameworkFunction.Release((Group)obj);
+                    return;
+                }
+                if (obj is Image)
+                {
+                    ((Image)obj).Texture.Free();
+                    return;
+                }
             }
         }
     }
@@ -721,6 +751,9 @@ namespace JyunrcaeaFramework
         }
     }
 
+    /// <summary>
+    /// 창과 관련된 기능을 다룹니다.
+    /// </summary>
     public static class Window {
         internal static SDL.SDL_Rect size = new();
         internal static SDL.SDL_Point position = new();
@@ -793,27 +826,18 @@ namespace JyunrcaeaFramework
         public static bool Borderless
         {
             get => windowborderless;
-            set
-            {
-                SDL.SDL_SetWindowBordered(Framework.window, (windowborderless = value) ? SDL.SDL_bool.SDL_TRUE : SDL.SDL_bool.SDL_FALSE);
-            }
+            set => SDL.SDL_SetWindowBordered(Framework.window, (windowborderless = value) ? SDL.SDL_bool.SDL_TRUE : SDL.SDL_bool.SDL_FALSE);
         }
 
         /// <summary>
         /// 창을 맨 앞으로 올리고 사용자가 조작할 대상을 이 창으로 설정합니다.
         /// </summary>
-        public static void Raise()
-        {
-            SDL.SDL_RaiseWindow(Framework.window);
-        }
+        public static void Raise() => SDL.SDL_RaiseWindow(Framework.window);
 
         /// <summary>
         /// 최소화 또는 최대화 된 창의 크기와 위치를 원래대로 돌려놓습니다.
         /// </summary>
-        public static void Restore()
-        {
-            SDL.SDL_RestoreWindow(Framework.window);
-        }
+        public static void Restore() => SDL.SDL_RestoreWindow(Framework.window);
 
         /// <summary>
         /// 창의 투명도를 설정합니다. 0.0f이 완전히 투명이며 1.0f이 완전 불투명입니다.
@@ -822,10 +846,7 @@ namespace JyunrcaeaFramework
         public static float Opacity
         {
             get { SDL.SDL_GetWindowOpacity(Framework.window, out var op); return op; }
-            set
-            {
-                SDL.SDL_SetWindowOpacity(Framework.window, value);
-            }
+            set => SDL.SDL_SetWindowOpacity(Framework.window, value);
         }
         /// <summary>
         /// 창 표시여부
