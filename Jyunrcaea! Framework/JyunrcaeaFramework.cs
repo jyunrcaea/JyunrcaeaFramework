@@ -1,6 +1,7 @@
 ﻿#define WINDOWS
 using SDL2;
 using System.Diagnostics.SymbolStore;
+using System.Runtime.CompilerServices;
 
 namespace JyunrcaeaFramework
 {
@@ -449,12 +450,206 @@ namespace JyunrcaeaFramework
         {
             running = false;
         }
+
+        /// <summary>
+        /// 새로운 렌더링 방식(Zenerety)을 사용할지에 대한 여부입니다.
+        /// </summary>
+        public static bool NewRenderingSolution = false;
+
+        static Stack<SDL.SDL_Point> DrawPosStack = new();
+
+        static SDL.SDL_Rect DrawPos = new() { x = 0, y = 0 };
+
+        internal static void Rendering(Group group)
+        {
+            DrawPosStack.Push(new() { x = DrawPos.x, y = DrawPos.y });
+            int wx = DrawPos.x + group.Rx;
+            int hy = DrawPos.y + group.Ry;
+            for (int i = 0; i < group.ObjectList.Count; i++)
+            {
+                DrawPos.x = wx;
+                DrawPos.y = hy;
+
+                if (group.ObjectList[i] is Group)
+                {
+                    Rendering((Group)group.ObjectList[i]);
+                    continue;
+                }
+
+                if (group.ObjectList[i] is ZeneretyDrawableObject)
+                {
+                    ZeneretyDrawableObject zdo = (ZeneretyDrawableObject)group.ObjectList[i];
+                    DrawPos.w = zdo.RealWidth;
+                    DrawPos.h = zdo.RealHeight;
+                    DrawPos.x += zdo.Rx;
+                    DrawPos.y += zdo.Ry;
+                    if (zdo is Box)
+                    {
+                        SDL.SDL_SetRenderDrawColor(Framework.renderer,((Box)zdo).Color.colorbase.r, ((Box)zdo).Color.colorbase.g, ((Box)zdo).Color.colorbase.b, ((Box)zdo).Color.colorbase.a);
+                        SDL.SDL_RenderFillRect(Framework.renderer, ref DrawPos);
+                        continue;
+                    }
+
+                    if (zdo is Image)
+                    {
+                        SDL.SDL_RenderCopy(Framework.renderer, ((Image)zdo).Texture.texture, ref ((Image)zdo).Texture.src, ref DrawPos);
+                        continue;
+                    }
+                }
+
+            }
+            var ret = DrawPosStack.Pop();
+            DrawPos.x = ret.x;
+            DrawPos.y = ret.y;
+        }
     }
+
+    /// <summary>
+    /// Zenerety 렌더링에 사용될 크기 조정 클래스입니다.
+    /// </summary>
+    public class ZeneretySize
+    {
+        public int Width, Height;
+        public ZeneretySize(int Width = 0, int Height = 0)
+        {
+            this.Width = Width;
+            this.Height = Height;
+        }
+    }
+
+    public class ZeneretyScale
+    {
+        public double X, Y;
+        public ZeneretyScale(double x=1d,double y=1d)
+        {
+            X = x;
+            Y = y;
+        }
+    }
+
+    /// <summary>
+    /// Zenerety 렌더링 용 객체 
+    /// </summary>
+    public class ZeneretyObject
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        internal int Rx => X;
+        internal int Ry => Y;
+    }
+
+    /// <summary>
+    /// Zenerety 렌더링 용 그릴수 있는 객체
+    /// </summary>
+    public class ZeneretyDrawableObject : ZeneretyObject
+    {
+        internal int rw = 0, rh = 0;
+        internal int ww = 0, hh = 0;
+
+        internal virtual int RealWidth { get; }
+        internal virtual int RealHeight { get; }
+    }
+
+    /// <summary>
+    /// Zenerety 렌더링 방식에 사용되는 그룹 객체입니다.
+    /// </summary>
+    public class Group : ZeneretyObject
+    {
+        /// <summary>
+        /// 묶을 객체들
+        /// </summary>
+        public ZeneretyList ObjectList = new();
+
+    }
+
+    /// <summary>
+    /// Zenerety 렌더링 방식에 사용되는 직사각형 객체입니다.
+    /// </summary>
+    public class Box : ZeneretyDrawableObject
+    {
+        /// <summary>
+        /// 직사각형의 너비와 높이
+        /// </summary>
+        public ZeneretySize Size = new();
+        /// <summary>
+        /// 너비 및 높이의 배율
+        /// </summary>
+        public ZeneretyScale Scale = new();
+
+        /// <summary>
+        /// 출력할 색상
+        /// </summary>
+        public Color Color = new();
+
+        internal override int RealWidth => (int)(Size.Width * Scale.X);
+        internal override int RealHeight => (int)(Size.Height * Scale.Y);
+    }
+
+    public class Image : ZeneretyDrawableObject
+    {
+        public DrawableTexture Texture = null!;
+
+        /// <summary>
+        /// 렌더링 될 이미지의 절대적 크기
+        /// (null 로 설정시 원본 이미지의 크기를 따릅니다.)
+        /// </summary>
+        public ZeneretySize? AbsoluteSize = null;
+
+        /// <summary>
+        /// 이미지의 너비 및 높이의 배율
+        /// </summary>
+        public ZeneretyScale Scale = new();
+
+        internal override int RealWidth => (int)((AbsoluteSize is null ? Texture.Width : AbsoluteSize.Width) * Scale.X);
+        internal override int RealHeight => (int)((AbsoluteSize is null ? Texture.Height : AbsoluteSize.Height) * Scale.Y);
+    }
+
+    public class ZeneretyList : List<ZeneretyObject>
+    {
+        public new void Add(ZeneretyObject obj)
+        {
+            base.Add(obj);
+            if (Framework.running)
+            {
+                if (obj is Group)
+                {
+                    FrameworkFunction.Prepare((Group)obj);
+                    return;
+                }
+                if (obj is Image)
+                {
+                    ((Image)obj).Texture.Ready();
+                    return;
+                }
+            }
+        }
+
+        public new void Remove(ZeneretyObject obj)
+        {
+            base.Remove(obj);
+            if (obj is Group)
+            {
+                FrameworkFunction.Release((Group)obj);
+                return;
+            }
+            if (obj is Image)
+            {
+                ((Image)obj).Texture.Free();
+                return;
+            }
+        }
+    }
+
     /// <summary>
     /// 모니터의 정보를 얻거나, 또는 장면을 추가/제거 하기위한 클래스입니다.
     /// </summary>
     public static class Display
     {
+        /// <summary>
+        /// Zenerety 렌더링 방식에 사용되는 장면 탐색기입니다.
+        /// </summary>
+        public static Group Target = new();
+
         internal static SDL.SDL_DisplayMode dm;
 
         internal static List<SceneInterface> scenes = new();
@@ -745,43 +940,97 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class FrameworkFunction : ObjectInterface, AllEventInterface
     {
-        
+        //Start와 비슷
+        internal static void Prepare(Group group)
+        {
+            for (int i=0;i<group.ObjectList.Count;i++)
+            {
+                if (group.ObjectList[i] is Group)
+                {
+                    Prepare((Group)group.ObjectList[i]);
+                    continue;
+                }
+                 
+                if (group.ObjectList[i] is Image)
+                {
+                    ((Image)group.ObjectList[i]).Texture.Ready();
+                }
+
+
+            }
+        }
+
+        //Stop, Free 와 비슷
+        internal static void Release(Group group)
+        {
+            for (int i = 0; i < group.ObjectList.Count; i++)
+            {
+                if (group.ObjectList[i] is Group)
+                {
+                    Release((Group)group.ObjectList[i]);
+                    continue;
+                }
+
+                if (group.ObjectList[i] is Image)
+                {
+                    ((Image)group.ObjectList[i]).Texture.Free();
+                }
+
+
+            }
+        }
 
         /// <summary>
         /// 'Framework.Run' 함수를 호출시 실행되는 함수입니다.
         /// </summary>
         public override void Start()
         {
-            if (Framework.MultiCoreProcess)
+            if (Framework.NewRenderingSolution)
             {
-                Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].Start());
+                Prepare(Display.Target);
             }
             else
             {
-                for (int i = 0; i < Display.scenes.Count; i++)
-                {
-                    Display.scenes[i].Start();
-                }
-            }
 
+                if (Framework.MultiCoreProcess)
+                {
+                    Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].Start());
+                }
+                else
+                {
+                    for (int i = 0; i < Display.scenes.Count; i++)
+                    {
+                        Display.scenes[i].Start();
+                    }
+                }
+
+            }
         }
         /// <summary>
         /// 'Framework.Stop' 함수를 호출시 실행되는 함수입니다.
         /// </summary>
         public override void Stop()
         {
-            if (Framework.MultiCoreProcess)
+            if (Framework.NewRenderingSolution)
             {
-                Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].Stop());
+                Release(Display.Target);
             }
             else
             {
-                for (ist = 0; ist < Display.scenes.Count; ist++)
-                {
-                    Display.scenes[ist].Stop();
-                }
-            }
 
+                if (Framework.MultiCoreProcess)
+                {
+                    Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].Stop());
+                }
+                else
+                {
+                    for (ist = 0; ist < Display.scenes.Count; ist++)
+                    {
+                        Display.scenes[ist].Stop();
+                    }
+                }
+
+            }
         }
 
         private int iu, id, ir, iwm, ird, ist, ifd;
@@ -816,20 +1065,32 @@ namespace JyunrcaeaFramework
                 if (Framework.SavingPerformance && endtime > Framework.frametimer.ElapsedTicks + Framework.savelevel) Thread.Sleep(1);
                 return;
             }
+
+
+            
             Update(((updatems = Framework.frametimer.ElapsedTicks) - updatetime) * 0.0001f);
-            for (id = 0; id < Display.scenes.Count; id++)
+
+            if (Framework.NewRenderingSolution)
             {
-                if (!Display.scenes[id].Hide) Display.scenes[id].Draw();
+                Framework.Rendering(Display.Target);
             }
+            else
+            {
+
+                for (id = 0; id < Display.scenes.Count; id++)
+                {
+                    if (!Display.scenes[id].Hide) Display.scenes[id].Draw();
+                }
 #if DEBUG
             if (Debug.ObjectDrawDebuging)
             {
                 ODD();
             }
 #endif
-            if (SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size) != 0) throw new JyunrcaeaFrameworkException($"SDL Error: {SDL.SDL_GetError()}");
+
+            }
             SDL.SDL_RenderPresent(Framework.renderer);
-            //Console.WriteLine("hi");
+            if (SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size) != 0) throw new JyunrcaeaFrameworkException($"SDL Error: {SDL.SDL_GetError()}");
             SDL.SDL_SetRenderDrawColor(Framework.renderer, Window.BackgroundColor.Red, Window.BackgroundColor.Green, Window.BackgroundColor.Blue, Window.BackgroundColor.Alpha);
             SDL.SDL_RenderClear(Framework.renderer);
             if (endtime <= Framework.frametimer.ElapsedTicks - Display.framelatelimit)
