@@ -1854,6 +1854,10 @@ namespace JyunrcaeaFramework
         int mx=0, my=0;
         bool needupdatepos = false;
 
+        /// <summary>
+        /// X 좌표 입니다.
+        /// 상속된 객체도 같이 움직입니다.
+        /// </summary>
         public int X
         {
             get => mx;
@@ -1863,7 +1867,10 @@ namespace JyunrcaeaFramework
                 needupdatepos = true;
             }
         }
-
+        /// <summary>
+        /// Y 좌표 입니다.
+        /// 상속된 객체도 같이 움직입니다.
+        /// </summary>
         public int Y
         {
             get => my;
@@ -1874,6 +1881,9 @@ namespace JyunrcaeaFramework
             }
         }
 
+        /// <summary>
+        /// 이 장면이 가지고 있는 모든 객체
+        /// </summary>
         public DrawableObject[] SpriteList => sprites.ToArray();
 
         private protected List<DrawableObject> sprites = new();
@@ -3999,12 +4009,14 @@ namespace JyunrcaeaFramework
     }
 
     
-
+    /// <summary>
+    /// 부드러운 움직임을 구현하기 위한 편리한 기능이 모여있습니다.
+    /// </summary>
     public static class Animation
     {
-        internal class LinkedListForAnimation : LinkedList<InformationClass.AnimationInfomation>
+        internal class LinkedListForAnimation : LinkedList<Information.General>
         {
-            public void Add(InformationClass.AnimationInfomation info)
+            public void Add(Information.General info)
             {
                 if (info.EndTime <= Framework.RunningTime)
                 {
@@ -4014,9 +4026,9 @@ namespace JyunrcaeaFramework
                 this.AddLast(info);
             }
 
-            Queue<InformationClass.AnimationInfomation> RemoveTarget = new();
+            Queue<Information.General> RemoveTarget = new();
 
-            public new void Remove(InformationClass.AnimationInfomation info)
+            public new void Remove(Information.General info)
             {
                 RemoveTarget.Enqueue(info);
             }
@@ -4036,19 +4048,35 @@ namespace JyunrcaeaFramework
 
         internal static LinkedListForAnimation AnimationQueue = new();
 
-
-        public static InformationClass.Movement Move(ZeneretyObject Target,int X,int Y,double StartTime,double EndTime,Action? WhenFinish,FunctionForAnimation? Motion = null)
+        /// <summary>
+        /// 원하는 객체를 원하는 좌표로 부드럽게 이동합니다.
+        /// </summary>
+        /// <param name="Target">객체</param>
+        /// <param name="X">도착할 X좌표</param>
+        /// <param name="Y">도착할 Y좌표</param>
+        /// <param name="StartTime">시작시간</param>
+        /// <param name="EndTime">종료시간</param>
+        /// <param name="WhenFinish">완료 후 실행될 함수</param>
+        /// <param name="Motion">애니메이션 계산 함수</param>
+        /// <returns>애니메이션 정보</returns>
+        public static Information.Movement Move(ZeneretyObject Target,int X,int Y,double StartTime,double EndTime,Action? WhenFinish,FunctionForAnimation? Motion = null)
         {
-            InformationClass.Movement result = new(X, Y, Target, StartTime, EndTime, WhenFinish, Motion);
+            Information.Movement result = new(X, Y, Target, StartTime, EndTime, WhenFinish, Motion);
             AnimationQueue.Add(result);
             return result;
         }
 
-        public static class InformationClass
+        /// <summary>
+        /// 특정한 애니메이션 정보를 담는 클래스가 모여있습니다.
+        /// </summary>
+        public static class Information
         {
-            public abstract class AnimationInfomation
+            /// <summary>
+            /// 기본적인 애니메이션 정보를 담는 클래스입니다.
+            /// </summary>
+            public abstract class General
             {
-                public AnimationInfomation(ZeneretyObject zo,double st,double et,Action? fff = null,FunctionForAnimation? ffa = null)
+                public General(ZeneretyObject zo,double st,double et,Action? fff = null,FunctionForAnimation? ffa = null)
                 {
                     Target = zo;
                     StartTime = st;
@@ -4064,7 +4092,7 @@ namespace JyunrcaeaFramework
                 public double AnimationTime { get; internal set; }
                 public bool Finished { get; internal set; } = false;
                 public Action? FunctionForFinish { get; internal set; } = null;
-                public FunctionForAnimation AnimationCalculator { get; internal set; } = Animation.Nothing;
+                public FunctionForAnimation AnimationCalculator { get; internal set; } = JyunrcaeaFramework.Animation.Nothing;
 
                 internal double Progress = 0d;
 
@@ -4082,21 +4110,44 @@ namespace JyunrcaeaFramework
                 }
 
                 internal abstract void Update();
-
+                /// <summary>
+                /// 애니메이션을 즉시 끝내버립니다.
+                /// </summary>
                 public virtual void Done()
                 {
                     this.Finished = true;
                     if (FunctionForFinish is not null) FunctionForFinish();
                     AnimationQueue.Remove(this);
                 }
-
+                /// <summary>
+                /// 애니메이션을 취소합니다. (이전 상태로 되돌립니다.)
+                /// </summary>
                 public virtual void Undo()
                 {
                     this.Finished = false;
                 }
-            }
 
-            public class Movement : AnimationInfomation
+                /// <summary>
+                /// 시간을 수정하여 애니메이션을 재개합니다. (애니메이션이 이미 종료된 상태여야 합니다.)
+                /// </summary>
+                /// <param name="StartTime">시작 시간</param>
+                /// <param name="EndTime">종료 시간</param>
+                /// <returns>재개 성공 여부</returns>
+                [Obsolete("불안정")]
+                public bool ResumeAt(double StartTime,double EndTime)
+                {
+                    if (this.Finished is false) return false;
+                    this.Finished = false;
+                    this.StartTime = StartTime;
+                    this.EndTime = EndTime;
+                    AnimationQueue.Add(this);
+                    return true;
+                }
+            }
+            /// <summary>
+            /// 움직임과 관련된 정보를 담는 클래스
+            /// </summary>
+            public class Movement : General
             {
                 public Movement(int x,int y,ZeneretyObject zo, double st, double et, Action? fff = null, FunctionForAnimation? ffa = null) : base(zo,st,et,fff,ffa) {
                     BX = zo.X;
@@ -4115,6 +4166,7 @@ namespace JyunrcaeaFramework
                     Target.Y = BY + (int)(LY * Progress);
                 }
 
+                
                 public override void Done()
                 {
                     Target.X = AX;
@@ -4262,6 +4314,7 @@ namespace JyunrcaeaFramework
 
         internal SDL.SDL_Rect size => source.src;
     }
+
 
     public class RectSize
     {
