@@ -38,6 +38,8 @@ namespace Zenerety
                 obj2
             };
 
+            Animation.Move(obj1,100,100,3000,5000,null,null);
+
             //실행
             Framework.Run();
             /**************************************************************/

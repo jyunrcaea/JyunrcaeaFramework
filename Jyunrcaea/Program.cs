@@ -143,6 +143,7 @@ namespace Jyunrcaea
                     Framework.SavingPerformanceLevel = 255;
                     break;
                 case Input.Keycode.F10:
+                    Window.Raise();
                     break;
                 case Input.Keycode.F11:
                     fullscreenswicthed = true;

@@ -1,7 +1,10 @@
 ﻿#define WINDOWS
 using SDL2;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 
 namespace JyunrcaeaFramework
 {
@@ -83,7 +86,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly System.Version Version = new(0, 6, 2);
+        public static readonly System.Version Version = new(0, 6, 1,4);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
@@ -227,8 +230,12 @@ namespace JyunrcaeaFramework
         public static long RunningTimeTick => frametimer.ElapsedTicks;
         /// <summary>
         /// 프레임워크가 지금까지 작동된 시간을 밀리초(ms)로 반환합니다.
+        /// 하위 호환성을 위해 Float 반환을 제공합니다.
         /// </summary>
-        public static float RunningTime => frametimer.ElapsedTicks * 0.0001f;
+        public static float RunningTimeToFloat => frametimer.ElapsedTicks * 0.0001f;
+
+        public static double RunningTime => frametimer.ElapsedTicks * 0.0001d;
+
         /// <summary>
         /// 프레임워크가 지금까지 작동된 시간을 초(second)로 반환합니다.
         /// </summary>
@@ -237,8 +244,9 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// Framework.Stop(); 을 호출할때까지 창을 띄웁니다. (또는 오류가 날때까지...)
         /// </summary>
+        /// <param name="ShowWindow">창을 표시할지에 대한 여부</param>
         /// <exception cref="JyunrcaeaFrameworkException">실행중에 호출할경우</exception>
-        public static void Run()
+        public static void Run(bool ShowWindow = true)
         {
             if (running) throw new JyunrcaeaFrameworkException("이 함수는 이미 실행중인 함수입니다. (함수가 종료될때까지 호출할수 없습니다.)");
             SDL.SDL_StopTextInput();
@@ -247,6 +255,7 @@ namespace JyunrcaeaFramework
             FrameworkFunction.updatetime = 0;
             FrameworkFunction.endtime = Display.framelatelimit;
             frametimer.Start();
+            if (ShowWindow) SDL.SDL_ShowWindow(Framework.window);
             while (running)
             {
                 Framework.Function.Draw();
@@ -516,7 +525,9 @@ namespace JyunrcaeaFramework
             this.Height = Height;
         }
     }
-
+    /// <summary>
+    /// Zenerety 렌더링에 사용될 배율 조정 클래스입니다.
+    /// </summary>
     public class ZeneretyScale
     {
         public double X, Y;
@@ -536,6 +547,8 @@ namespace JyunrcaeaFramework
         public int Y { get; set; }
         internal int Rx => X;
         internal int Ry => Y;
+
+        internal bool MoveAnimation = false;
     }
 
     /// <summary>
@@ -797,15 +810,13 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static int Height => size.h;
 
-        //internal static FullscreenOption fullscreenstate;
-        //public static FullscreenOption FullScreen { get => fullscreenstate; set
-        //    {
-        //        if (fullscreenstate == value) return;
-        //        if (fullscreenstate == FullscreenOption.FullScreen) SDL.SDL_SetWindowFullscreen(Framework.window, 0);
-        //        fullscreenstate = value;
-        //        if (SDL.SDL_SetWindowFullscreen(Framework.window, (uint)fullscreenstate) != 0) throw new JyunrcaeaFrameworkException($"SDL Error : {SDL.SDL_GetError()}");
-        //    }
-        //}
+        /// <summary>
+        /// 다른 창에 가려져도 이 창에 초첨이 맞춰집니다. 잘 작동하진 않습니다.
+        /// 창을 맨 위로 올리고 초첨을 맞출려면 Raise() 를 사용하세요.
+        /// </summary>
+        /// <returns></returns>
+        public static bool InputFocus() => SDL.SDL_SetWindowInputFocus(Framework.window) == 0;
+
         internal static bool fullscreenoption = false;
         /// <summary>
         /// 전체화면 여부
@@ -903,35 +914,54 @@ namespace JyunrcaeaFramework
             SDL.SDL_GetWindowPosition(Framework.window, out Window.position.x, out Window.position.y);
             Framework.Function.WindowMove();
         }
-
+        /// <summary>
+        /// 최대 창 크기를 지정합니다.
+        /// </summary>
+        /// <param name="Width">너비</param>
+        /// <param name="Height">높이</param>
         public static void SetMaximizeSize(int Width,int Height)
         {
             SDL.SDL_SetWindowMaximumSize(Framework.window, Width, Height);
         }
-
+        /// <summary>
+        /// 최소 창 크기를 지정합니다.
+        /// </summary>
+        /// <param name="Width">너비</param>
+        /// <param name="Height">높이</param>
         public static void SetMinimizeSize(int Width,int Height)
         {
             SDL.SDL_SetWindowMinimumSize(Framework.window, Width, Height);
         }
-
+        /// <summary>
+        /// 지정한 최대 창 크기를 얻습니다.
+        /// </summary>
+        /// <param name="Width">너비</param>
+        /// <param name="Height">높이</param>
         public static void GetMaximizeSize(out int Width,out int Height) => SDL.SDL_GetWindowMaximumSize(Framework.window,out Width,out Height);
-
+        /// <summary>
+        /// 지정한 최소 창 크기를 얻습니다.
+        /// </summary>
+        /// <param name="Width">너비</param>
+        /// <param name="Height">높이</param>
         public static void GetMinimizeSize(out int Width,out int Height) => SDL.SDL_GetWindowMinimumSize(Framework.window,out Width,out Height);
-
+        /// <summary>
+        /// 창을 최대화 합니다.
+        /// </summary>
         public static void Maximize() => SDL.SDL_MaximizeWindow(Framework.window);
-
+        /// <summary>
+        /// 창을 최소화 합니다.
+        /// </summary>
         public static void Minimize() => SDL.SDL_MinimizeWindow(Framework.window);
-
+        /// <summary>
+        /// 창을 항상 맨위에 올릴지에 대한 여부를 지정합니다.
+        /// </summary>
         public static bool AlwaysOnTop
         {
-            set
-            {
-                SDL.SDL_SetWindowAlwaysOnTop(Framework.window, value ? SDL.SDL_bool.SDL_TRUE : SDL.SDL_bool.SDL_FALSE);
-            }
+            set => SDL.SDL_SetWindowAlwaysOnTop(Framework.window, value ? SDL.SDL_bool.SDL_TRUE : SDL.SDL_bool.SDL_FALSE);
         }
 
         /// <summary>
-        /// SDL에서 사용할수 있는 창의 ID 값을 얻습니다. 
+        /// SDL2에서 사용할수 있는 창의 ID 값을 얻습니다. 
         /// 정식 버전에서 삭제될 기능입니다.
         /// </summary>
         public static uint ID => SDL.SDL_GetWindowID(Framework.window);
@@ -939,6 +969,9 @@ namespace JyunrcaeaFramework
         
     }
 
+    /// <summary>
+    /// 모든 이벤트를 모아둔 인터페이스입니다.
+    /// </summary>
     public interface AllEventInterface :
         Events.Resized,
         Events.WindowMove,
@@ -1123,6 +1156,12 @@ namespace JyunrcaeaFramework
 
         public virtual void Update(float ms)
         {
+            if (Framework.NewRenderingSolution)
+            {
+                Animation.AnimationQueue.Update();
+                updatetime = updatems;
+                return;
+            }
             if (Framework.MultiCoreProcess)
             {
                 Parallel.For(0, Display.scenes.Count, (i, _) => { if (Display.scenes[i].UpdateRejection) return; Display.scenes[i].Update(ms); });
@@ -1339,9 +1378,9 @@ namespace JyunrcaeaFramework
     {
         internal SDL.SDL_WindowFlags option = SDL.SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
 
-        public WindowOption() { option = SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE; }
+        public WindowOption() { option = SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN; }
 
-        public WindowOption(bool resize, bool borderless, bool fullscreen, bool hide)
+        public WindowOption(bool resize = true, bool borderless = false, bool fullscreen = false, bool hide = true)
         {
             if (resize) option |= SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
             if (borderless) option |= SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
@@ -3120,7 +3159,7 @@ namespace JyunrcaeaFramework
         internal void Start(byte alpha,float animationtime,float startupdelay = 0f)
         {
             //시작 시간 구하기
-            StartTime = Framework.RunningTime + startupdelay;
+            StartTime = Framework.RunningTimeToFloat + startupdelay;
             //종료 시간 구하기
             ArrivalTime = StartTime + animationtime;
             //이동시간 저장
@@ -3145,7 +3184,7 @@ namespace JyunrcaeaFramework
 
         internal byte Update()
         {
-            float nowtime = Framework.RunningTime - StartTime;
+            float nowtime = Framework.RunningTimeToFloat - StartTime;
             if (nowtime <= 0f) return beforealpha;
 
             if (AnimationTime <= nowtime)
@@ -3211,7 +3250,7 @@ namespace JyunrcaeaFramework
         internal void Start(int? x, int? y, float AnimationTime, float StartupDelay = 0f)
         {
             if (x == null && y == null) return;
-            this.StartTime = Framework.RunningTime + StartupDelay;
+            this.StartTime = Framework.RunningTimeToFloat + StartupDelay;
             Complete = false;
             if (x == null) gx = false;
             else { gx = true; TargetPositionX = (int)x; dx = (int)x - bpx; }
@@ -3232,7 +3271,7 @@ namespace JyunrcaeaFramework
 
         internal void Update(ref int x, ref int y)
         {
-            float nowtime = Framework.RunningTime - StartTime;
+            float nowtime = Framework.RunningTimeToFloat - StartTime;
             if (nowtime <= 0f) return;
             
             if (AnimationTime <= nowtime)
@@ -3542,11 +3581,13 @@ namespace JyunrcaeaFramework
     /// </summary>
     public static class Input
     {
+
         /// <summary>
         /// 마우스와 관련된 클래스입니다.
         /// </summary>
         public static class Mouse
         {
+
             internal static SDL.SDL_Point position = new();
 
             public static int X => position.x;
@@ -3957,8 +3998,144 @@ namespace JyunrcaeaFramework
         public int Height { get; }
     }
 
+    
+
     public static class Animation
     {
+        internal class LinkedListForAnimation : LinkedList<InformationClass.AnimationInfomation>
+        {
+            public void Add(InformationClass.AnimationInfomation info)
+            {
+                if (info.EndTime <= Framework.RunningTime)
+                {
+                    info.Done();
+                    return;
+                }
+                this.AddLast(info);
+            }
+
+            Queue<InformationClass.AnimationInfomation> RemoveTarget = new();
+
+            public new void Remove(InformationClass.AnimationInfomation info)
+            {
+                RemoveTarget.Enqueue(info);
+            }
+
+            public void Update()
+            {
+                if (Framework.MultiCoreProcess)
+                {
+                    Parallel.ForEach(AnimationQueue, (a) => { a.Update(); });
+                    return;
+                }
+                foreach (var a in AnimationQueue) a.Update();
+
+                while(RemoveTarget.Count!=0) base.Remove(RemoveTarget.Dequeue());
+            }
+        }
+
+        internal static LinkedListForAnimation AnimationQueue = new();
+
+
+        public static InformationClass.Movement Move(ZeneretyObject Target,int X,int Y,double StartTime,double EndTime,Action? WhenFinish,FunctionForAnimation? Motion = null)
+        {
+            InformationClass.Movement result = new(X, Y, Target, StartTime, EndTime, WhenFinish, Motion);
+            AnimationQueue.Add(result);
+            return result;
+        }
+
+        public static class InformationClass
+        {
+            public abstract class AnimationInfomation
+            {
+                public AnimationInfomation(ZeneretyObject zo,double st,double et,Action? fff = null,FunctionForAnimation? ffa = null)
+                {
+                    Target = zo;
+                    StartTime = st;
+                    EndTime = et;
+                    AnimationTime = EndTime - StartTime;
+                    FunctionForFinish = fff;
+                    if (ffa is not null) AnimationCalculator = ffa;
+                }
+
+                public ZeneretyObject Target { get; internal set; } = null!;
+                public double StartTime { get; internal set; }
+                public double EndTime { get; internal set; }
+                public double AnimationTime { get; internal set; }
+                public bool Finished { get; internal set; } = false;
+                public Action? FunctionForFinish { get; internal set; } = null;
+                public FunctionForAnimation AnimationCalculator { get; internal set; } = Animation.Nothing;
+
+                internal double Progress = 0d;
+
+                internal bool CheckTime()
+                {
+                    Progress = Framework.RunningTime;
+                    if (Progress <= StartTime) return true;
+                    if (Progress >= EndTime)
+                    {
+                        Done();
+                        return true;
+                    }
+                    Progress = AnimationCalculator((Progress - StartTime) / AnimationTime);
+                    return false;
+                }
+
+                internal abstract void Update();
+
+                public virtual void Done()
+                {
+                    this.Finished = true;
+                    if (FunctionForFinish is not null) FunctionForFinish();
+                    AnimationQueue.Remove(this);
+                }
+
+                public virtual void Undo()
+                {
+                    this.Finished = false;
+                }
+            }
+
+            public class Movement : AnimationInfomation
+            {
+                public Movement(int x,int y,ZeneretyObject zo, double st, double et, Action? fff = null, FunctionForAnimation? ffa = null) : base(zo,st,et,fff,ffa) {
+                    BX = zo.X;
+                    BY = zo.Y;
+                    AX = x;
+                    AY = y;
+                    LX = AX - BX;
+                    LY = AY - BY;
+                }
+
+                int BX, BY, AX, AY, LX, LY;
+                internal override void Update()
+                {
+                    if (CheckTime()) return;
+                    Target.X = BX + (int)(LX * Progress);
+                    Target.Y = BY + (int)(LY * Progress);
+                }
+
+                public override void Done()
+                {
+                    Target.X = AX;
+                    Target.Y = AY;
+                    base.Done();
+                }
+
+                public override void Undo()
+                {
+                    Target.X = BX;
+                    Target.Y = BY;
+                    base.Done();
+                }
+
+
+            }
+
+
+
+        }
+
         internal static double Nothing(double x) => x;
 
         internal static double EaseInSine(double x)

@@ -25,7 +25,7 @@ namespace Jyunrcaea
 
         public override void Render()
         {
-            float a = Framework.RunningTime;
+            float a = Framework.RunningTimeToFloat;
             float b = a - finishtime;
             this.finishtime = a;
             if (b > 27)
