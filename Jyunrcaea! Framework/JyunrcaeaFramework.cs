@@ -1,4 +1,5 @@
 ﻿#define WINDOWS
+using Microsoft.VisualBasic;
 using SDL2;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -9,6 +10,10 @@ using System.Security.Cryptography.X509Certificates;
 namespace JyunrcaeaFramework
 {
 #if DEBUG
+    /// <summary>
+    /// 프레임워크 개발용 테스를 하기 위한 기능이 모여있습니다.
+    /// 프레임워크 기여자가 아닌이상 쓸 필요는 없습니다.
+    /// </summary>
     public static class Debug
     {
         public static Version SDL2Version
@@ -19,13 +24,15 @@ namespace JyunrcaeaFramework
                 return new(v.major, v.minor, v.patch);
             }
         }
-
+        /// <summary>
+        /// 텍스트 렌더링 된 횟수
+        /// </summary>
         public static ulong TextRenderCount = 0;
 
         /// <summary>
         /// ODD 를 실행할지에 대한 여부입니다.
         /// </summary>
-        public static bool ObjectDrawDebuging = false;
+        public static bool ObjectDrawDebuging = false;  
         /// <summary>
         /// ODD 실행시 객체의 테두리를 표시할 색입니다.
         /// </summary>
@@ -66,6 +73,7 @@ namespace JyunrcaeaFramework
         /// CPU 사용량의 줄이는 수준을 조정합니다.
         /// 높을수록 사용량을 더 많이 줄입니다. 그대신 프레임이 더욱 불안정해질수 있습니다.
         /// </summary>
+        [Obsolete("사용할 가치가 없음")]
         public static byte SavingPerformanceLevel { get => (byte)((1600 - savelevel) / 2); set {
                 savelevel = 1600 - value * 2;
             } 
@@ -86,7 +94,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly System.Version Version = new(0, 6, 1,4);
+        public static readonly System.Version Version = new(0, 6, 1,5);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
@@ -465,13 +473,13 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static bool NewRenderingSolution = false;
 
-        static Stack<SDL.SDL_Point> DrawPosStack = new();
+        static Stack<ZeneretySize> DrawPosStack = new();
 
         static SDL.SDL_Rect DrawPos = new() { x = 0, y = 0 };
 
         internal static void Rendering(Group group)
         {
-            DrawPosStack.Push(new() { x = DrawPos.x, y = DrawPos.y });
+            DrawPosStack.Push(new() { Width = DrawPos.x, Height = DrawPos.y });
             int wx = DrawPos.x + group.Rx;
             int hy = DrawPos.y + group.Ry;
             for (int i = 0; i < group.ObjectList.Count; i++)
@@ -492,6 +500,10 @@ namespace JyunrcaeaFramework
                     DrawPos.h = zdo.RealHeight;
                     DrawPos.x += zdo.Rx;
                     DrawPos.y += zdo.Ry;
+                    if (zdo.DrawX != HorizontalPositionType.Right) DrawPos.x -= zdo.DrawX == HorizontalPositionType.Middle ? (int)(DrawPos.w * 0.5f) : DrawPos.w;
+                    if (zdo.DrawY != VerticalPositionType.Bottom) DrawPos.y -= zdo.DrawY == VerticalPositionType.Middle ? (int)(DrawPos.h * 0.5f) : DrawPos.h;
+
+
                     if (zdo is Box)
                     {
                         SDL.SDL_SetRenderDrawColor(Framework.renderer,((Box)zdo).Color.colorbase.r, ((Box)zdo).Color.colorbase.g, ((Box)zdo).Color.colorbase.b, ((Box)zdo).Color.colorbase.a);
@@ -501,15 +513,16 @@ namespace JyunrcaeaFramework
 
                     if (zdo is Image)
                     {
-                        SDL.SDL_RenderCopy(Framework.renderer, ((Image)zdo).Texture.texture, ref ((Image)zdo).Texture.src, ref DrawPos);
+                        //SDL.SDL_RenderCopy(Framework.renderer, ((Image)zdo).Texture.texture, ref ((Image)zdo).Texture.src, ref DrawPos);
+                        SDL.SDL_RenderCopyEx(Framework.renderer, ((Image)zdo).Texture.texture, ref ((Image)zdo).Texture.src, ref DrawPos, ((Image)zdo).Rotation, IntPtr.Zero,SDL.SDL_RendererFlip.SDL_FLIP_NONE);
                         continue;
                     }
                 }
 
             }
             var ret = DrawPosStack.Pop();
-            DrawPos.x = ret.x;
-            DrawPos.y = ret.y;
+            DrawPos.x = ret.Width;
+            DrawPos.y = ret.Height;
         }
     }
 
@@ -525,6 +538,8 @@ namespace JyunrcaeaFramework
             this.Height = Height;
         }
     }
+
+
     /// <summary>
     /// Zenerety 렌더링에 사용될 배율 조정 클래스입니다.
     /// </summary>
@@ -538,6 +553,8 @@ namespace JyunrcaeaFramework
         }
     }
 
+
+
     /// <summary>
     /// Zenerety 렌더링 용 객체 
     /// </summary>
@@ -545,8 +562,47 @@ namespace JyunrcaeaFramework
     {
         public int X { get; set; }
         public int Y { get; set; }
-        internal int Rx => X;
-        internal int Ry => Y;
+        internal int Rx => X + Cx;
+        internal int Ry => Y + Cy;
+
+        public Group? Parent { get; internal set; } = null;
+
+        internal int Cx = 0, Cy = 0;
+
+        internal double CxD = 0.5, CyD = 0.5;
+
+        //public bool CxIsChanged = false;
+        //public bool CyIsChanged = false;
+
+        public double CenterX
+        {
+            get => CxD;
+            //{
+            //    // 이미 값이 변경되었고, 부모가 null이 아닐경우 계산
+            //    if (CxIsChanged && Parent is not null)
+            //    {
+            //        CxIsChanged = false;
+            //        Cx = (int)(Parent.RealWidth * CxD);
+            //    }
+            //    return CxD;
+            //}
+            set
+            {
+                CxD = value;
+                //if (CxIsChanged && Parent is not null) Cx = (int)(Parent.RealWidth * value);
+            }
+        }
+        
+        public double CenterY
+        {
+            get => CyD;
+            set
+            {
+                CyD = value;
+                //if (Parent is not null) Cy = (int)(Parent.RealWidth * value);
+            }
+        }
+        
 
         internal bool MoveAnimation = false;
     }
@@ -561,6 +617,53 @@ namespace JyunrcaeaFramework
 
         internal virtual int RealWidth { get; }
         internal virtual int RealHeight { get; }
+
+        internal int dxw=0, dyh=0;
+
+        /// <summary>
+        /// 창 크기에 맞춰 자동으로 크기 조정을 사용할지에 대한 여부입니다.
+        /// </summary>
+        public bool RelativeSize = true;
+
+        //internal HorizontalPositionType dx = HorizontalPositionType.Middle;
+        //internal VerticalPositionType dy = VerticalPositionType.Middle;
+        //public HorizontalPositionType DrawX
+        //{
+        //    set
+        //    {
+        //        dx = value;
+        //        if (value == HorizontalPositionType.Right) dxw = 0;
+        //        else dxw = (value == HorizontalPositionType.Middle ? (int)(RealWidth * 0.5f) : RealWidth);
+        //    }
+        //    get => dx;
+        //}
+        //public VerticalPositionType DrawY
+        //{
+        //    set
+        //    {
+        //        dy = value;
+        //        if (value == VerticalPositionType.Middle) dyh = 0;
+        //        else dyh = (value == VerticalPositionType.Middle ? (int)(RealHeight * 0.5f) : RealHeight);
+        //    }
+        //    get => dy;
+        //}
+        public HorizontalPositionType DrawX = HorizontalPositionType.Middle;
+        public VerticalPositionType DrawY = VerticalPositionType.Middle;
+
+
+    }
+
+    /// <summary>
+    /// Zenerety 렌더링 용 그리기도 가능하고 회전, 뒤집기 등이 가능한 확장된 객체
+    /// </summary>
+    public class ZeneretyExtendObject : ZeneretyDrawableObject
+    {
+        /// <summary>
+        /// 회전값
+        /// </summary>
+        public double Rotation = 0;
+        
+        
     }
 
     /// <summary>
@@ -568,11 +671,58 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class Group : ZeneretyObject
     {
+        public Group()
+        {
+            ObjectList = new(this);
+        }
+
         /// <summary>
         /// 묶을 객체들
         /// </summary>
-        public ZeneretyList ObjectList = new();
+        public ZeneretyList ObjectList { get; protected set; } = null!;
 
+        internal virtual void ResetPosition(ZeneretySize Position)
+        {
+            if (this.RenderRange is not null)
+            {
+                Position.Width = this.RenderRange.Width;
+                Position.Height = this.RenderRange.Height;
+            }
+            for (int i = 0; i < ObjectList.Count; i++)
+            {
+                ObjectList[i].Cx = (int)(Position.Width * ObjectList[i].CxD);
+                ObjectList[i].Cy = (int)(Position.Height * ObjectList[i].CyD);
+                if (ObjectList[i] is Group) ((Group)ObjectList[i]).ResetPosition(Position);
+            }
+        }
+
+        public ZeneretySize? RenderRange = null;
+
+        internal int RealWidth
+        {
+            get
+            {
+                if (RenderRange is null)
+                {
+                    if (base.Parent is null) return Window.Width;
+                    return base.Parent.RealWidth;
+                }
+                return RenderRange.Width;
+            }
+        }
+
+        internal int RealHeight
+        {
+            get
+            {
+                if (RenderRange is null)
+                {
+                    if (base.Parent is null) return Window.Height;
+                    return base.Parent.RealHeight;
+                }
+                return RenderRange.Height;
+            }
+        }
     }
 
     /// <summary>
@@ -594,11 +744,11 @@ namespace JyunrcaeaFramework
         /// </summary>
         public Color Color = new();
 
-        internal override int RealWidth => (int)(Size.Width * Scale.X);
-        internal override int RealHeight => (int)(Size.Height * Scale.Y);
+        internal override int RealWidth =>  (int)(Size.Width * Scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
+        internal override int RealHeight => (int)(Size.Height * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
     }
 
-    public class Image : ZeneretyDrawableObject
+    public class Image : ZeneretyExtendObject
     {
         public DrawableTexture Texture = null!;
 
@@ -613,8 +763,8 @@ namespace JyunrcaeaFramework
         /// </summary>
         public ZeneretyScale Scale = new();
 
-        internal override int RealWidth => (int)((AbsoluteSize is null ? Texture.Width : AbsoluteSize.Width) * Scale.X);
-        internal override int RealHeight => (int)((AbsoluteSize is null ? Texture.Height : AbsoluteSize.Height) * Scale.Y);
+        internal override int RealWidth => (int)((AbsoluteSize is null ? Texture.Width : AbsoluteSize.Width) * Scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
+        internal override int RealHeight => (int)((AbsoluteSize is null ? Texture.Height : AbsoluteSize.Height) * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
     }
 
     /// <summary>
@@ -623,6 +773,11 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class ZeneretyList : List<ZeneretyObject>, IDisposable
     {
+        Group Parent;
+        public ZeneretyList(Group group)
+        {
+            Parent = group;
+        }
         /// <summary>
         /// 객체를 추가합니다.
         /// </summary>
@@ -630,8 +785,11 @@ namespace JyunrcaeaFramework
         public new void Add(ZeneretyObject obj)
         {
             base.Add(obj);
+            if (obj.Parent is not null) throw new JyunrcaeaFrameworkException("이미 다른 부모 객체에게 상속된 객체입니다.");
+            obj.Parent = this.Parent;
             if (Framework.running)
             {
+
                 if (obj is Group)
                 {
                     FrameworkFunction.Prepare((Group)obj);
@@ -1158,6 +1316,7 @@ namespace JyunrcaeaFramework
         {
             if (Framework.NewRenderingSolution)
             {
+                Display.Target.ResetPosition(new(Window.Width,Window.Height));
                 Animation.AnimationQueue.Update();
                 updatetime = updatems;
                 return;
@@ -4023,9 +4182,11 @@ namespace JyunrcaeaFramework
                     info.Done();
                     return;
                 }
-                this.AddLast(info);
+                //this.AddLast(info);
+                AddTarget.Enqueue(info);
             }
 
+            Queue<Information.General> AddTarget = new();
             Queue<Information.General> RemoveTarget = new();
 
             public new void Remove(Information.General info)
@@ -4035,6 +4196,8 @@ namespace JyunrcaeaFramework
 
             public void Update()
             {
+                while (AddTarget.Count != 0) base.AddLast(AddTarget.Dequeue());
+
                 if (Framework.MultiCoreProcess)
                 {
                     Parallel.ForEach(AnimationQueue, (a) => { a.Update(); });
@@ -4048,23 +4211,28 @@ namespace JyunrcaeaFramework
 
         internal static LinkedListForAnimation AnimationQueue = new();
 
-        /// <summary>
-        /// 원하는 객체를 원하는 좌표로 부드럽게 이동합니다.
-        /// </summary>
-        /// <param name="Target">객체</param>
-        /// <param name="X">도착할 X좌표</param>
-        /// <param name="Y">도착할 Y좌표</param>
-        /// <param name="StartTime">시작시간</param>
-        /// <param name="EndTime">종료시간</param>
-        /// <param name="WhenFinish">완료 후 실행될 함수</param>
-        /// <param name="Motion">애니메이션 계산 함수</param>
-        /// <returns>애니메이션 정보</returns>
-        public static Information.Movement Move(ZeneretyObject Target,int X,int Y,double StartTime,double EndTime,Action? WhenFinish,FunctionForAnimation? Motion = null)
+        public static void Add(Information.General info)
         {
-            Information.Movement result = new(X, Y, Target, StartTime, EndTime, WhenFinish, Motion);
-            AnimationQueue.Add(result);
-            return result;
+            AnimationQueue.Add(info);
         }
+
+        ///// <summary>
+        ///// 원하는 객체를 원하는 좌표로 부드럽게 이동합니다.
+        ///// </summary>
+        ///// <param name="Target">객체</param>
+        ///// <param name="X">도착할 X좌표</param>
+        ///// <param name="Y">도착할 Y좌표</param>
+        ///// <param name="StartTime">시작시간</param>
+        ///// <param name="EndTime">종료시간</param>
+        ///// <param name="WhenFinish">완료 후 실행될 함수</param>
+        ///// <param name="Motion">애니메이션 계산 함수</param>
+        ///// <returns>애니메이션 정보</returns>
+        //public static Information.Movement Move(ZeneretyObject Target,int X,int Y,double StartTime,double EndTime,Action? WhenFinish,FunctionForAnimation? Motion = null)
+        //{
+        //    Information.Movement result = new(X, Y, Target, StartTime, EndTime, WhenFinish, Motion);
+        //    AnimationQueue.Add(result);
+        //    return result;
+        //}
 
         /// <summary>
         /// 특정한 애니메이션 정보를 담는 클래스가 모여있습니다.
@@ -4076,14 +4244,14 @@ namespace JyunrcaeaFramework
             /// </summary>
             public abstract class General
             {
-                public General(ZeneretyObject zo,double st,double et,Action? fff = null,FunctionForAnimation? ffa = null)
+                public General(ZeneretyObject zo,double? st,double animatime,Action<ZeneretyObject>? fff = null,FunctionForAnimation? ffa = null)
                 {
                     Target = zo;
-                    StartTime = st;
-                    EndTime = et;
-                    AnimationTime = EndTime - StartTime;
+                    AnimationTime = animatime;
                     FunctionForFinish = fff;
                     if (ffa is not null) AnimationCalculator = ffa;
+                    StartTime = st is null ? Framework.RunningTime : (double)st;
+                    EndTime = StartTime + animatime;
                 }
 
                 public ZeneretyObject Target { get; internal set; } = null!;
@@ -4091,7 +4259,7 @@ namespace JyunrcaeaFramework
                 public double EndTime { get; internal set; }
                 public double AnimationTime { get; internal set; }
                 public bool Finished { get; internal set; } = false;
-                public Action? FunctionForFinish { get; internal set; } = null;
+                public Action<ZeneretyObject>? FunctionForFinish { get; internal set; } = null;
                 public FunctionForAnimation AnimationCalculator { get; internal set; } = JyunrcaeaFramework.Animation.Nothing;
 
                 internal double Progress = 0d;
@@ -4116,7 +4284,7 @@ namespace JyunrcaeaFramework
                 public virtual void Done()
                 {
                     this.Finished = true;
-                    if (FunctionForFinish is not null) FunctionForFinish();
+                    if (FunctionForFinish is not null) FunctionForFinish(Target);
                     AnimationQueue.Remove(this);
                 }
                 /// <summary>
@@ -4149,11 +4317,21 @@ namespace JyunrcaeaFramework
             /// </summary>
             public class Movement : General
             {
-                public Movement(int x,int y,ZeneretyObject zo, double st, double et, Action? fff = null, FunctionForAnimation? ffa = null) : base(zo,st,et,fff,ffa) {
-                    BX = zo.X;
-                    BY = zo.Y;
-                    AX = x;
-                    AY = y;
+                /// <summary>
+                /// 특정 대상을 원하는 (절대적) 위치로 부드럽게 움직입니다.
+                /// </summary>
+                /// <param name="Target">대상 (모든 Zenerety 렌더링 지원 객체)</param>
+                /// <param name="X">이동할 X좌표</param>
+                /// <param name="Y">이동할 Y좌표</param>
+                /// <param name="StartTime">시작 시간 (null 일경우 현재 프레임워크 실행시간으로 설정 (즉시 시작))</param>
+                /// <param name="AnimationTime">이동 시간</param>
+                /// <param name="FunctionWhenFinished">완료되었을때 실행할 함수 (null 일경우 아무것도 하지 않음)</param>
+                /// <param name="TimeClaculator">애니메이션 계산기 (null 일경우 기본)</param>
+                public Movement(ZeneretyObject Target,int X,int Y,double? StartTime, double AnimationTime, Action<ZeneretyObject>? FunctionWhenFinished = null, FunctionForAnimation? TimeClaculator = null) : base(Target,StartTime,AnimationTime,FunctionWhenFinished,TimeClaculator) {
+                    BX = Target.X;
+                    BY = Target.Y;
+                    AX = X;
+                    AY = Y;
                     LX = AX - BX;
                     LY = AY - BY;
                 }
@@ -4184,6 +4362,38 @@ namespace JyunrcaeaFramework
 
             }
 
+            /// <summary>
+            /// 회전과 관련된 정보를 담는 클래스
+            /// </summary>
+            public class Rotation : General
+            {
+                public Rotation(ZeneretyExtendObject Target,double Rotate,double? StartTime,double AnimationTime, Action<ZeneretyObject>? FunctionWhenFinished = null, FunctionForAnimation? TimeClaculator = null) : base(Target, StartTime, AnimationTime, FunctionWhenFinished, TimeClaculator)
+                {
+                    BR = Target.Rotation;
+                    RL = Rotate;
+                    AR = BR + RL;
+                }
+
+                double BR, RL, AR;
+
+                internal override void Update()
+                {
+                    if (CheckTime()) return;
+                    ((ZeneretyExtendObject)Target).Rotation = BR + RL * Progress;
+                }
+
+                public override void Done()
+                {
+                    ((ZeneretyExtendObject)Target).Rotation = AR;
+                    base.Done();
+                }
+
+                public override void Undo()
+                {
+                    ((ZeneretyExtendObject)Target).Rotation = BR;
+                    base.Undo();
+                }
+            }
 
 
         }
