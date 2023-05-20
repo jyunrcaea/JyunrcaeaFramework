@@ -94,7 +94,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly System.Version Version = new(0, 6, 1,5);
+        public static readonly System.Version Version = new(0, 6, 1);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
@@ -224,7 +224,7 @@ namespace JyunrcaeaFramework
             {
                 throw new JyunrcaeaFrameworkException("디스플레이 정보를 갖고오는데 실패했습니다.\nDisplay 클래스 내에 있는 일부 함수와 전체화면 전환이 작동하지 못합니다.");
             }
-            SDL.SDL_SetHint(SDL.SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4, "1");
+            //SDL.SDL_SetHint(SDL.SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4, "1");
             SDL.SDL_SetHint(SDL.SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "1");
             SDL.SDL_SetHint(SDL.SDL_HINT_IME_SHOW_UI, "0");
             SDL.SDL_EventState(SDL.SDL_EventType.SDL_DROPTEXT,SDL.SDL_ENABLE);
@@ -1124,7 +1124,22 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static uint ID => SDL.SDL_GetWindowID(Framework.window);
 
-        
+        /// <summary>
+        /// 창을 닫을때 프레임워크를 중지할지에 대한 여부입니다.
+        /// </summary>
+        public static bool FrameworkStopWhenClose = true;
+
+        /// <summary>
+        /// Alt + F4 키로 창을 종료하는걸 막을지에 대한 여부입니다.
+        /// </summary>
+        public static bool BlockAltF4
+        {
+            set
+            {
+                SDL.SDL_SetHint(SDL.SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4, value ? "1" : "0");
+            }
+            get => SDL.SDL_GetHint(SDL.SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4) == "1";
+        }
     }
 
     /// <summary>
@@ -1427,16 +1442,21 @@ namespace JyunrcaeaFramework
         /// </summary>
         public virtual void WindowQuit()
         {
-            if (Framework.MultiCoreProcess)
+
+            if (!Framework.NewRenderingSolution)
             {
-                Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].WindowQuit());
-            }
-            else
-            {
-                for (iwq = 0; iwq < Display.scenes.Count; iwq++)
-                    if (!Display.scenes[iwq].EventRejection) Display.scenes[iwq].WindowQuit();
+                if (Framework.MultiCoreProcess)
+                {
+                    Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].WindowQuit());
+                }
+                else
+                {
+                    for (iwq = 0; iwq < Display.scenes.Count; iwq++)
+                        if (!Display.scenes[iwq].EventRejection) Display.scenes[iwq].WindowQuit();
+                }
             }
 
+            if (Window.FrameworkStopWhenClose) Framework.Stop();
         }
         /// <summary>
         /// 파일이 드래그 드롭될때 호출되는 함수입니다.
@@ -3750,6 +3770,7 @@ namespace JyunrcaeaFramework
     /// </summary>
     public static class Input
     {
+        
 
         /// <summary>
         /// 마우스와 관련된 클래스입니다.
@@ -3764,7 +3785,23 @@ namespace JyunrcaeaFramework
             public static int Y => position.y;
 
             static bool cursorhide = false;
+            
 
+            /// <summary>
+            /// 마우스를 창 밖으로 나오지 못하게 가둘지에 대한 여부입니다.
+            /// </summary>
+            public static bool Grab
+            {
+                set
+                {
+                    SDL.SDL_SetWindowMouseGrab(Framework.window, value ? SDL.SDL_bool.SDL_TRUE: SDL.SDL_bool.SDL_FALSE);
+                }
+                get => SDL.SDL_GetWindowMouseGrab(Framework.window) == SDL.SDL_bool.SDL_TRUE;
+            }
+
+            /// <summary>
+            /// 커서를 숨길지에 대한 여부입니다.
+            /// </summary>
             public static bool HideCursor
             {
                 get => false;
@@ -4173,9 +4210,9 @@ namespace JyunrcaeaFramework
     /// </summary>
     public static class Animation
     {
-        internal class LinkedListForAnimation : LinkedList<Information.General>
+        internal class LinkedListForAnimation : LinkedList<Info.General>
         {
-            public void Add(Information.General info)
+            public void Add(Info.General info)
             {
                 if (info.EndTime <= Framework.RunningTime)
                 {
@@ -4186,10 +4223,10 @@ namespace JyunrcaeaFramework
                 AddTarget.Enqueue(info);
             }
 
-            Queue<Information.General> AddTarget = new();
-            Queue<Information.General> RemoveTarget = new();
+            Queue<Info.General> AddTarget = new();
+            Queue<Info.General> RemoveTarget = new();
 
-            public new void Remove(Information.General info)
+            public new void Remove(Info.General info)
             {
                 RemoveTarget.Enqueue(info);
             }
@@ -4211,7 +4248,7 @@ namespace JyunrcaeaFramework
 
         internal static LinkedListForAnimation AnimationQueue = new();
 
-        public static void Add(Information.General info)
+        public static void Add(Info.General info)
         {
             AnimationQueue.Add(info);
         }
@@ -4237,18 +4274,19 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 특정한 애니메이션 정보를 담는 클래스가 모여있습니다.
         /// </summary>
-        public static class Information
+        public static class Info
         {
             /// <summary>
             /// 기본적인 애니메이션 정보를 담는 클래스입니다.
             /// </summary>
             public abstract class General
             {
-                public General(ZeneretyObject zo,double? st,double animatime,Action<ZeneretyObject>? fff = null,FunctionForAnimation? ffa = null)
+                public General(ZeneretyObject zo,double? st,double animatime,uint RepeatCount = 1,Action<ZeneretyObject>? fff = null,FunctionForAnimation? ffa = null)
                 {
                     Target = zo;
                     AnimationTime = animatime;
                     FunctionForFinish = fff;
+                    this.RepeatCount = RepeatCount;
                     if (ffa is not null) AnimationCalculator = ffa;
                     StartTime = st is null ? Framework.RunningTime : (double)st;
                     EndTime = StartTime + animatime;
@@ -4261,6 +4299,7 @@ namespace JyunrcaeaFramework
                 public bool Finished { get; internal set; } = false;
                 public Action<ZeneretyObject>? FunctionForFinish { get; internal set; } = null;
                 public FunctionForAnimation AnimationCalculator { get; internal set; } = JyunrcaeaFramework.Animation.Nothing;
+                public uint RepeatCount = 0;
 
                 internal double Progress = 0d;
 
@@ -4270,6 +4309,14 @@ namespace JyunrcaeaFramework
                     if (Progress <= StartTime) return true;
                     if (Progress >= EndTime)
                     {
+                        if (RepeatCount != 1)
+                        {
+                            this.StartTime = EndTime;
+                            this.EndTime = StartTime + AnimationTime;
+                            if (RepeatCount != 0) RepeatCount--;
+                            Progress = AnimationCalculator((Progress - StartTime) / AnimationTime);
+                            return false;
+                        }
                         Done();
                         return true;
                     }
@@ -4327,7 +4374,8 @@ namespace JyunrcaeaFramework
                 /// <param name="AnimationTime">이동 시간</param>
                 /// <param name="FunctionWhenFinished">완료되었을때 실행할 함수 (null 일경우 아무것도 하지 않음)</param>
                 /// <param name="TimeClaculator">애니메이션 계산기 (null 일경우 기본)</param>
-                public Movement(ZeneretyObject Target,int X,int Y,double? StartTime, double AnimationTime, Action<ZeneretyObject>? FunctionWhenFinished = null, FunctionForAnimation? TimeClaculator = null) : base(Target,StartTime,AnimationTime,FunctionWhenFinished,TimeClaculator) {
+                /// <param name="RepeatCount">반복 횟수, 0일경우 무한</param>
+                public Movement(ZeneretyObject Target,int X,int Y,double? StartTime, double AnimationTime,uint RepeatCount = 1,Action<ZeneretyObject>? FunctionWhenFinished = null, FunctionForAnimation? TimeClaculator = null) : base(Target,StartTime,AnimationTime,RepeatCount,FunctionWhenFinished,TimeClaculator) {
                     BX = Target.X;
                     BY = Target.Y;
                     AX = X;
@@ -4367,7 +4415,7 @@ namespace JyunrcaeaFramework
             /// </summary>
             public class Rotation : General
             {
-                public Rotation(ZeneretyExtendObject Target,double Rotate,double? StartTime,double AnimationTime, Action<ZeneretyObject>? FunctionWhenFinished = null, FunctionForAnimation? TimeClaculator = null) : base(Target, StartTime, AnimationTime, FunctionWhenFinished, TimeClaculator)
+                public Rotation(ZeneretyExtendObject Target,double Rotate,double? StartTime,double AnimationTime, uint RepeatCount = 1, Action<ZeneretyObject>? FunctionWhenFinished = null, FunctionForAnimation? TimeClaculator = null) : base(Target, StartTime, AnimationTime,RepeatCount, FunctionWhenFinished, TimeClaculator)
                 {
                     BR = Target.Rotation;
                     RL = Rotate;

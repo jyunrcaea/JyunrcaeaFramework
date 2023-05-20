@@ -199,7 +199,6 @@ namespace Jyunrcaea
             public override void Resize()
             {
                 Y = (int)(100 * Window.AppropriateSize);
-                //this.Size = (int)(48 * Window.AppropriateSize);
                 base.Resize();
             }
         }
