@@ -5568,7 +5568,7 @@ namespace SDL2
 			}
 			else
 			{
-				filter = null;
+                filter = null;
 			}
 			return retval;
 		}

@@ -7,13 +7,25 @@
   "targets": {
     ".NETCoreApp,Version=v6.0": {
       "Jyunrcaea/1.0.0": {
+        "dependencies": {
+          "JyunrcaeaFramework": "0.6.1",
+          "Jyunrcaea! Framework": "0.6.1.0"
+        },
         "runtime": {
           "Jyunrcaea.dll": {}
         }
       },
-      "Jyunrcaea! Framework/1.0.0": {
+      "JyunrcaeaFramework/0.6.1": {
         "runtime": {
           "Jyunrcaea! Framework.dll": {}
+        }
+      },
+      "Jyunrcaea! Framework/0.6.1.0": {
+        "runtime": {
+          "Jyunrcaea! Framework.dll": {
+            "assemblyVersion": "0.6.1.0",
+            "fileVersion": "0.6.1.0"
+          }
         }
       }
     }
@@ -24,8 +36,13 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Jyunrcaea! Framework/1.0.0": {
+    "JyunrcaeaFramework/0.6.1": {
       "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Jyunrcaea! Framework/0.6.1.0": {
+      "type": "reference",
       "serviceable": false,
       "sha512": ""
     }

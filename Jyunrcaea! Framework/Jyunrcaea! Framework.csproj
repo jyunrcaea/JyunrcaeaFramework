@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>Jyunrcaea__Framework</RootNamespace>
+    <RootNamespace>JyunrcaeaFramework</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -13,16 +13,38 @@
     <Description>This is C# framework for make game!</Description>
     <PackageProjectUrl>http://jyunrcaeaframework.kro.kr</PackageProjectUrl>
     <RepositoryUrl>https://github.com/jyunrcaea/JyunrcaeaFramework</RepositoryUrl>
+    <PackageId>JyunrcaeaFramework</PackageId>
+    <PackageReadmeFile>README_EN.md</PackageReadmeFile>
+    <PackageIcon>Icon.png</PackageIcon>
+    <Copyright>Copyright 2023. 614project. All rights reserved.</Copyright>
+    <PackAsTool>True</PackAsTool>
+    <Version>0.6.1</Version>
+    <SignAssembly>False</SignAssembly>
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
+    <ApplicationIcon>Jyunrcaea_FrameworkIcon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <Optimize>True</Optimize>
     <WarningLevel>9999</WarningLevel>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <WarningLevel>9999</WarningLevel>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Jyunrcaea_FrameworkIcon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README_EN.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <None Update="dll\SDL2_gfx.dll">
@@ -54,6 +76,10 @@
     </None>
     <None Update="dll\SDL2_mixer.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="src\Icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
     </None>
     <None Update="test.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

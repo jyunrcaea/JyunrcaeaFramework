@@ -5,10 +5,10 @@
   },
   "projects": {
     "C:\\Users\\박대호\\source\\repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj": {
-      "version": "1.0.0",
+      "version": "0.6.1",
       "restore": {
         "projectUniqueName": "C:\\Users\\박대호\\source\\repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj",
-        "projectName": "Jyunrcaea! Framework",
+        "projectName": "JyunrcaeaFramework",
         "projectPath": "C:\\Users\\박대호\\source\\repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj",
         "packagesPath": "C:\\Users\\박대호\\.nuget\\packages\\",
         "outputPath": "C:\\Users\\박대호\\source\\repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea! Framework\\obj\\",

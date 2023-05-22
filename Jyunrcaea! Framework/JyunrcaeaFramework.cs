@@ -1,11 +1,7 @@
 ﻿#define WINDOWS
-using Microsoft.VisualBasic;
 using SDL2;
+using System.Data;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.SymbolStore;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
 
 namespace JyunrcaeaFramework
 {
@@ -69,15 +65,6 @@ namespace JyunrcaeaFramework
         /// 가능한 CPU 사용량을 줄입니다. 안정적인 초당 프레임을 내는데에 방해가 될수 있습니다.
         /// </summary>
         public static bool SavingPerformance = true;
-        /// <summary>
-        /// CPU 사용량의 줄이는 수준을 조정합니다.
-        /// 높을수록 사용량을 더 많이 줄입니다. 그대신 프레임이 더욱 불안정해질수 있습니다.
-        /// </summary>
-        [Obsolete("사용할 가치가 없음")]
-        public static byte SavingPerformanceLevel { get => (byte)((1600 - savelevel) / 2); set {
-                savelevel = 1600 - value * 2;
-            } 
-        }
 
         internal static int savelevel = 1600;
         /// <summary>
@@ -91,6 +78,29 @@ namespace JyunrcaeaFramework
         /// 장면 갯수가 적은 경우 사용하지 않는걸 권장합니다.
         /// </summary>
         public static bool MultiCoreProcess = false;
+
+        /// <summary>
+        /// 별개의 스레드에서 독립적으로 렌더링을 진행합니다. (실험기능)
+        /// 렌더링 속도가 향상되진 않습니다. 대신 업데이트 시간에 영향받지 않고 계속 렌더링합니다.
+        /// </summary>
+        [Obsolete("실험용")]
+        public static bool AsyncRendering = false;
+
+        static void AsyncRenderingFunction()
+        {
+            double st,et;
+            while (Framework.running && AsyncRendering)
+            {
+                st = Framework.RunningTime;
+                lock (Framework.Function)
+                {
+                    Rendering(Display.Target);
+                }
+                et = Framework.RunningTime;
+                Thread.Sleep((int)(Display.framelatelimit * 0.001 - (et - st)));
+            }
+        }
+
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
@@ -119,7 +129,7 @@ namespace JyunrcaeaFramework
         /// <param name="option">초기 창 생성옵션</param>
         /// <param name="render_option">렌더러 옵션</param>
         /// <exception cref="JyunrcaeaFrameworkException">초기화 실패시</exception>
-        public static void Init(string title, uint width, uint height, int? x = null, int? y = null, WindowOption option = default, RenderOption render_option = default, AudioOption audio_option = default)
+        public static void Init(string title, uint width, uint height, int? x = null, int? y = null, WindowOption? option = null, RenderOption render_option = default, AudioOption audio_option = default)
         {
             #region 값 검사
             if (audio_option.ch > 8) throw new JyunrcaeaFrameworkException("지원하지 않는 스테레오 ( AudioOption.Channls > 8)");
@@ -129,7 +139,8 @@ namespace JyunrcaeaFramework
             {
                 throw new JyunrcaeaFrameworkException($"SDL2 라이브러리 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             }
-            window = SDL.SDL_CreateWindow(title, x ?? SDL.SDL_WINDOWPOS_CENTERED, y ?? SDL.SDL_WINDOWPOS_CENTERED, (int)width, (int)height, option.option);
+            SDL.SDL_WindowFlags winflg = option is null ? SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN : ((WindowOption)option).option;
+            window = SDL.SDL_CreateWindow(title, x ?? SDL.SDL_WINDOWPOS_CENTERED, y ?? SDL.SDL_WINDOWPOS_CENTERED, (int)width, (int)height, winflg);
             if (window == IntPtr.Zero)
             {
                 throw new JyunrcaeaFrameworkException($"창 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
@@ -214,10 +225,10 @@ namespace JyunrcaeaFramework
 #endif
 
             SDL_mixer.Mix_HookMusicFinished(Music.Finished);
-            if ((option.option & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) Window.fullscreenoption = true;
-            if ((option.option & SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) == SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) Window.windowborderless = true;
+            if ((winflg & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) Window.fullscreenoption = true;
+            if ((winflg & SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) == SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) Window.windowborderless = true;
             TextureSharing.resourcelist = new();
-            Window.size = new() { w = Window.default_size.x = (int)width, h = Window.default_size.y = (int)height };
+            Window.size = new() { w = Window.default_size.x = Window.beforewidth = (int)width, h = Window.default_size.y = Window.beforeheight = (int)height };
             Window.wh = width * 0.5f;
             Window.hh = height * 0.5f;
             if (SDL.SDL_GetDisplayMode(0, 0, out Display.dm) < 0)
@@ -264,9 +275,14 @@ namespace JyunrcaeaFramework
             FrameworkFunction.endtime = Display.framelatelimit;
             frametimer.Start();
             if (ShowWindow) SDL.SDL_ShowWindow(Framework.window);
+            Thread t1;
+            //if (AsyncRendering)
+            //{
+            //    t1 = new(render)
+            //}
             while (running)
             {
-                Framework.Function.Draw();
+                if(!AsyncRendering) Framework.Function.Draw();
                 #region 이벤트
                 if (EventMultiThreading)
                 {
@@ -310,6 +326,22 @@ namespace JyunrcaeaFramework
                                     break;
                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESTORED:
                                     Framework.Function.WindowRestore();
+                                    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST:
+                                        Framework.Function.KeyFocusOut();
+                                    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
+                                        Framework.Function.KeyFocusIn();
+                                    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_LEAVE:
+                                        Framework.Function.MouseFocusOut();
+                                    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_ENTER:
+                                        Framework.Function.MouseFocusIn();
+                                    break;
+                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_DISPLAY_CHANGED:
+                                        if (SDL.SDL_GetDisplayMode(sdle.display.data1, 0, out Display.dm) != 0) throw new JyunrcaeaFrameworkException("창이 이동된 모니터의 정보를 얻는데 실패했습니다.");
+                                        Framework.Function.DisplayChange();
                                     break;
 #if !WINDOWS
                                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
@@ -523,6 +555,37 @@ namespace JyunrcaeaFramework
             var ret = DrawPosStack.Pop();
             DrawPos.x = ret.Width;
             DrawPos.y = ret.Height;
+        }
+
+
+    }
+
+    public delegate void ZeneretyEvent();
+
+    public delegate void ZeneretyKeyboardEvent(Input.Keycode e);
+
+    public delegate void ZeneretyClickEvent(Input.Mouse.Key e);
+
+
+    public class EventList
+    {
+        internal List<Events.Resized> Resize = new();
+        internal List<Events.Update> Update = new();
+        internal List<Events.KeyDown> KeyDown = new();
+        internal List<Events.KeyUp> keyUp = new();
+
+        public void Add(ZeneretyObject obj)
+        {
+            Ad<Events.Resized>(Resize, obj);
+            Ad<Events.Update>(Update, obj);
+            Ad<Events.KeyDown>(KeyDown, obj);
+            Ad<Events.KeyUp>(keyUp, obj);
+        }
+
+        public void Ad<T>(List<T> li,object obj)
+        {
+            if (obj is not T) return;
+            li.Add((T)obj);
         }
     }
 
@@ -988,6 +1051,33 @@ namespace JyunrcaeaFramework
             }
         }
 
+        internal static int beforewidth=0, beforeheight=0;
+
+        /// <summary>
+        /// 화면을 창으로 가득 채우는 기능입니다. 가짜 전체화면으로 불리기도 합니다. (창 테두리를 없애고 창 크기를 모니터 크기에 맞춥니다.)
+        /// (안정적인 기능은 아닙니다.)
+        /// </summary>
+        public static bool DesktopFullscreen
+        {
+            set
+            {
+                if (value)
+                {
+                    Borderless = true;
+                    //SDL.SDL_SetWindowSize(Framework.window, Display.MonitorWidth, Display.MonitorHeight);
+                    beforewidth = Window.Width;
+                    beforeheight = Window.Height;
+                    Window.Resize(Display.MonitorWidth, Display.MonitorHeight);
+                    Window.Move();
+                } else
+                {
+                    Borderless = false;
+                    Window.Resize(beforewidth, beforeheight);
+                    Window.Move();
+                }
+            }
+        }
+
         internal static bool windowborderless = false;
         /// <summary>
         /// 창의 테두리 제거여부
@@ -995,7 +1085,7 @@ namespace JyunrcaeaFramework
         public static bool Borderless
         {
             get => windowborderless;
-            set => SDL.SDL_SetWindowBordered(Framework.window, (windowborderless = value) ? SDL.SDL_bool.SDL_TRUE : SDL.SDL_bool.SDL_FALSE);
+            set => SDL.SDL_SetWindowBordered(Framework.window, (windowborderless = value) ? SDL.SDL_bool.SDL_FALSE : SDL.SDL_bool.SDL_TRUE);
         }
 
         /// <summary>
@@ -1158,7 +1248,11 @@ namespace JyunrcaeaFramework
         Events.KeyUp,
         Events.WindowMaximized,
         Events.WindowMinimized,
-        Events.WindowRestore
+        Events.WindowRestore,
+        Events.KeyFocusIn,
+        Events.KeyFocusOut,
+        Events.MouseFocusIn,
+        Events.MouseFocusOut
     {
 
     }
@@ -1539,6 +1633,71 @@ namespace JyunrcaeaFramework
             }
         }
 
+        int kfi, kfo;
+
+        public virtual void KeyFocusIn()
+        {
+            if (Framework.MultiCoreProcess)
+            {
+                Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].KeyFocusIn());
+            }
+            else
+            {
+                for (kfi = 0; kfi < Display.scenes.Count; kfi++)
+                    if (!Display.scenes[kfi].EventRejection) Display.scenes[kfi].KeyFocusIn();
+            }
+        }
+
+        public virtual void KeyFocusOut()
+        {
+            if (Framework.MultiCoreProcess)
+            {
+                Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].KeyFocusOut());
+            }
+            else
+            {
+                for (kfo = 0; kfo < Display.scenes.Count; kfo++)
+                    if (!Display.scenes[kfo].EventRejection) Display.scenes[kfo].KeyFocusOut();
+            }
+        }
+
+        int mfi, mfo;
+
+        public virtual void MouseFocusIn()
+        {
+            if (Framework.MultiCoreProcess)
+            {
+                Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].MouseFocusIn());
+            }
+            else
+            {
+                for (mfi = 0; mfi < Display.scenes.Count; mfi++)
+                    if (!Display.scenes[mfi].EventRejection) Display.scenes[mfi].MouseFocusIn();
+            }
+        }
+
+        public virtual void MouseFocusOut()
+        {
+            if (Framework.MultiCoreProcess)
+            {
+                Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].MouseFocusOut());
+            }
+            else
+            {
+                for (mfo = 0; mfo < Display.scenes.Count; mfo++)
+                    if (!Display.scenes[mfo].EventRejection) Display.scenes[mfo].MouseFocusOut();
+            }
+        }
+
+        public virtual void DisplayChange()
+        {
+            if (Window.Fullscreen)
+            {
+                Window.Resize(Display.MonitorWidth, Display.MonitorHeight);
+            }
+            if (Display.FrameLateLimit == 0) Display.FrameLateLimit = 0;
+        }
+
 #if DEBUG
         internal override void ODD()
         {
@@ -1555,12 +1714,13 @@ namespace JyunrcaeaFramework
     /// </summary>
     public struct WindowOption
     {
-        internal SDL.SDL_WindowFlags option = SDL.SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
+        internal SDL.SDL_WindowFlags option;
 
-        public WindowOption() { option = SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN; }
+        //public WindowOption() { option = SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN; }
 
         public WindowOption(bool resize = true, bool borderless = false, bool fullscreen = false, bool hide = true)
         {
+            option = SDL.SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
             if (resize) option |= SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
             if (borderless) option |= SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
             if (fullscreen) option |= SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -1814,6 +1974,14 @@ namespace JyunrcaeaFramework
         public abstract void WindowMinimized();
 
         public abstract void WindowRestore();
+
+        public abstract void KeyFocusIn();
+
+        public abstract void KeyFocusOut();
+
+        public abstract void MouseFocusIn();
+
+        public abstract void MouseFocusOut();
     }
 
     public interface DefaultObjectPositionInterface
@@ -1952,65 +2120,137 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class Events
     {
-        public interface DropFile {
+        /// <summary>
+        /// 마우스 포커스를 잃음
+        /// </summary>
+        public interface MouseFocusOut
+        {
+            public void MouseFocusOut();
+        }
+
+        /// <summary>
+        /// 마우스 포커스가 잡힘
+        /// </summary>
+        public interface MouseFocusIn
+        {
+            public void MouseFocusIn();
+        }
+
+        /// <summary>
+        /// 키보드 포커스를 잃음
+        /// </summary>
+        public interface KeyFocusOut
+        {
+            public void KeyFocusOut();
+        }
+
+        /// <summary>
+        /// 키보드 포커스가 잡힘
+        /// </summary>
+        public interface KeyFocusIn
+        {
+            public void KeyFocusIn();
+        }
+
+        /// <summary>
+        /// 창에 파일을 끌어서 놓음
+        /// </summary>
+        public interface DropFile
+        {
             public void DropFile(string filename);
         }
 
+        /// <summary>
+        /// 창 크기가 조정됨
+        /// </summary>
         public interface Resized
         {
             public void Resized();
         }
 
+        /// <summary>
+        /// 업데이트 (렌더링과 같은 주기로 반복됨)
+        /// </summary>
         public interface Update
         {
             public void Update(float millisecond);
         }
 
+        /// <summary>
+        /// 창이 이동됨
+        /// </summary>
         public interface WindowMove
         {
             public void WindowMove();
         }
 
+        /// <summary>
+        /// 키보드에서 키를 누름
+        /// </summary>
         public interface KeyDown
         {
             public void KeyDown(Input.Keycode key);
         }
 
+        /// <summary>
+        /// 마우스 포인터가 움직임
+        /// </summary>
         public interface MouseMove
         {
             public void MouseMove();
         }
 
+        /// <summary>
+        /// 창에서 나가기를 누름
+        /// </summary>
         public interface WindowQuit
         {
             public void WindowQuit();
         }
 
+        /// <summary>
+        /// 마우스의 버튼이 눌림
+        /// </summary>
         public interface MouseKeyDown
         {
             public void MouseKeyDown(Input.Mouse.Key key);
         }
 
+        /// <summary>
+        /// 마우스의 버튼이 완화됨
+        /// </summary>
         public interface MouseKeyUp
         {
             public void MouseKeyUp(Input.Mouse.Key key);
         }
 
+        /// <summary>
+        /// 키보드에서 키가 완화됨
+        /// </summary>
         public interface KeyUp
         {
             public void KeyUp(Input.Keycode key);
         }
 
+        /// <summary>
+        /// 창이 최대화됨
+        /// </summary>
         public interface WindowMaximized
         {
             public void WindowMaximized();
         }
 
+        /// <summary>
+        /// 창이 최소화됨
+        /// </summary>
         public interface WindowMinimized
         {
             public void WindowMinimized();
         }
 
+        /// <summary>
+        /// 창이 복구됨
+        /// </summary>
         public interface WindowRestore
         {
             public void WindowRestore();
@@ -2023,6 +2263,11 @@ namespace JyunrcaeaFramework
     }
 #endif
     }
+
+    //public class ZeneretyScene : Scene
+    //{
+    //    Group Target = null!;
+    //}
 
 
     /// <summary>
@@ -2079,6 +2324,10 @@ namespace JyunrcaeaFramework
         List<Events.WindowRestore> windowRestores = new();
         List<Events.WindowMaximized> windowMaximizeds = new();
         List<Events.WindowMinimized> windowMinimizeds = new();
+        List<Events.KeyFocusIn> keyfocusin = new();
+        List<Events.KeyFocusOut> keyfocusout = new();
+        List<Events.MouseFocusIn> mousefocusin = new();
+        List<Events.MouseFocusOut> mousefocusout = new();
 
         internal void AddAtEventList(DrawableObject NewSprite)
         {
@@ -2095,6 +2344,10 @@ namespace JyunrcaeaFramework
             if (NewSprite is Events.WindowMaximized) windowMaximizeds.Add((Events.WindowMaximized)NewSprite);
             if (NewSprite is Events.WindowMinimized) windowMinimizeds.Add((Events.WindowMinimized)NewSprite);
             if (NewSprite is Events.WindowRestore) windowRestores.Add((Events.WindowRestore)NewSprite);
+            if (NewSprite is Events.KeyFocusIn) keyfocusin.Add((Events.KeyFocusIn)NewSprite);
+            if (NewSprite is Events.KeyFocusOut) keyfocusout.Add((Events.KeyFocusOut)NewSprite);
+            if (NewSprite is Events.MouseFocusIn) mousefocusin.Add((Events.MouseFocusIn)NewSprite);
+            if (NewSprite is Events.MouseFocusOut) mousefocusout.Add((Events.MouseFocusOut)NewSprite);
         }
 
         internal void RemoveAtEventList(DrawableObject RemovedObject)
@@ -2112,6 +2365,10 @@ namespace JyunrcaeaFramework
             if (RemovedObject is Events.WindowMaximized) windowMaximizeds.Remove((Events.WindowMaximized)RemovedObject);
             if (RemovedObject is Events.WindowMinimized) windowMinimizeds.Remove((Events.WindowMinimized)RemovedObject);
             if (RemovedObject is Events.WindowRestore) windowRestores.Remove((Events.WindowRestore)RemovedObject);
+            if (RemovedObject is Events.KeyFocusIn) keyfocusin.Remove((Events.KeyFocusIn)RemovedObject);
+            if (RemovedObject is Events.KeyFocusOut) keyfocusout.Remove((Events.KeyFocusOut)RemovedObject);
+            if (RemovedObject is Events.MouseFocusIn) mousefocusin.Remove((Events.MouseFocusIn)RemovedObject);
+            if (RemovedObject is Events.MouseFocusOut) mousefocusout.Remove((Events.MouseFocusOut)RemovedObject);
         } 
 
         /// <summary>
@@ -2124,19 +2381,7 @@ namespace JyunrcaeaFramework
         {
             if (NewSprite.InheritedObject != null) throw new JyunrcaeaFrameworkException("이 객체는 이미 다른 장면에 추가되었습니다.");
             NewSprite.inheritobj = this;
-            if (NewSprite is Events.DropFile) drops.Add((Events.DropFile)NewSprite);
-            if (NewSprite is Events.Resized) resizes.Add((Events.Resized)NewSprite);
-            if (NewSprite is Events.Update) updates.Add((Events.Update)NewSprite);
-            if (NewSprite is Events.WindowMove) windowMovedInterfaces.Add((Events.WindowMove)NewSprite);
-            if (NewSprite is Events.KeyDown) keyDownEvents.Add((Events.KeyDown)NewSprite);
-            if (NewSprite is Events.MouseMove) mouseMoves.Add((Events.MouseMove)NewSprite);
-            if (NewSprite is Events.WindowQuit) windowQuits.Add((Events.WindowQuit)NewSprite);
-            if (NewSprite is Events.KeyUp) keyUpEvents.Add((Events.KeyUp)NewSprite);
-            if (NewSprite is Events.MouseKeyDown) mouseButtonDownEvents.Add((Events.MouseKeyDown)NewSprite);
-            if (NewSprite is Events.MouseKeyUp) mouseButtonUpEvents.Add((Events.MouseKeyUp)NewSprite);
-            if (NewSprite is Events.WindowMaximized) windowMaximizeds.Add((Events.WindowMaximized)NewSprite);
-            if (NewSprite is Events.WindowMinimized) windowMinimizeds.Add((Events.WindowMinimized)NewSprite);
-            if (NewSprite is Events.WindowRestore) windowRestores.Add((Events.WindowRestore)NewSprite);
+            AddAtEventList(NewSprite);
             if (Index < 0)
             {
                 if (Index == -1) {
@@ -2167,19 +2412,7 @@ namespace JyunrcaeaFramework
         {
             if (!sprites.Remove(RemovedObject)) return false;
             RemovedObject.inheritobj = null;
-            if (RemovedObject is Events.DropFile) drops.Remove((Events.DropFile)RemovedObject);
-            if (RemovedObject is Events.Resized) resizes.Remove((Events.Resized)RemovedObject);
-            if (RemovedObject is Events.Update) updates.Remove((Events.Update)RemovedObject);
-            if (RemovedObject is Events.WindowMove) windowMovedInterfaces.Remove((Events.WindowMove)RemovedObject);
-            if (RemovedObject is Events.KeyDown) keyDownEvents.Remove((Events.KeyDown)RemovedObject);
-            if (RemovedObject is Events.MouseMove) mouseMoves.Remove((Events.MouseMove)RemovedObject);
-            if (RemovedObject is Events.WindowQuit) windowQuits.Remove((Events.WindowQuit)RemovedObject);
-            if (RemovedObject is Events.KeyUp) keyUpEvents.Remove((Events.KeyUp)RemovedObject);
-            if (RemovedObject is Events.MouseKeyDown) mouseButtonDownEvents.Remove((Events.MouseKeyDown)RemovedObject);
-            if (RemovedObject is Events.MouseKeyUp) mouseButtonUpEvents.Remove((Events.MouseKeyUp)RemovedObject);
-            if (RemovedObject is Events.WindowMaximized) windowMaximizeds.Remove((Events.WindowMaximized)RemovedObject);
-            if (RemovedObject is Events.WindowMinimized) windowMinimizeds.Remove((Events.WindowMinimized)RemovedObject);
-            if (RemovedObject is Events.WindowRestore) windowRestores.Remove((Events.WindowRestore)RemovedObject);
+            RemoveAtEventList(RemovedObject);
             RemovedObject.Stop();
             return true;
         }
@@ -2356,6 +2589,30 @@ namespace JyunrcaeaFramework
             for (int i = 0; i < mouseButtonUpEvents.Count; i++)
                 mouseButtonUpEvents[i].MouseKeyUp(e);
         }
+
+        public override void KeyFocusIn()
+        {
+            for (int i = 0; i < keyfocusin.Count; i++)
+                keyfocusin[i].KeyFocusIn();
+        }
+
+        public override void KeyFocusOut()
+        {
+            for (int i = 0; i < keyfocusout.Count; i++)
+                keyfocusout[i].KeyFocusOut();
+        }
+
+        public override void MouseFocusIn()
+        {
+            for (int i = 0; i < mousefocusin.Count; i++)
+                mousefocusin[i].MouseFocusIn();
+        }
+
+        public override void MouseFocusOut()
+        {
+            for (int i = 0; i < mousefocusout.Count; i++)
+                mousefocusout[i].MouseFocusOut();
+        }
     }
 
     /// <summary>
@@ -2512,42 +2769,34 @@ namespace JyunrcaeaFramework
 
         public override void DropFile(string filename)
         {
-
         }
 
         public override void KeyDown(Input.Keycode e)
         {
-
         }
 
         public override void KeyUp(Input.Keycode e)
         {
-
         }
 
         public override void MouseKeyDown(Input.Mouse.Key e)
         {
-
         }
 
         public override void MouseKeyUp(Input.Mouse.Key e)
         {
-
         }
 
         public override void MouseMove()
         {
-
         }
 
         public override void Resize()
         {
-
         }
 
         public override void Resized()
         {
-
         }
 
         public override void Start()
@@ -2570,17 +2819,14 @@ namespace JyunrcaeaFramework
 
         public override void Update(float millisecond)
         {
-
         }
 
         public override void WindowMove()
         {
-
         }
 
         public override void WindowQuit()
         {
-
         }
 
         public override void WindowRestore()
@@ -2592,6 +2838,22 @@ namespace JyunrcaeaFramework
         }
 
         public override void WindowMaximized()
+        {
+        }
+
+        public override void KeyFocusIn()
+        {
+        }
+
+        public override void KeyFocusOut()
+        {
+        }
+
+        public override void MouseFocusIn()
+        {
+        }
+
+        public override void MouseFocusOut()
         {
         }
 

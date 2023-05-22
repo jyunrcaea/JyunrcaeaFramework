@@ -140,7 +140,7 @@ namespace Jyunrcaea
                     Framework.SavingPerformance = !Framework.SavingPerformance;
                     break;
                 case Input.Keycode.F9:
-                    Framework.SavingPerformanceLevel = 255;
+                    //Framework.SavingPerformanceLevel = 255;
                     break;
                 case Input.Keycode.F10:
                     Window.Raise();

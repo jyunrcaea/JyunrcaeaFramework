@@ -2,20 +2,20 @@
   "version": 3,
   "targets": {
     "net6.0": {
-      "Jyunrcaea! Framework/1.0.0": {
+      "JyunrcaeaFramework/0.6.1": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v6.0",
         "compile": {
-          "bin/placeholder/Jyunrcaea! Framework.dll": {}
+          "bin/placeholder/JyunrcaeaFramework.dll": {}
         },
         "runtime": {
-          "bin/placeholder/Jyunrcaea! Framework.dll": {}
+          "bin/placeholder/JyunrcaeaFramework.dll": {}
         }
       }
     }
   },
   "libraries": {
-    "Jyunrcaea! Framework/1.0.0": {
+    "JyunrcaeaFramework/0.6.1": {
       "type": "project",
       "path": "../Jyunrcaea! Framework/Jyunrcaea! Framework.csproj",
       "msbuildProject": "../Jyunrcaea! Framework/Jyunrcaea! Framework.csproj"
@@ -23,7 +23,7 @@
   },
   "projectFileDependencyGroups": {
     "net6.0": [
-      "Jyunrcaea! Framework >= 1.0.0"
+      "JyunrcaeaFramework >= 0.6.1"
     ]
   },
   "packageFolders": {

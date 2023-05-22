@@ -31,7 +31,5 @@ Jyunrcaea! Framework support Windows OS 7 or higher<br>
 Never, I'm not about to support this.
 ## Linux
 I don't know yet. But I will try support it.<br>
-(Maybe, I think can run if .DLL file of SDL2 Library is replaced .SO file)
 ## Android
-Never... .NET Runtime can't running on android.<br>
-also Latest Mono not support C# 10.0
+Never. I can't.

@@ -408,6 +408,7 @@ namespace Jyunrcaea
             }
         }
 
+        
         public class MusicBar : GroupObjectForAnimation, Events.MouseMove
         {
             RectangleForAnimation background = new() { OriginX = HorizontalPositionType.Right, DrawX = HorizontalPositionType.Left };
