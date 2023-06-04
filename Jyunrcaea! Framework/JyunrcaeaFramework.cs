@@ -1,7 +1,6 @@
 ﻿#define WINDOWS
 using SDL2;
-using System.Data;
-using System.Diagnostics;
+using System.ComponentModel;
 
 namespace JyunrcaeaFramework
 {
@@ -76,29 +75,46 @@ namespace JyunrcaeaFramework
         /// 이벤트(Update, Quit 등)를 멀티 코어(또는 스레드)로 처리할지에 대한 여부입니다.
         /// true 로 하게 될경우 모든 장면속 이벤트 함수가 동시에 실행됩니다!
         /// 장면 갯수가 적은 경우 사용하지 않는걸 권장합니다.
+        /// (Zenerety 렌더링에는 적용되지 않습니다.)
         /// </summary>
         public static bool MultiCoreProcess = false;
 
         /// <summary>
-        /// 별개의 스레드에서 독립적으로 렌더링을 진행합니다. (실험기능)
-        /// 렌더링 속도가 향상되진 않습니다. 대신 업데이트 시간에 영향받지 않고 계속 렌더링합니다.
+        /// 별개의 스레드에서 독립적으로 업데이트와 렌더링을 진행합니다. (Zenerety 렌더링 전용)
+        /// 단일스레드 성능이 부족할때 권장되며, 프레임이 불안정할수 있습니다.
         /// </summary>
-        [Obsolete("실험용")]
-        public static bool AsyncRendering = false;
+        public static bool AsyncRendering { get; internal set; } = false;
 
-        static void AsyncRenderingFunction()
+        internal static bool RequestRenderPresent = false;
+
+        //internal static void AcceptRenderPresent()
+        //{
+        //    RequestRenderPresent = false;
+        //    SDL.SDL_RenderPresent(renderer);
+        //}
+
+        static async void AsyncRenderingFunction()
         {
-            double st,et;
-            while (Framework.running && AsyncRendering)
+            long starttime,endtime = 0;
+            await Task.Run(() =>
             {
-                st = Framework.RunningTime;
-                lock (Framework.Function)
+                while (Framework.Running && AsyncRendering)
                 {
+                    endtime += Display.framelatelimit;
+                    //프로그램이 몇초 이상 일시정지되서 시간을 놓칠경우
+                    if (endtime <= Framework.frametimer.ElapsedTicks) endtime = Framework.frametimer.ElapsedTicks + Display.framelatelimit;
+                    // RenderPresent를 포기한것으로 간주. 지우고 새 프레임 생성
+                    if (RequestRenderPresent) RequestRenderPresent = false;
+                    SDL.SDL_SetRenderDrawColor(renderer, Window.BackgroundColor.colorbase.r, Window.BackgroundColor.colorbase.g, Window.BackgroundColor.colorbase.b, Window.BackgroundColor.colorbase.a);
+                    SDL.SDL_RenderClear(renderer);
+                    Framework.Function.Update(((FrameworkFunction.updatems = Framework.frametimer.ElapsedTicks) - FrameworkFunction.updatetime) * 0.0001f);
                     Rendering(Display.Target);
+                    //SDL.SDL_RenderPresent(renderer);
+                    RequestRenderPresent = true;
+                    starttime = Framework.frametimer.ElapsedTicks;
+                    if (endtime > starttime + 1000) Thread.Sleep((int)((endtime - starttime) * 0.0001));
                 }
-                et = Framework.RunningTime;
-                Thread.Sleep((int)(Display.framelatelimit * 0.001 - (et - st)));
-            }
+            });
         }
 
         /// <summary>
@@ -200,27 +216,52 @@ namespace JyunrcaeaFramework
                 // ReSharper disable once PossibleNullReferenceException
                 var e = (SDL.SDL_Event)System.Runtime.InteropServices.Marshal.PtrToStructure(eventPtr, typeof(SDL.SDL_Event))!;
                 //if (e.type == SDL.SDL_EventType.SDL_KEYDOWN && Input.TextInput.Enable && e.key.keysym.sym == SDL.SDL_Keycode.SDLK_BACKSPACE)  
+                if (AsyncRendering)
+                {
+                    if (RequestRenderPresent)
+                    {
+                        RequestRenderPresent = false;
+                        SDL.SDL_RenderPresent(renderer);
+                    }
+                }
                 if (e.key.repeat != 0) return 0;
+                //if (e.type == SDL.SDL_EventType.SDL_WINDOWEVENT)
+                //{
+
+                //}
                 if (e.type != SDL.SDL_EventType.SDL_WINDOWEVENT) return 1;
                 switch (e.window.windowEvent)
                 {
+                    case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
+                        Framework.Function.WindowQuit();
+                        return 0;
                     case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
                         Window.size.w = e.window.data1;
                         Window.size.h = e.window.data2;
                         Window.wh = Window.size.w * 0.5f;
                         Window.hh = Window.size.h * 0.5f;
-                        Framework.Function.Resize();
-                        break;
+                        Task.Run(() => Framework.Function.Resize()); 
+                        if (!AsyncRendering) Framework.Function.Draw();
+                        else if (RequestRenderPresent)
+                        {
+                            RequestRenderPresent = false;
+                            SDL.SDL_RenderPresent(renderer);
+                        }
+                        return 0;
                     case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
                         Window.position.x = e.window.data1;
                         Window.position.y = e.window.data2;
-                        Framework.Function.WindowMove();
-                        break;
+                        Task.Run(() => Framework.Function.WindowMove());
+                        if (!AsyncRendering) Framework.Function.Draw();
+                        else if (RequestRenderPresent)
+                        {
+                            RequestRenderPresent = false;
+                            SDL.SDL_RenderPresent(renderer);
+                        }
+                        return 0;
                     default:
                         return 1;
                 }
-                Framework.Function.Draw();
-                return 1;
             }, IntPtr.Zero);
 #endif
 
@@ -238,10 +279,11 @@ namespace JyunrcaeaFramework
             //SDL.SDL_SetHint(SDL.SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4, "1");
             SDL.SDL_SetHint(SDL.SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "1");
             SDL.SDL_SetHint(SDL.SDL_HINT_IME_SHOW_UI, "0");
-            SDL.SDL_EventState(SDL.SDL_EventType.SDL_DROPTEXT,SDL.SDL_ENABLE);
+            Input.TextInput.Enable = false;
+            //SDL.SDL_EventState(SDL.SDL_EventType.SDL_DROPTEXT,SDL.SDL_ENABLE);
         }
-        internal static bool running = false;
-        internal static SDL.SDL_Event sdle;
+        public static bool Running { get; internal set; } = false;
+        //internal static SDL.SDL_Event sdle;
         internal static System.Diagnostics.Stopwatch frametimer = new();
         /// <summary>
         /// 프레임워크가 지금까지 작동된 시간을 틱(tick)으로 반환합니다.
@@ -264,149 +306,46 @@ namespace JyunrcaeaFramework
         /// Framework.Stop(); 을 호출할때까지 창을 띄웁니다. (또는 오류가 날때까지...)
         /// </summary>
         /// <param name="ShowWindow">창을 표시할지에 대한 여부</param>
+        /// <param name="AsyncRendering">(Zenerety 전용) 비동기 렌더링 사용여부</param>
         /// <exception cref="JyunrcaeaFrameworkException">실행중에 호출할경우</exception>
-        public static void Run(bool ShowWindow = true)
+        public static void Run(bool AsyncRendering = false,bool ShowWindow = true)
         {
-            if (running) throw new JyunrcaeaFrameworkException("이 함수는 이미 실행중인 함수입니다. (함수가 종료될때까지 호출할수 없습니다.)");
-            SDL.SDL_StopTextInput();
-            running = true;
+            Framework.AsyncRendering = AsyncRendering;
+            if (Running) throw new JyunrcaeaFrameworkException("이 함수는 이미 실행중인 함수입니다. (함수가 종료될때까지 호출할수 없습니다.)");
+            //Input.TextInput.Enable = false;
+            Running = true;
             Framework.Function.Start();
             FrameworkFunction.updatetime = 0;
             FrameworkFunction.endtime = Display.framelatelimit;
             frametimer.Start();
+            SDL.SDL_SetRenderDrawColor(renderer, Window.BackgroundColor.colorbase.r, Window.BackgroundColor.colorbase.g, Window.BackgroundColor.colorbase.b, Window.BackgroundColor.colorbase.a);
+            SDL.SDL_RenderClear(renderer);
             if (ShowWindow) SDL.SDL_ShowWindow(Framework.window);
-            Thread t1;
-            //if (AsyncRendering)
-            //{
-            //    t1 = new(render)
-            //}
-            while (running)
+            if (AsyncRendering)
             {
-                if(!AsyncRendering) Framework.Function.Draw();
-                #region 이벤트
-                if (EventMultiThreading)
+                AsyncRenderingFunction();
+                while(Running)
                 {
-                    List<Thread> tl = new();
                     while (SDL.SDL_PollEvent(out var e) == 1)
                     {
-                        Thread t = new((e) => EventProcess(e)); t.Start(e);
-                        tl.Add(t);
+                        AsyncEventProcess(e);
                     }
-                }
-                else while (SDL.SDL_PollEvent(out sdle) == 1)
-                {
-                    switch (sdle.type)
+                    if (RequestRenderPresent)
                     {
-                        case SDL.SDL_EventType.SDL_QUIT:
-                            Framework.Function.WindowQuit();
-                            break;
-                        case SDL.SDL_EventType.SDL_WINDOWEVENT:
-                            switch (sdle.window.windowEvent)
-                            {
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED:
-                                    Function.Resized();
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
-                                    Framework.Function.WindowQuit();
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SHOWN:
-                                    //Console.WriteLine("shown");
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_HIDDEN:
-                                    //Console.WriteLine("hidden");
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MINIMIZED:
-                                    Framework.Function.WindowMinimized();
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MAXIMIZED:
-                                    Framework.Function.WindowMaximized();
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_EXPOSED:
-
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESTORED:
-                                    Framework.Function.WindowRestore();
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST:
-                                        Framework.Function.KeyFocusOut();
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
-                                        Framework.Function.KeyFocusIn();
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_LEAVE:
-                                        Framework.Function.MouseFocusOut();
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_ENTER:
-                                        Framework.Function.MouseFocusIn();
-                                    break;
-                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_DISPLAY_CHANGED:
-                                        if (SDL.SDL_GetDisplayMode(sdle.display.data1, 0, out Display.dm) != 0) throw new JyunrcaeaFrameworkException("창이 이동된 모니터의 정보를 얻는데 실패했습니다.");
-                                        Framework.Function.DisplayChange();
-                                    break;
-#if !WINDOWS
-                                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
-                                                    //SDL.SDL_GetWindowSize(window, out var w, out var h);
-                                                    //Window.w = (uint)w;
-                                                    //Window.h = (uint)h;
-                                                    //Window.wh = w * 0.5f;
-                                                    //Window.hh = h * 0.5f;
-                                                    //function.Resize();
-                                                    Framework.function.Resize();
-                                                    break;
-
-                                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
-                                                    SDL.SDL_GetWindowPosition(window, out var x, out var y);
-                                                    Window.x = x;
-                                                    Window.y = y;
-                                                    function.WindowMove();
-                                                    break;
-#endif
-                            }
-                            break;
-                        case SDL.SDL_EventType.SDL_DROPFILE:
-                            Framework.Function.DropFile(SDL.UTF8_ToManaged(sdle.drop.file, true));
-                            break;
-                        case SDL.SDL_EventType.SDL_KEYDOWN:
-                            //if (Input.TextInput.Enable)
-                            //{
-                            //    int l;
-                            //    if (sdle.key.keysym.sym == SDL.SDL_Keycode.SDLK_BACKSPACE && (l =  Input.TextInput.InputedText.Length) > 0)
-                            //        Input.TextInput.InputedText = Input.TextInput.InputedText.Substring(0,l-1);
-                            //    Console.WriteLine(Input.TextInput.InputedText);
-                            //};
-                            Framework.Function.KeyDown((Input.Keycode)sdle.key.keysym.sym);
-                            break;  
-                        case SDL.SDL_EventType.SDL_MOUSEMOTION:
-                            Framework.Function.MouseMove();
-                            break;
-                        case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                            Framework.Function.MouseKeyDown((Input.Mouse.Key)sdle.button.button);
-                            break;
-                        case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
-                            Framework.Function.MouseKeyUp((Input.Mouse.Key)sdle.button.button);
-                            break;
-                        case SDL.SDL_EventType.SDL_KEYUP:
-                            Framework.Function.KeyUp((Input.Keycode)sdle.key.keysym.sym);
-                            break;
-                        //case SDL.SDL_EventType.SDL_TEXTINPUT:
-                        //    unsafe
-                        //    {
-                        //        fixed (byte * b = sdle.text.text)
-                        //        {
-                        //            Input.TextInput.InputedText += new string((sbyte*)b);
-                        //        }
-                        //    }
-                        //    Console.WriteLine(Input.TextInput.InputedText);
-                        //    break;
-                        //case SDL.SDL_EventType.SDL_TEXTEDITING:
-                        //    unsafe
-                        //    {
-                        //        fixed (byte* b = sdle.edit.text) Console.WriteLine("Edit Text: {0}\nCursor Pos: {1}\nSelected Line {2}",new string((sbyte*)b),sdle.edit.start,sdle.edit.length);
-                        //    }
-                        //    break;
+                        RequestRenderPresent = false;
+                        SDL.SDL_RenderPresent(renderer);
                     }
+                    Thread.Sleep(1);
                 }
-                #endregion
+            } else
+            {
+                SDL.SDL_Event e;
+                long starttime, endtime = 0;
+                while (Running)
+                {
+                    Framework.Function.Draw();
+                    while (SDL.SDL_PollEvent(out e) == 1) EventProcess(e);
+                }
             }
             Framework.Function.Stop();
             SDL.SDL_DestroyRenderer(renderer);
@@ -419,15 +358,22 @@ namespace JyunrcaeaFramework
 
         public static bool EventMultiThreading = false;
 
-        public static void EventProcess(object? e)
+        public static async void AsyncEventProcess(SDL.SDL_Event e)
         {
-            switch (((SDL.SDL_Event)e!).type)
+            //SDL.SDL_Event e;
+            //SDL.SDL_PollEvent(out e);
+            await Task.Run(() => EventProcess(e));
+        }
+
+        public static void EventProcess(SDL.SDL_Event e)
+        {
+            switch (e.type)
             {
                 case SDL.SDL_EventType.SDL_QUIT:
                     Framework.Function.WindowQuit();
                     break;
                 case SDL.SDL_EventType.SDL_WINDOWEVENT:
-                    switch (sdle.window.windowEvent)
+                    switch (e.window.windowEvent)
                     {
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED:
                             Function.Resized();
@@ -436,8 +382,10 @@ namespace JyunrcaeaFramework
                             Framework.Function.WindowQuit();
                             break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SHOWN:
+                            //Console.WriteLine("shown");
                             break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_HIDDEN:
+                            //Console.WriteLine("hidden");
                             break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MINIMIZED:
                             Framework.Function.WindowMinimized();
@@ -450,6 +398,22 @@ namespace JyunrcaeaFramework
                             break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESTORED:
                             Framework.Function.WindowRestore();
+                            break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST:
+                            Framework.Function.KeyFocusOut();
+                            break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
+                            Framework.Function.KeyFocusIn();
+                            break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_LEAVE:
+                            Framework.Function.MouseFocusOut();
+                            break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_ENTER:
+                            Framework.Function.MouseFocusIn();
+                            break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_DISPLAY_CHANGED:
+                            if (SDL.SDL_GetDisplayMode(e.display.data1, 0, out Display.dm) != 0) throw new JyunrcaeaFrameworkException("창이 이동된 모니터의 정보를 얻는데 실패했습니다.");
+                            Framework.Function.DisplayChange();
                             break;
 #if !WINDOWS
                                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
@@ -472,24 +436,39 @@ namespace JyunrcaeaFramework
                     }
                     break;
                 case SDL.SDL_EventType.SDL_DROPFILE:
-                    Framework.Function.DropFile(SDL.UTF8_ToManaged(sdle.drop.file, true));
+                    Framework.Function.DropFile(SDL.UTF8_ToManaged(e.drop.file, true));
                     break;
                 case SDL.SDL_EventType.SDL_KEYDOWN:
-                    Framework.Function.KeyDown((Input.Keycode)sdle.key.keysym.sym);
+                    Console.WriteLine(e.key.keysym.sym.ToString());
+                    Framework.Function.KeyDown((Input.Keycode)e.key.keysym.sym);
                     break;
                 case SDL.SDL_EventType.SDL_MOUSEMOTION:
                     Framework.Function.MouseMove();
                     break;
                 case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                    Framework.Function.MouseKeyDown((Input.Mouse.Key)sdle.button.button);
+                    Framework.Function.MouseKeyDown((Input.Mouse.Key)e.button.button);
                     break;
                 case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
-                    Framework.Function.MouseKeyUp((Input.Mouse.Key)sdle.button.button);
+                    Framework.Function.MouseKeyUp((Input.Mouse.Key)e.button.button);
                     break;
                 case SDL.SDL_EventType.SDL_KEYUP:
-                    Framework.Function.KeyUp((Input.Keycode)sdle.key.keysym.sym);
+                    Framework.Function.KeyUp((Input.Keycode)e.key.keysym.sym);
+                    break;
+                case SDL.SDL_EventType.SDL_TEXTINPUT:
+                    unsafe
+                    {
+                        Input.TextInput.InputedText += System.Text.Encoding.ASCII.GetString(e.text.text, SDL.SDL_TEXTINPUTEVENT_TEXT_SIZE);
+                    }
+                    Console.WriteLine(Input.TextInput.InputedText);
+                    break;
+                case SDL.SDL_EventType.SDL_TEXTEDITING:
+                    unsafe
+                    {
+                        Console.WriteLine("Edit Text: {0}\nCursor Pos: {1}\nSelected Line {2}", new string((sbyte*)e.edit.text), e.edit.start, e.edit.length);
+                    }
                     break;
             }
+            
         }
         /// <summary>
         /// 프레임워크를 중지합니다.
@@ -497,7 +476,7 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static void Stop()
         {
-            running = false;
+            Running = false;
         }
 
         /// <summary>
@@ -623,6 +602,8 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class ZeneretyObject
     {
+        public bool Hide;
+
         public int X { get; set; }
         public int Y { get; set; }
         internal int Rx => X + Cx;
@@ -813,6 +794,20 @@ namespace JyunrcaeaFramework
 
     public class Image : ZeneretyExtendObject
     {
+        /// <summary>
+        /// Image 객체를 생성합니다.
+        /// </summary>
+        /// <param name="Texture">텍스쳐</param>
+        public Image(DrawableTexture Texture)
+        {
+            this.Texture = Texture;
+        }
+
+        public Image(string ImageFilePath)
+        {
+            this.Texture = new TextureFromFile(ImageFilePath);
+        }
+
         public DrawableTexture Texture = null!;
 
         /// <summary>
@@ -841,6 +836,21 @@ namespace JyunrcaeaFramework
         {
             Parent = group;
         }
+
+        void AddProcedure(ZeneretyObject obj)
+        {
+            if (obj is Group)
+            {
+                FrameworkFunction.Prepare((Group)obj);
+                return;
+            }
+            if (obj is Image)
+            {
+                ((Image)obj).Texture.Ready();
+                return;
+            }
+        }
+
         /// <summary>
         /// 객체를 추가합니다.
         /// </summary>
@@ -850,44 +860,41 @@ namespace JyunrcaeaFramework
             base.Add(obj);
             if (obj.Parent is not null) throw new JyunrcaeaFrameworkException("이미 다른 부모 객체에게 상속된 객체입니다.");
             obj.Parent = this.Parent;
-            if (Framework.running)
+            if (Framework.Running)
             {
-
-                if (obj is Group)
-                {
-                    FrameworkFunction.Prepare((Group)obj);
-                    return;
-                }
-                if (obj is Image)
-                {
-                    ((Image)obj).Texture.Ready();
-                    return;
-                }
+                AddProcedure(obj);
             }
+        }
+
+        public new void Insert(int index,ZeneretyObject zo)
+        {
+            base.Insert(index,zo);
+            if (Framework.Running) AddProcedure(zo);
         }
 
         /// <summary>
         /// 객체를 제거합니다.
         /// </summary>
         /// <param name="obj">객체</param>
-        public new void Remove(ZeneretyObject obj)
+        public new bool Remove(ZeneretyObject obj)
         {
-            base.Remove(obj);
+            if(base.Remove(obj) is false) return false;
             if (obj is Group)
             {
                 FrameworkFunction.Release((Group)obj);
-                return;
+                return true;
             }
             if (obj is Image)
             {
                 ((Image)obj).Texture.Free();
-                return;
+                return true;
             }
+            return true;
         }
 
         public void Dispose()
         {
-            if (Framework.running)
+            if (Framework.Running)
             foreach(var obj in this)
             {
                 if (obj is Group)
@@ -928,7 +935,7 @@ namespace JyunrcaeaFramework
         {
             scenes.Add(scene);
             threads.Add(null!);
-            if (Framework.running) scene.Start();
+            if (Framework.Running) scene.Start();
             return scenes.Count - 1;
         }
         /// <summary>
@@ -1387,8 +1394,6 @@ namespace JyunrcaeaFramework
                 return;
             }
 
-
-            
             Update(((updatems = Framework.frametimer.ElapsedTicks) - updatetime) * 0.0001f);
 
             if (Framework.NewRenderingSolution)
@@ -1402,15 +1407,20 @@ namespace JyunrcaeaFramework
                 {
                     if (!Display.scenes[id].Hide) Display.scenes[id].Draw();
                 }
-#if DEBUG
-            if (Debug.ObjectDrawDebuging)
-            {
-                ODD();
-            }
-#endif
+    #if DEBUG
+                if (Debug.ObjectDrawDebuging)
+                {
+                    ODD();
+                }
+    #endif
 
             }
             SDL.SDL_RenderPresent(Framework.renderer);
+
+            //lock (Framework.Function)
+            //{
+                
+            //}
             if (SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size) != 0) throw new JyunrcaeaFrameworkException($"SDL Error: {SDL.SDL_GetError()}");
             SDL.SDL_SetRenderDrawColor(Framework.renderer, Window.BackgroundColor.Red, Window.BackgroundColor.Green, Window.BackgroundColor.Blue, Window.BackgroundColor.Alpha);
             SDL.SDL_RenderClear(Framework.renderer);
@@ -2264,9 +2274,86 @@ namespace JyunrcaeaFramework
 #endif
     }
 
-    //public class ZeneretyScene : Scene
+    //public class ZeneretyScene : SceneInterface
     //{
-    //    Group Target = null!;
+
+    //    public Group Target { get; internal set; } = new();
+    //    List<Events.DropFile> drops = new();
+    //    List<Events.Resized> resizes = new();
+    //    List<Events.Update> updates = new();
+    //    List<Events.WindowMove> windowMovedInterfaces = new();
+    //    List<Events.KeyDown> keyDownEvents = new();
+    //    List<Events.MouseMove> mouseMoves = new();
+    //    List<Events.WindowQuit> windowQuits = new();
+    //    List<Events.KeyUp> keyUpEvents = new();
+    //    List<Events.MouseKeyDown> mouseButtonDownEvents = new();
+    //    List<Events.MouseKeyUp> mouseButtonUpEvents = new();
+    //    List<Events.WindowRestore> windowRestores = new();
+    //    List<Events.WindowMaximized> windowMaximizeds = new();
+    //    List<Events.WindowMinimized> windowMinimizeds = new();
+    //    List<Events.KeyFocusIn> keyfocusin = new();
+    //    List<Events.KeyFocusOut> keyfocusout = new();
+    //    List<Events.MouseFocusIn> mousefocusin = new();
+    //    List<Events.MouseFocusOut> mousefocusout = new();
+
+    //    public void AddObject(ZeneretyObject Object)
+    //    {
+    //        this.Target.ObjectList.Add(Object);
+    //        AddAtEventList(Object);
+    //    }
+
+
+
+    //    public bool RemoveObject(ZeneretyObject Object)
+    //    {
+    //        if (!this.Target.ObjectList.Remove(Object)) return false;
+    //        RemoveAtEventList(Object);
+    //        return true;
+    //    }
+
+
+
+    //    internal void AddAtEventList(ZeneretyObject NewSprite)
+    //    {
+    //        if (NewSprite is Events.DropFile) drops.Add((Events.DropFile)NewSprite);
+    //        if (NewSprite is Events.Resized) resizes.Add((Events.Resized)NewSprite);
+    //        if (NewSprite is Events.Update) updates.Add((Events.Update)NewSprite);
+    //        if (NewSprite is Events.WindowMove) windowMovedInterfaces.Add((Events.WindowMove)NewSprite);
+    //        if (NewSprite is Events.KeyDown) keyDownEvents.Add((Events.KeyDown)NewSprite);
+    //        if (NewSprite is Events.MouseMove) mouseMoves.Add((Events.MouseMove)NewSprite);
+    //        if (NewSprite is Events.WindowQuit) windowQuits.Add((Events.WindowQuit)NewSprite);
+    //        if (NewSprite is Events.KeyUp) keyUpEvents.Add((Events.KeyUp)NewSprite);
+    //        if (NewSprite is Events.MouseKeyDown) mouseButtonDownEvents.Add((Events.MouseKeyDown)NewSprite);
+    //        if (NewSprite is Events.MouseKeyUp) mouseButtonUpEvents.Add((Events.MouseKeyUp)NewSprite);
+    //        if (NewSprite is Events.WindowMaximized) windowMaximizeds.Add((Events.WindowMaximized)NewSprite);
+    //        if (NewSprite is Events.WindowMinimized) windowMinimizeds.Add((Events.WindowMinimized)NewSprite);
+    //        if (NewSprite is Events.WindowRestore) windowRestores.Add((Events.WindowRestore)NewSprite);
+    //        if (NewSprite is Events.KeyFocusIn) keyfocusin.Add((Events.KeyFocusIn)NewSprite);
+    //        if (NewSprite is Events.KeyFocusOut) keyfocusout.Add((Events.KeyFocusOut)NewSprite);
+    //        if (NewSprite is Events.MouseFocusIn) mousefocusin.Add((Events.MouseFocusIn)NewSprite);
+    //        if (NewSprite is Events.MouseFocusOut) mousefocusout.Add((Events.MouseFocusOut)NewSprite);
+    //    }
+
+    //    internal void RemoveAtEventList(ZeneretyObject RemovedObject)
+    //    {
+    //        if (RemovedObject is Events.DropFile) drops.Remove((Events.DropFile)RemovedObject);
+    //        if (RemovedObject is Events.Resized) resizes.Remove((Events.Resized)RemovedObject);
+    //        if (RemovedObject is Events.Update) updates.Remove((Events.Update)RemovedObject);
+    //        if (RemovedObject is Events.WindowMove) windowMovedInterfaces.Remove((Events.WindowMove)RemovedObject);
+    //        if (RemovedObject is Events.KeyDown) keyDownEvents.Remove((Events.KeyDown)RemovedObject);
+    //        if (RemovedObject is Events.MouseMove) mouseMoves.Remove((Events.MouseMove)RemovedObject);
+    //        if (RemovedObject is Events.WindowQuit) windowQuits.Remove((Events.WindowQuit)RemovedObject);
+    //        if (RemovedObject is Events.KeyUp) keyUpEvents.Remove((Events.KeyUp)RemovedObject);
+    //        if (RemovedObject is Events.MouseKeyDown) mouseButtonDownEvents.Remove((Events.MouseKeyDown)RemovedObject);
+    //        if (RemovedObject is Events.MouseKeyUp) mouseButtonUpEvents.Remove((Events.MouseKeyUp)RemovedObject);
+    //        if (RemovedObject is Events.WindowMaximized) windowMaximizeds.Remove((Events.WindowMaximized)RemovedObject);
+    //        if (RemovedObject is Events.WindowMinimized) windowMinimizeds.Remove((Events.WindowMinimized)RemovedObject);
+    //        if (RemovedObject is Events.WindowRestore) windowRestores.Remove((Events.WindowRestore)RemovedObject);
+    //        if (RemovedObject is Events.KeyFocusIn) keyfocusin.Remove((Events.KeyFocusIn)RemovedObject);
+    //        if (RemovedObject is Events.KeyFocusOut) keyfocusout.Remove((Events.KeyFocusOut)RemovedObject);
+    //        if (RemovedObject is Events.MouseFocusIn) mousefocusin.Remove((Events.MouseFocusIn)RemovedObject);
+    //        if (RemovedObject is Events.MouseFocusOut) mousefocusout.Remove((Events.MouseFocusOut)RemovedObject);
+    //    }
     //}
 
 
@@ -2400,7 +2487,7 @@ namespace JyunrcaeaFramework
                 sprites.Insert(Index, NewSprite);
                 //objectlist.Insert(index, sp);
             }
-            if (Framework.running)
+            if (Framework.Running)
                 NewSprite.Start();
         }
         /// <summary>
@@ -3679,7 +3766,6 @@ namespace JyunrcaeaFramework
         EaseInOutQuad = 6,
     }
 
-
     /// <summary>
     /// 움직임을 관리하는 객체입니다.
     /// </summary>
@@ -4118,6 +4204,12 @@ namespace JyunrcaeaFramework
                     else SDL.SDL_StopTextInput();
                 }
             }
+
+            /// <summary>
+            /// 텍스트가 입력되는 동안 KeyDown/KeyUp 이벤트를 무시합니다. (아직 구현되지 않음, 다음 업데이트를 위해 미리 생성)
+            /// </summary>
+            [Obsolete("미구현")]
+            public static bool BlockKeyEvent{ get; set; } = false;
         }
 
         /// <summary>

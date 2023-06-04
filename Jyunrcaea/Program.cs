@@ -67,7 +67,7 @@ namespace Jyunrcaea
             }
             Window.Icon("cache/icon.png");
             Display.FrameLateLimit = 120;
-            //Framework.EventMultiThreading = true;
+            Framework.EventMultiThreading = true;
             Display.AddScene(new MainMenu.MainScene());
             Display.AddScene(musiclistscene = new MusicList.MainScene());
             Display.AddScene(ss = new Setting.SettingScene());
@@ -75,6 +75,7 @@ namespace Jyunrcaea
             Display.AddScene(fr = new Framerate());
             if(TestScene.Test) Display.AddScene(new TestScene());
             Framework.Function = new CustomFrameworkFunction();
+            Framework.AsyncRendering = true;
             Framework.Run();
         }
 
@@ -140,7 +141,7 @@ namespace Jyunrcaea
                     Framework.SavingPerformance = !Framework.SavingPerformance;
                     break;
                 case Input.Keycode.F9:
-                    //Framework.SavingPerformanceLevel = 255;
+                    Input.TextInput.Enable = !Input.TextInput.Enable;
                     break;
                 case Input.Keycode.F10:
                     Window.Raise();

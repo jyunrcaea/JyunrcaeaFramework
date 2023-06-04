@@ -55,7 +55,7 @@ namespace Jyunrcaea
                 int i = 0;
                 for (processedcount = 0; processedcount < allworkcount; processedcount++)
                 {
-                    //string path = musicfolder_path + "\\" + path + "\\";
+                    if (!Framework.Running) return;
                     Console.WriteLine("=== 비트맵 읽는중... 위치: {0} ===", directories[processedcount]);
                     string datapath = directories[processedcount] + "\\data.txt";
                     if (!File.Exists(datapath)) { Console.WriteLine("data.txt 파일이 존재하지 않음. 건너뜀"); continue; }
