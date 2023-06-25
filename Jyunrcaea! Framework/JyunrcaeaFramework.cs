@@ -1,6 +1,7 @@
 ﻿#define WINDOWS
 using SDL2;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 namespace JyunrcaeaFramework
 {
@@ -65,12 +66,6 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static bool SavingPerformance = true;
 
-        internal static int savelevel = 1600;
-        /// <summary>
-        /// 업데이트와 렌더링을 서로 다른 스레드에서 작업시킵니다.
-        /// 프레임이 낮은 상태에선 잘하면 나쁘지 않은 성능을 얻을순 있지만, SDL2 라이브러리에 문제를 일으킬수 있습니다.
-        /// </summary>
-        public static bool ThreadRender = false;
         /// <summary>
         /// 이벤트(Update, Quit 등)를 멀티 코어(또는 스레드)로 처리할지에 대한 여부입니다.
         /// true 로 하게 될경우 모든 장면속 이벤트 함수가 동시에 실행됩니다!
@@ -78,44 +73,6 @@ namespace JyunrcaeaFramework
         /// (Zenerety 렌더링에는 적용되지 않습니다.)
         /// </summary>
         public static bool MultiCoreProcess = false;
-
-        /// <summary>
-        /// 별개의 스레드에서 독립적으로 업데이트와 렌더링을 진행합니다. (Zenerety 렌더링 전용)
-        /// 단일스레드 성능이 부족할때 권장되며, 프레임이 불안정할수 있습니다.
-        /// </summary>
-        public static bool AsyncRendering { get; internal set; } = false;
-
-        internal static bool RequestRenderPresent = false;
-
-        //internal static void AcceptRenderPresent()
-        //{
-        //    RequestRenderPresent = false;
-        //    SDL.SDL_RenderPresent(renderer);
-        //}
-
-        static async void AsyncRenderingFunction()
-        {
-            long starttime,endtime = 0;
-            await Task.Run(() =>
-            {
-                while (Framework.Running && AsyncRendering)
-                {
-                    endtime += Display.framelatelimit;
-                    //프로그램이 몇초 이상 일시정지되서 시간을 놓칠경우
-                    if (endtime <= Framework.frametimer.ElapsedTicks) endtime = Framework.frametimer.ElapsedTicks + Display.framelatelimit;
-                    // RenderPresent를 포기한것으로 간주. 지우고 새 프레임 생성
-                    if (RequestRenderPresent) RequestRenderPresent = false;
-                    SDL.SDL_SetRenderDrawColor(renderer, Window.BackgroundColor.colorbase.r, Window.BackgroundColor.colorbase.g, Window.BackgroundColor.colorbase.b, Window.BackgroundColor.colorbase.a);
-                    SDL.SDL_RenderClear(renderer);
-                    Framework.Function.Update(((FrameworkFunction.updatems = Framework.frametimer.ElapsedTicks) - FrameworkFunction.updatetime) * 0.0001f);
-                    Rendering(Display.Target);
-                    //SDL.SDL_RenderPresent(renderer);
-                    RequestRenderPresent = true;
-                    starttime = Framework.frametimer.ElapsedTicks;
-                    if (endtime > starttime + 1000) Thread.Sleep((int)((endtime - starttime) * 0.0001));
-                }
-            });
-        }
 
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
@@ -134,6 +91,7 @@ namespace JyunrcaeaFramework
         /// SDL2 Renderer
         /// </summary>
         internal static IntPtr renderer = IntPtr.Zero;
+
         /// <summary>
         /// Jyunrcaea! Framework를 사용하기 위해 기본적으로 실행해야되는 초기화 함수입니다.
         /// </summary>
@@ -145,7 +103,7 @@ namespace JyunrcaeaFramework
         /// <param name="option">초기 창 생성옵션</param>
         /// <param name="render_option">렌더러 옵션</param>
         /// <exception cref="JyunrcaeaFrameworkException">초기화 실패시</exception>
-        public static void Init(string title, uint width, uint height, int? x = null, int? y = null, WindowOption? option = null, RenderOption render_option = default, AudioOption audio_option = default)
+        public static void Init(string title, uint width, uint height, int? x = null, int? y = null, WindowOption? option = null, RenderOption render_option = default, AudioOption audio_option = default,bool KeepRenderingWhenResize = true)
         {
             #region 값 검사
             if (audio_option.ch > 8) throw new JyunrcaeaFrameworkException("지원하지 않는 스테레오 ( AudioOption.Channls > 8)");
@@ -155,7 +113,7 @@ namespace JyunrcaeaFramework
             {
                 throw new JyunrcaeaFrameworkException($"SDL2 라이브러리 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             }
-            SDL.SDL_WindowFlags winflg = option is null ? SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN : ((WindowOption)option).option;
+            SDL.SDL_WindowFlags winflg = option is null ? SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN | SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL : ((WindowOption)option).option;
             window = SDL.SDL_CreateWindow(title, x ?? SDL.SDL_WINDOWPOS_CENTERED, y ?? SDL.SDL_WINDOWPOS_CENTERED, (int)width, (int)height, winflg);
             if (window == IntPtr.Zero)
             {
@@ -209,62 +167,42 @@ namespace JyunrcaeaFramework
                 }
                 else setting = false;
             }
-#endregion
-#if WINDOWS
-            SDL.SDL_SetEventFilter((_, eventPtr) =>
+            #endregion
+            if (KeepRenderingWhenResize)
             {
-                // ReSharper disable once PossibleNullReferenceException
-                var e = (SDL.SDL_Event)System.Runtime.InteropServices.Marshal.PtrToStructure(eventPtr, typeof(SDL.SDL_Event))!;
-                //if (e.type == SDL.SDL_EventType.SDL_KEYDOWN && Input.TextInput.Enable && e.key.keysym.sym == SDL.SDL_Keycode.SDLK_BACKSPACE)  
-                if (AsyncRendering)
-                {
-                    if (RequestRenderPresent)
+                SDL.SDL_SetEventFilter((_, eventPtr) =>
                     {
-                        RequestRenderPresent = false;
-                        SDL.SDL_RenderPresent(renderer);
-                    }
-                }
-                if (e.key.repeat != 0) return 0;
-                //if (e.type == SDL.SDL_EventType.SDL_WINDOWEVENT)
-                //{
-
-                //}
-                if (e.type != SDL.SDL_EventType.SDL_WINDOWEVENT) return 1;
-                switch (e.window.windowEvent)
-                {
-                    case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
-                        Framework.Function.WindowQuit();
-                        return 0;
-                    case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
-                        Window.size.w = e.window.data1;
-                        Window.size.h = e.window.data2;
-                        Window.wh = Window.size.w * 0.5f;
-                        Window.hh = Window.size.h * 0.5f;
-                        Task.Run(() => Framework.Function.Resize()); 
-                        if (!AsyncRendering) Framework.Function.Draw();
-                        else if (RequestRenderPresent)
+                        var e = (SDL.SDL_Event)System.Runtime.InteropServices.Marshal.PtrToStructure(eventPtr, typeof(SDL.SDL_Event))!;
+                        //if (e.type == SDL.SDL_EventType.SDL_KEYDOWN && Input.TextInput.Enable && e.key.keysym.sym == SDL.SDL_Keycode.SDLK_BACKSPACE)
+                        if (e.key.repeat != 0) return 0;
+                        if (e.type != SDL.SDL_EventType.SDL_WINDOWEVENT) return 1;
+                        switch (e.window.windowEvent)
                         {
-                            RequestRenderPresent = false;
-                            SDL.SDL_RenderPresent(renderer);
+                            case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
+                                Framework.Function.WindowQuit();
+                                return 0;
+                            case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
+                                Window.size.w = e.window.data1;
+                                Window.size.h = e.window.data2;
+                                Window.wh = Window.size.w * 0.5f;
+                                Window.hh = Window.size.h * 0.5f;
+                                Framework.Function.Resize();
+                                Framework.Function.Draw();
+                                return 0;
+                            case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED:
+                                return 1;
+                            case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
+                                Window.position.x = e.window.data1;
+                                Window.position.y = e.window.data2;
+                                Framework.Function.WindowMove();
+                                Framework.Function.Draw();
+                                return 0;
+                            default:
+                                return 1;
                         }
-                        return 0;
-                    case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
-                        Window.position.x = e.window.data1;
-                        Window.position.y = e.window.data2;
-                        Task.Run(() => Framework.Function.WindowMove());
-                        if (!AsyncRendering) Framework.Function.Draw();
-                        else if (RequestRenderPresent)
-                        {
-                            RequestRenderPresent = false;
-                            SDL.SDL_RenderPresent(renderer);
-                        }
-                        return 0;
-                    default:
-                        return 1;
-                }
-            }, IntPtr.Zero);
-#endif
-
+                    }, IntPtr.Zero); 
+            }
+            #region 믹서, 윈플래그, 텍스쳐 쉐어링, 창 크기, 디스플레이 모드, 힌트
             SDL_mixer.Mix_HookMusicFinished(Music.Finished);
             if ((winflg & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) Window.fullscreenoption = true;
             if ((winflg & SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) == SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) Window.windowborderless = true;
@@ -276,11 +214,12 @@ namespace JyunrcaeaFramework
             {
                 throw new JyunrcaeaFrameworkException("디스플레이 정보를 갖고오는데 실패했습니다.\nDisplay 클래스 내에 있는 일부 함수와 전체화면 전환이 작동하지 못합니다.");
             }
-            //SDL.SDL_SetHint(SDL.SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4, "1");
             SDL.SDL_SetHint(SDL.SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "1");
             SDL.SDL_SetHint(SDL.SDL_HINT_IME_SHOW_UI, "0");
-            Input.TextInput.Enable = false;
-            //SDL.SDL_EventState(SDL.SDL_EventType.SDL_DROPTEXT,SDL.SDL_ENABLE);
+            //SDL2-CS
+            SDL.SDL_SetHint(SDL.SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
+            SDL.SDL_StopTextInput();
+            #endregion
         }
         public static bool Running { get; internal set; } = false;
         //internal static SDL.SDL_Event sdle;
@@ -306,47 +245,21 @@ namespace JyunrcaeaFramework
         /// Framework.Stop(); 을 호출할때까지 창을 띄웁니다. (또는 오류가 날때까지...)
         /// </summary>
         /// <param name="ShowWindow">창을 표시할지에 대한 여부</param>
-        /// <param name="AsyncRendering">(Zenerety 전용) 비동기 렌더링 사용여부</param>
+        /// <param name="CallResize">시작할때 Resize 이벤트도 호출할지에 대한 여부</param>
         /// <exception cref="JyunrcaeaFrameworkException">실행중에 호출할경우</exception>
-        public static void Run(bool AsyncRendering = false,bool ShowWindow = true)
+        public static void Run(bool CallResize = false, bool ShowWindow = true)
         {
-            Framework.AsyncRendering = AsyncRendering;
             if (Running) throw new JyunrcaeaFrameworkException("이 함수는 이미 실행중인 함수입니다. (함수가 종료될때까지 호출할수 없습니다.)");
-            //Input.TextInput.Enable = false;
             Running = true;
             Framework.Function.Start();
+            if (CallResize) Window.Resize(Window.Width,Window.Height);
             FrameworkFunction.updatetime = 0;
             FrameworkFunction.endtime = Display.framelatelimit;
             frametimer.Start();
             SDL.SDL_SetRenderDrawColor(renderer, Window.BackgroundColor.colorbase.r, Window.BackgroundColor.colorbase.g, Window.BackgroundColor.colorbase.b, Window.BackgroundColor.colorbase.a);
             SDL.SDL_RenderClear(renderer);
             if (ShowWindow) SDL.SDL_ShowWindow(Framework.window);
-            if (AsyncRendering)
-            {
-                AsyncRenderingFunction();
-                while(Running)
-                {
-                    while (SDL.SDL_PollEvent(out var e) == 1)
-                    {
-                        AsyncEventProcess(e);
-                    }
-                    if (RequestRenderPresent)
-                    {
-                        RequestRenderPresent = false;
-                        SDL.SDL_RenderPresent(renderer);
-                    }
-                    Thread.Sleep(1);
-                }
-            } else
-            {
-                SDL.SDL_Event e;
-                long starttime, endtime = 0;
-                while (Running)
-                {
-                    Framework.Function.Draw();
-                    while (SDL.SDL_PollEvent(out e) == 1) EventProcess(e);
-                }
-            }
+            RunningLoop();
             Framework.Function.Stop();
             SDL.SDL_DestroyRenderer(renderer);
             SDL.SDL_DestroyWindow(window);
@@ -354,6 +267,26 @@ namespace JyunrcaeaFramework
             SDL_image.IMG_Quit();
             SDL_ttf.TTF_Quit();
             SDL.SDL_Quit();
+        }
+
+
+        public static void RunningLoop()
+        {
+            SDL.SDL_Event e;
+            while (Running)
+            {
+                if (EventMultiThreading)
+                {
+                    while (SDL.SDL_PollEvent(out var ae) == 1)
+                    {
+                        AsyncEventProcess(ae);
+                    }
+                } else
+                {
+                    while (SDL.SDL_PollEvent(out e) == 1) EventProcess(e);
+                }
+                Framework.Function.Draw();
+            }
         }
 
         public static bool EventMultiThreading = false;
@@ -382,10 +315,8 @@ namespace JyunrcaeaFramework
                             Framework.Function.WindowQuit();
                             break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SHOWN:
-                            //Console.WriteLine("shown");
                             break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_HIDDEN:
-                            //Console.WriteLine("hidden");
                             break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MINIMIZED:
                             Framework.Function.WindowMinimized();
@@ -415,6 +346,8 @@ namespace JyunrcaeaFramework
                             if (SDL.SDL_GetDisplayMode(e.display.data1, 0, out Display.dm) != 0) throw new JyunrcaeaFrameworkException("창이 이동된 모니터의 정보를 얻는데 실패했습니다.");
                             Framework.Function.DisplayChange();
                             break;
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
+                            break;
 #if !WINDOWS
                                                 case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
                                                     //SDL.SDL_GetWindowSize(window, out var w, out var h);
@@ -425,21 +358,15 @@ namespace JyunrcaeaFramework
                                                     //function.Resize();
                                                     Framework.function.Resize();
                                                     break;
-
-                                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
-                                                    SDL.SDL_GetWindowPosition(window, out var x, out var y);
-                                                    Window.x = x;
-                                                    Window.y = y;
-                                                    function.WindowMove();
-                                                    break;
 #endif
+
+
                     }
                     break;
                 case SDL.SDL_EventType.SDL_DROPFILE:
                     Framework.Function.DropFile(SDL.UTF8_ToManaged(e.drop.file, true));
                     break;
                 case SDL.SDL_EventType.SDL_KEYDOWN:
-                    Console.WriteLine(e.key.keysym.sym.ToString());
                     Framework.Function.KeyDown((Input.Keycode)e.key.keysym.sym);
                     break;
                 case SDL.SDL_EventType.SDL_MOUSEMOTION:
@@ -457,14 +384,13 @@ namespace JyunrcaeaFramework
                 case SDL.SDL_EventType.SDL_TEXTINPUT:
                     unsafe
                     {
-                        Input.TextInput.InputedText += System.Text.Encoding.ASCII.GetString(e.text.text, SDL.SDL_TEXTINPUTEVENT_TEXT_SIZE);
+                        Input.TextInput.InputedText += new string((sbyte*)e.text.text);
                     }
-                    Console.WriteLine(Input.TextInput.InputedText);
                     break;
                 case SDL.SDL_EventType.SDL_TEXTEDITING:
                     unsafe
                     {
-                        Console.WriteLine("Edit Text: {0}\nCursor Pos: {1}\nSelected Line {2}", new string((sbyte*)e.edit.text), e.edit.start, e.edit.length);
+                        //Console.WriteLine("Edit Text: {0}\nCursor Pos: {1}\nSelected Line {2}", new string((sbyte*)e.edit.text), e.edit.start, e.edit.length);
                     }
                     break;
             }
@@ -524,7 +450,6 @@ namespace JyunrcaeaFramework
 
                     if (zdo is Image)
                     {
-                        //SDL.SDL_RenderCopy(Framework.renderer, ((Image)zdo).Texture.texture, ref ((Image)zdo).Texture.src, ref DrawPos);
                         SDL.SDL_RenderCopyEx(Framework.renderer, ((Image)zdo).Texture.texture, ref ((Image)zdo).Texture.src, ref DrawPos, ((Image)zdo).Rotation, IntPtr.Zero,SDL.SDL_RendererFlip.SDL_FLIP_NONE);
                         continue;
                     }
@@ -545,26 +470,60 @@ namespace JyunrcaeaFramework
 
     public delegate void ZeneretyClickEvent(Input.Mouse.Key e);
 
+    public class TopGroup : Group
+    {
+        public TopGroup()
+        {
+            this.Ancestor = this;
+            this.Parent = this;
+        }
+
+        internal EventList EventManager = new();
+    }
 
     public class EventList
     {
-        internal List<Events.Resized> Resize = new();
+        internal Queue<ZeneretyObject> ObjectQueue = new();
+
+        internal List<Events.Resized> Resized = new();
+        internal List<Events.Resize> Resize = new();
         internal List<Events.Update> Update = new();
         internal List<Events.KeyDown> KeyDown = new();
         internal List<Events.KeyUp> keyUp = new();
 
         public void Add(ZeneretyObject obj)
         {
-            Ad<Events.Resized>(Resize, obj);
-            Ad<Events.Update>(Update, obj);
-            Ad<Events.KeyDown>(KeyDown, obj);
-            Ad<Events.KeyUp>(keyUp, obj);
+            Ad(Resized, obj);
+            Ad(Resize, obj);
+            Ad(Update, obj);
+            Ad(KeyDown, obj);
+            Ad(keyUp, obj);
         }
 
-        public void Ad<T>(List<T> li,object obj)
+        public void Remove(object obj)
+        {
+            Rd(Resized, obj);
+            Rd(Resize, obj);
+            Rd(Update, obj);
+            Rd(KeyDown, obj);
+            Rd(keyUp, obj);
+        }
+
+        internal void Ad<T>(List<T> li,object obj)
         {
             if (obj is not T) return;
             li.Add((T)obj);
+        }
+
+        internal bool Rd<T>(List<T> li,object obj)
+        {
+            if (obj is not T) return false;
+            return li.Remove((T)obj);
+        }
+
+        public void Refresh()
+        {
+            while (ObjectQueue.Count != 0) Add(ObjectQueue.Dequeue());
         }
     }
 
@@ -595,8 +554,6 @@ namespace JyunrcaeaFramework
         }
     }
 
-
-
     /// <summary>
     /// Zenerety 렌더링 용 객체 
     /// </summary>
@@ -606,10 +563,15 @@ namespace JyunrcaeaFramework
 
         public int X { get; set; }
         public int Y { get; set; }
-        internal int Rx => X + Cx;
-        internal int Ry => Y + Cy;
+        internal virtual int Rx => X + Cx;
+        internal virtual int Ry => Y + Cy;
 
         public Group? Parent { get; internal set; } = null;
+
+        /// <summary>
+        /// 표시할 범위를 제한합니다. null 일경우 부모의 속성을 따릅니다.
+        /// </summary>
+        //public ZeneretySize? RenderRange = null;
 
         internal int Cx = 0, Cy = 0;
 
@@ -706,8 +668,9 @@ namespace JyunrcaeaFramework
         /// 회전값
         /// </summary>
         public double Rotation = 0;
-        
-        
+
+        public int AbsoluteWidth => this.RealWidth;
+        public int AbsoluteHeight => this.RealHeight;
     }
 
     /// <summary>
@@ -715,10 +678,15 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class Group : ZeneretyObject
     {
+        internal override int Rx => this.X;
+        internal override int Ry => this.Y;
+
         public Group()
         {
             ObjectList = new(this);
         }
+
+        internal TopGroup? Ancestor = null;
 
         /// <summary>
         /// 묶을 객체들
@@ -765,6 +733,46 @@ namespace JyunrcaeaFramework
                     return base.Parent.RealHeight;
                 }
                 return RenderRange.Height;
+            }
+        }
+
+        /// <summary>
+        /// 오브젝트 준비
+        /// </summary>
+        public virtual void Prepare()
+        {
+            for (int i = 0; i < this.ObjectList.Count; i++)
+            {
+                if (this.ObjectList[i] is Group)
+                {
+                    ((Group)this.ObjectList[i]).Prepare();
+                    continue;
+                }
+
+                if (this.ObjectList[i] is Image)
+                {
+                    ((Image)this.ObjectList[i]).Texture.Ready();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 하위 객체들의 리소스를 해제하는 함수입니다. (override 할 경우 base.Release() 가 한번 실행되어야 합니다.)
+        /// </summary>
+        public virtual void Release()
+        {
+            for (int i = 0; i < this.ObjectList.Count; i++)
+            {
+                if (this.ObjectList[i] is Group)
+                {
+                    ((Group)this.ObjectList[i]).Release();
+                    continue;
+                }
+
+                if (this.ObjectList[i] is Image)
+                {
+                    ((Image)this.ObjectList[i]).Texture.Free();
+                }
             }
         }
     }
@@ -831,10 +839,13 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class ZeneretyList : List<ZeneretyObject>, IDisposable
     {
+        internal TopGroup? Ancestor;
+
         Group Parent;
         public ZeneretyList(Group group)
         {
             Parent = group;
+            Ancestor = group.Ancestor;
         }
 
         void AddProcedure(ZeneretyObject obj)
@@ -842,6 +853,7 @@ namespace JyunrcaeaFramework
             if (obj is Group)
             {
                 FrameworkFunction.Prepare((Group)obj);
+                ((Group)obj).ObjectList.Ancestor = Ancestor;
                 return;
             }
             if (obj is Image)
@@ -849,6 +861,7 @@ namespace JyunrcaeaFramework
                 ((Image)obj).Texture.Ready();
                 return;
             }
+            if(Ancestor is not null) Ancestor.EventManager.Add(obj);
         }
 
         /// <summary>
@@ -919,7 +932,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// Zenerety 렌더링 방식에 사용되는 장면 탐색기입니다.
         /// </summary>
-        public static Group Target = new();
+        public static TopGroup Target = new();
 
         internal static SDL.SDL_DisplayMode dm;
 
@@ -1283,8 +1296,6 @@ namespace JyunrcaeaFramework
                 {
                     ((Image)group.ObjectList[i]).Texture.Ready();
                 }
-
-
             }
         }
 
@@ -1315,7 +1326,7 @@ namespace JyunrcaeaFramework
         {
             if (Framework.NewRenderingSolution)
             {
-                Prepare(Display.Target);
+                Display.Target.Prepare();
             }
             else
             {
@@ -1341,7 +1352,7 @@ namespace JyunrcaeaFramework
         {
             if (Framework.NewRenderingSolution)
             {
-                Release(Display.Target);
+                Display.Target.Release();
             }
             else
             {
@@ -1377,6 +1388,16 @@ namespace JyunrcaeaFramework
                 iratio = (float)Window.size.h / (float)Window.default_size.y;
             }
             Window.AppropriateSize = iratio;
+
+            if (Framework.NewRenderingSolution)
+            {
+                for (int i = 0;i<Display.Target.EventManager.Resize.Count;i++)
+                {
+                    Display.Target.EventManager.Resize[i].Resize();
+                }
+                return;
+            }
+
             for (ir = 0; ir < Display.scenes.Count; ir++)
             {
                 if (!Display.scenes[ir].EventRejection) Display.scenes[ir].Resize();
@@ -1390,7 +1411,7 @@ namespace JyunrcaeaFramework
         internal override void Draw()
         {
             if (endtime > Framework.frametimer.ElapsedTicks) {
-                if (Framework.SavingPerformance && endtime > Framework.frametimer.ElapsedTicks + Framework.savelevel) Thread.Sleep(1);
+                if (Framework.SavingPerformance && endtime > Framework.frametimer.ElapsedTicks + 2000) Thread.Sleep(1);
                 return;
             }
 
@@ -1435,11 +1456,16 @@ namespace JyunrcaeaFramework
         {
             if (Framework.NewRenderingSolution)
             {
+                for (int i = 0; i < Display.Target.EventManager.Update.Count; i++)
+                {
+                    Display.Target.EventManager.Update[i].Update(ms);
+                }
                 Display.Target.ResetPosition(new(Window.Width,Window.Height));
                 Animation.AnimationQueue.Update();
                 updatetime = updatems;
                 return;
             }
+
             if (Framework.MultiCoreProcess)
             {
                 Parallel.For(0, Display.scenes.Count, (i, _) => { if (Display.scenes[i].UpdateRejection) return; Display.scenes[i].Update(ms); });
@@ -1458,7 +1484,17 @@ namespace JyunrcaeaFramework
         /// </summary>
         public virtual void Resized()
         {
-            Resize();
+            //Resize();
+
+            if (Framework.NewRenderingSolution)
+            {
+                for (int i = 0; i < Display.Target.EventManager.Resized.Count; i++)
+                {
+                    Display.Target.EventManager.Resized[i].Resized();
+                }
+                return;
+            }
+
             if (Framework.MultiCoreProcess)
             {
                 Parallel.For(0, Display.scenes.Count, (i, _) => Display.scenes[i].Resized());
@@ -1747,7 +1783,7 @@ namespace JyunrcaeaFramework
         internal SDL.SDL_RendererFlags option = new();
         public byte anti_level = 0;
 
-        public RenderOption(bool sccelerated = true, bool software = false, bool vsync = false, bool anti_aliasing = true)
+        public RenderOption(bool sccelerated = true, bool software = true, bool vsync = false, bool anti_aliasing = true)
         {
             if (sccelerated) option |= SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED;
             if (software) option |= SDL.SDL_RendererFlags.SDL_RENDERER_SOFTWARE;
@@ -2168,6 +2204,14 @@ namespace JyunrcaeaFramework
         public interface DropFile
         {
             public void DropFile(string filename);
+        }
+
+        /// <summary>
+        /// 창 크기가 바뀜 (아직 조정중)
+        /// </summary>
+        public interface Resize
+        {
+            public void Resize();
         }
 
         /// <summary>
@@ -3687,7 +3731,7 @@ namespace JyunrcaeaFramework
         public float ArrivalTime { get; internal set; } = 0;
         internal byte beforealpha;
         public byte TargetOpacity { get; internal set; }
-        public FunctionForAnimation CalculationFunction = Animation.Nothing;
+        public FunctionForAnimation CalculationFunction = Animation.Type.Default;
         //음수도 저장해야되므로 그냥 int
         int distance;
         public float AnimationTime { get; internal set; } = 0;
@@ -3780,7 +3824,7 @@ namespace JyunrcaeaFramework
         public float AnimationTime { get; internal set; } = 0;
         public float ArrivalTime { get; internal set; } = 0;
         bool gx = true, gy = true;
-        public FunctionForAnimation CalculationFunction = Animation.Nothing;
+        public FunctionForAnimation CalculationFunction = Animation.Type.Default;
 
         public Action? CompleteFunction = null;
 
@@ -4607,24 +4651,6 @@ namespace JyunrcaeaFramework
             AnimationQueue.Add(info);
         }
 
-        ///// <summary>
-        ///// 원하는 객체를 원하는 좌표로 부드럽게 이동합니다.
-        ///// </summary>
-        ///// <param name="Target">객체</param>
-        ///// <param name="X">도착할 X좌표</param>
-        ///// <param name="Y">도착할 Y좌표</param>
-        ///// <param name="StartTime">시작시간</param>
-        ///// <param name="EndTime">종료시간</param>
-        ///// <param name="WhenFinish">완료 후 실행될 함수</param>
-        ///// <param name="Motion">애니메이션 계산 함수</param>
-        ///// <returns>애니메이션 정보</returns>
-        //public static Information.Movement Move(ZeneretyObject Target,int X,int Y,double StartTime,double EndTime,Action? WhenFinish,FunctionForAnimation? Motion = null)
-        //{
-        //    Information.Movement result = new(X, Y, Target, StartTime, EndTime, WhenFinish, Motion);
-        //    AnimationQueue.Add(result);
-        //    return result;
-        //}
-
         /// <summary>
         /// 특정한 애니메이션 정보를 담는 클래스가 모여있습니다.
         /// </summary>
@@ -4652,7 +4678,7 @@ namespace JyunrcaeaFramework
                 public double AnimationTime { get; internal set; }
                 public bool Finished { get; internal set; } = false;
                 public Action<ZeneretyObject>? FunctionForFinish { get; internal set; } = null;
-                public FunctionForAnimation AnimationCalculator { get; internal set; } = JyunrcaeaFramework.Animation.Nothing;
+                public FunctionForAnimation AnimationCalculator { get; internal set; } = JyunrcaeaFramework.Animation.Type.Default;
                 public uint RepeatCount = 0;
 
                 internal double Progress = 0d;
@@ -4800,61 +4826,43 @@ namespace JyunrcaeaFramework
 
         }
 
-        internal static double Nothing(double x) => x;
-
-        internal static double EaseInSine(double x)
+        public static class Type
         {
-            return 1d - Math.Cos((x * Math.PI) * 0.5d);
-        }
+            public static double Default(double x) => x;
 
-        internal static double EaseOutSine(double x)
-        {
-            return Math.Sin((x * Math.PI) * 0.5d);
-        }
-
-        internal static double EaseInOutSine(double x)
-        {
-            return -(Math.Cos(Math.PI * x) - 1d) * 0.5d;
-        }
-
-        internal static double EaseInQuad(double x)
-        {
-            return x * x;
-        }
-
-        internal static double EaseOutQuad(double x)
-        {
-            x = 1d - x;
-            return 1 - x * x;
-        }
-
-        internal static double EaseInOutQuad(double x)
-        {
-            return x < 0.5d ? 2d * x * x : 1d - Math.Pow(-2d * x + 2d, 2d) * 0.5d;
-        }
-
-        public static FunctionForAnimation GetAnimation(AnimationType type)
-        {
-            switch (type)
+            public static double EaseInSine(double x)
             {
-                case AnimationType.Normal:
-                    return Nothing;
-                case AnimationType.Easing:
-                    return EaseInOutSine;
-                case AnimationType.Ease_In:
-                    return EaseInSine;
-                case AnimationType.Ease_Out:
-                    return EaseOutSine;
-                case AnimationType.EaseInQuad:
-                    return EaseInQuad;
-                case AnimationType.EaseOutQuad:
-                    return EaseOutQuad;
-                case AnimationType.EaseInOutQuad:
-                    return EaseInOutQuad;
-
+                return 1d - Math.Cos((x * Math.PI) * 0.5d);
             }
-            throw new JyunrcaeaFrameworkException("존재하지 않는 애니메이션 타입");
+
+            public static double EaseOutSine(double x)
+            {
+                return Math.Sin((x * Math.PI) * 0.5d);
+            }
+
+            public static double EaseInOutSine(double x)
+            {
+                return -(Math.Cos(Math.PI * x) - 1d) * 0.5d;
+            }
+
+            public static double EaseInQuad(double x)
+            {
+                return x * x;
+            }
+
+            public static double EaseOutQuad(double x)
+            {
+                x = 1d - x;
+                return 1 - x * x;
+            }
+
+            public static double EaseInOutQuad(double x)
+            {
+                return x < 0.5d ? 2d * x * x : 1d - Math.Pow(-2d * x + 2d, 2d) * 0.5d;
+            }
         }
+
+
     }
 
     /// <summary>

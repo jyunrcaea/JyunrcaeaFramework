@@ -75,7 +75,7 @@ namespace Jyunrcaea
             Display.AddScene(fr = new Framerate());
             if(TestScene.Test) Display.AddScene(new TestScene());
             Framework.Function = new CustomFrameworkFunction();
-            Framework.AsyncRendering = true;
+            //Framework.AsyncRendering = true;
             Framework.Run();
         }
 

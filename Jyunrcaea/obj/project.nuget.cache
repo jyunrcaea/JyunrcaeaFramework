@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "qJpcpVEEzxacXIGXoTh2CU4uMN9EiSn1wW8ceOB54RVx8Osnow7ukS+S/nJi9DJ/PXY1hYNdNWyJ18Tcb3QZqg==",
+  "dgSpecHash": "+9r8KwJPbJBj5x6vXk1k7QI1y9lGC1sz9Z/RWvHtbrAP72nn1VII1LNfA6uZbBG21Ti1/PAJQtriciQeCycIBw==",
   "success": true,
   "projectFilePath": "C:\\Users\\박대호\\source\\repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea\\Jyunrcaea.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\박대호\\.nuget\\packages\\jyunrcaeaframework\\0.6.1\\jyunrcaeaframework.0.6.1.nupkg.sha512"
+  ],
   "logs": []
 }
