@@ -75,7 +75,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly Version Version = new(0, 6, 1);
+        public static readonly Version Version = new(0, 6, 2);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
