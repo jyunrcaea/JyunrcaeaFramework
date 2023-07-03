@@ -1,7 +1,7 @@
 ﻿#define WINDOWS
 using SDL2;
-using System.ComponentModel;
-using System.Runtime.InteropServices;
+using System.Security;
+using System.Xml;
 
 namespace JyunrcaeaFramework
 {
@@ -12,6 +12,9 @@ namespace JyunrcaeaFramework
     /// </summary>
     public static class Debug
     {
+        /// <summary>
+        /// SDL2 버전
+        /// </summary>
         public static Version SDL2Version
         {
             get
@@ -20,6 +23,16 @@ namespace JyunrcaeaFramework
                 return new(v.major, v.minor, v.patch);
             }
         }
+
+        /// <summary>
+        /// SDL2 렌더러
+        /// </summary>
+        public static IntPtr Renderer => Framework.renderer;
+        /// <summary>
+        /// SDL2 윈도우
+        /// </summary>
+        public static IntPtr Window => Framework.window;
+
         /// <summary>
         /// 텍스트 렌더링 된 횟수
         /// </summary>
@@ -37,21 +50,6 @@ namespace JyunrcaeaFramework
         /// ODD 실행시 장면의 테두리를 표시할 색입니다.
         /// </summary>
         public static Color SceneDrawDebugingLineColor = new(50, 255, 50);
-
-        //public static bool CheckDrawTime = false;
-        //internal static float[] drawtimelist = Array.Empty<float>();
-        //public static float[] DrawTimeList => drawtimelist;
-
-        static Queue<string> logginglist = new();
-
-        public static int LogCount => logginglist.Count;
-
-        public static void Log(string loglist,params object?[] obj)
-        {
-            logginglist.Enqueue($"{Framework.RunningTimeToSecond}:{string.Format(loglist,obj)}");
-        }
-
-        public static string GetLog => logginglist.Dequeue();
     }
 #endif
 
@@ -77,7 +75,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly System.Version Version = new(0, 6, 1);
+        public static readonly Version Version = new(0, 6, 1);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
@@ -103,7 +101,7 @@ namespace JyunrcaeaFramework
         /// <param name="option">초기 창 생성옵션</param>
         /// <param name="render_option">렌더러 옵션</param>
         /// <exception cref="JyunrcaeaFrameworkException">초기화 실패시</exception>
-        public static void Init(string title, uint width, uint height, int? x = null, int? y = null, WindowOption? option = null, RenderOption render_option = default, AudioOption audio_option = default,bool KeepRenderingWhenResize = true)
+        public static void Init(string title, uint width, uint height, int? x = null, int? y = null, WindowOption? option = null, RenderOption? render_option = null, AudioOption audio_option = default,bool KeepRenderingWhenResize = true)
         {
             #region 값 검사
             if (audio_option.ch > 8) throw new JyunrcaeaFrameworkException("지원하지 않는 스테레오 ( AudioOption.Channls > 8)");
@@ -119,13 +117,20 @@ namespace JyunrcaeaFramework
             {
                 throw new JyunrcaeaFrameworkException($"창 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             }
-            renderer = SDL.SDL_CreateRenderer(window, -1, render_option.option);
+            renderer = SDL.SDL_CreateRenderer(window, -1, render_option is null ? SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED : ((RenderOption)render_option).option);
             if (renderer == IntPtr.Zero)
             {
                 SDL.SDL_DestroyWindow(window);
                 throw new JyunrcaeaFrameworkException($"렌더 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             }
-            if (SDL.SDL_SetRenderDrawBlendMode(renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) < 0) throw new JyunrcaeaFrameworkException($"렌더러의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
+            if (render_option is null || ((RenderOption)render_option).anti_alising)
+            {
+                if (SDL.SDL_SetHint(SDL.SDL_HINT_RENDER_SCALE_QUALITY, "2") == 0)
+                {
+                    SDL.SDL_SetHint(SDL.SDL_HINT_RENDER_SCALE_QUALITY, "1");
+                }
+            }
+            if (SDL.SDL_SetRenderDrawBlendMode(renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) != 0) throw new JyunrcaeaFrameworkException($"렌더러의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             //if (SDL.SDL_SetRenderDrawBlendMode(renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_MOD) != 0) throw new JyunrcaeaFrameworkException("SDL Error: " + SDL.SDL_GetError());
             if (SDL_image.IMG_Init(SDL_image.IMG_InitFlags.IMG_INIT_JPG | SDL_image.IMG_InitFlags.IMG_INIT_WEBP | SDL_image.IMG_InitFlags.IMG_INIT_TIF | SDL_image.IMG_InitFlags.IMG_INIT_PNG) == 0)
             {
@@ -216,6 +221,7 @@ namespace JyunrcaeaFramework
             }
             SDL.SDL_SetHint(SDL.SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "1");
             SDL.SDL_SetHint(SDL.SDL_HINT_IME_SHOW_UI, "0");
+            SDL.SDL_SetHint(SDL.SDL_HINT_IME_INTERNAL_EDITING, "1");
             //SDL2-CS
             SDL.SDL_SetHint(SDL.SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
             SDL.SDL_StopTextInput();
@@ -453,6 +459,12 @@ namespace JyunrcaeaFramework
                         SDL.SDL_RenderCopyEx(Framework.renderer, ((Image)zdo).Texture.texture, ref ((Image)zdo).Texture.src, ref DrawPos, ((Image)zdo).Rotation, IntPtr.Zero,SDL.SDL_RendererFlip.SDL_FLIP_NONE);
                         continue;
                     }
+
+                    if (zdo is Text)
+                    {
+                        SDL.SDL_RenderCopyEx(Framework.renderer, ((Text)zdo).TFT.texture,ref ((Text)zdo).TFT.src, ref DrawPos, ((Text)zdo).Rotation,IntPtr.Zero,SDL.SDL_RendererFlip.SDL_FLIP_NONE);
+                        continue;
+                    }
                 }
 
             }
@@ -479,6 +491,13 @@ namespace JyunrcaeaFramework
         }
 
         internal EventList EventManager = new();
+
+        internal override void PushEvent(ZeneretyObject target)
+        {
+            EventManager.Add(target);
+        }
+
+
     }
 
     public class EventList
@@ -540,6 +559,83 @@ namespace JyunrcaeaFramework
         }
     }
 
+    public class Text : ZeneretyExtendObject, Events.Update, Events.Resize
+    {
+        /// <summary>
+        /// Text 오브젝트를 생성합니다. (Zenerety 렌더링 전용)
+        /// </summary>
+        /// <param name="content">출력할 내용. (null 일경우 빈 텍스트)</param>
+        /// <param name="textcolor">글자 색깔. (null 일경우 검은색)</param>
+        public Text(string? content = null, int size = 0, Color? textcolor = null, string? fontfilepath = null)
+        {
+            this.TFT = new TextureFromText(fontfilepath is null ? Font.DefaultPath : fontfilepath, realsize = size, content is null ? string.Empty : content, textcolor is null ? Color.Black : textcolor);
+        }
+
+        internal TextureFromText TFT;
+        public string Content
+        {
+            get => TFT.Text;
+            set
+            {
+                TFT.Text = value;
+                refresh = true;
+            }
+        }
+        internal int realsize;
+        public int FontSize {
+            get => realsize;
+            set
+            {
+                realsize = value;
+                TFT.Resize(this.RelativeSize ? (int)(Window.AppropriateSize * (float)realsize) : realsize);
+                refresh = true;
+            }
+        }
+        public uint WrapWidth
+        {
+            get => TFT.WarpLength;
+            set
+            {
+                TFT.WarpLength = value;
+                refresh = true;
+            }
+        }
+        public Color? Background
+        {
+            get => TFT.BackgroundColor;
+            set
+            {
+                TFT.BackgroundColor = value;
+                refresh = true;
+            }
+        }
+
+        internal override int RealWidth => (int)((AbsoluteSize is null ? TFT.Width : AbsoluteSize.Width) * Scale.X);
+        internal override int RealHeight => (int)((AbsoluteSize is null ? TFT.Height : AbsoluteSize.Height) * Scale.Y);
+
+        public bool Blended { get => TFT.Blended; set => TFT.Blended = value; }
+        internal bool refresh = false;
+
+        public override byte Opacity { get => TFT.Opacity; set => TFT.Opacity = value; }
+
+        /// <summary>
+        /// 변경 사항이 있을경우 텍스트를 다시 렌더링합니다. (일반적으로 이 코드는 마지막에 호출하는게 좋습니다.)
+        /// </summary>
+        /// <param name="ms"></param>
+        public virtual void Update(float ms)
+        {
+            if (refresh)
+            {
+                if (this.FontSize != 0) TFT.ReRender();
+                refresh = false;
+            }
+        }
+
+        public virtual void Resize()
+        {
+            if (this.RelativeSize) { TFT.Resize((int)(Window.AppropriateSize * (float)realsize)); refresh = true; }
+        }
+    }
 
     /// <summary>
     /// Zenerety 렌더링에 사용될 배율 조정 클래스입니다.
@@ -627,6 +723,17 @@ namespace JyunrcaeaFramework
         internal int dxw=0, dyh=0;
 
         /// <summary>
+        /// 렌더링 될 이미지의 절대적 크기
+        /// (null 로 설정시 원본 이미지의 크기를 따릅니다.)
+        /// </summary>
+        public ZeneretySize? AbsoluteSize = null;
+
+        /// <summary>
+        /// 이미지의 너비 및 높이의 배율
+        /// </summary>
+        public ZeneretyScale Scale = new();
+
+        /// <summary>
         /// 창 크기에 맞춰 자동으로 크기 조정을 사용할지에 대한 여부입니다.
         /// </summary>
         public bool RelativeSize = true;
@@ -662,7 +769,7 @@ namespace JyunrcaeaFramework
     /// <summary>
     /// Zenerety 렌더링 용 그리기도 가능하고 회전, 뒤집기 등이 가능한 확장된 객체
     /// </summary>
-    public class ZeneretyExtendObject : ZeneretyDrawableObject
+    public abstract class ZeneretyExtendObject : ZeneretyDrawableObject
     {
         /// <summary>
         /// 회전값
@@ -671,12 +778,14 @@ namespace JyunrcaeaFramework
 
         public int AbsoluteWidth => this.RealWidth;
         public int AbsoluteHeight => this.RealHeight;
+
+        public abstract byte Opacity { get; set; }
     }
 
     /// <summary>
     /// Zenerety 렌더링 방식에 사용되는 그룹 객체입니다.
     /// </summary>
-    public class Group : ZeneretyObject
+    public class Group : ZeneretyObject, Events.Update, Events.Resize
     {
         internal override int Rx => this.X;
         internal override int Ry => this.Y;
@@ -745,6 +854,7 @@ namespace JyunrcaeaFramework
             {
                 if (this.ObjectList[i] is Group)
                 {
+                    ((Group)this.ObjectList[i]).ObjectList.Ancestor =((Group)this.ObjectList[i]).Ancestor = this.Ancestor;
                     ((Group)this.ObjectList[i]).Prepare();
                     continue;
                 }
@@ -752,6 +862,11 @@ namespace JyunrcaeaFramework
                 if (this.ObjectList[i] is Image)
                 {
                     ((Image)this.ObjectList[i]).Texture.Ready();
+                }
+
+                if (this.ObjectList[i] is Text)
+                {
+                    ((Text)ObjectList[i]).TFT.Ready();
                 }
             }
         }
@@ -773,6 +888,41 @@ namespace JyunrcaeaFramework
                 {
                     ((Image)this.ObjectList[i]).Texture.Free();
                 }
+
+                if (this.ObjectList[i] is Text)
+                {
+                    ((Text)this.ObjectList[i]).TFT.Free();
+                }
+            }
+        }
+
+        public virtual void Update(float ms)
+        {
+            for (int i=0;i<this.ObjectList.Count;i++)
+            {
+                if (ObjectList[i] is Events.Update) ((Events.Update)ObjectList[i]).Update(ms);
+            }
+        }
+
+        public virtual void Resize()
+        {
+            for (int i = 0; i < this.ObjectList.Count; i++)
+            {
+                if (ObjectList[i] is Events.Resize) ((Events.Resize)ObjectList[i]).Resize();
+            }
+        }
+
+        internal virtual void PushEvent(ZeneretyObject target)
+        {
+            this.Ancestor!.PushEvent(target);
+            if (target is not Group)
+            {
+                return;
+            }
+            Group group = (Group)target;
+            for (int i =0;i<group.ObjectList.Count;i++)
+            {
+                this.PushEvent(group.ObjectList[i]);
             }
         }
     }
@@ -786,10 +936,6 @@ namespace JyunrcaeaFramework
         /// 직사각형의 너비와 높이
         /// </summary>
         public ZeneretySize Size = new();
-        /// <summary>
-        /// 너비 및 높이의 배율
-        /// </summary>
-        public ZeneretyScale Scale = new();
 
         /// <summary>
         /// 출력할 색상
@@ -818,16 +964,11 @@ namespace JyunrcaeaFramework
 
         public DrawableTexture Texture = null!;
 
-        /// <summary>
-        /// 렌더링 될 이미지의 절대적 크기
-        /// (null 로 설정시 원본 이미지의 크기를 따릅니다.)
-        /// </summary>
-        public ZeneretySize? AbsoluteSize = null;
-
-        /// <summary>
-        /// 이미지의 너비 및 높이의 배율
-        /// </summary>
-        public ZeneretyScale Scale = new();
+        public override byte Opacity { get => Texture.Opacity;
+            set {
+                Texture.Opacity = value;
+            }
+        }
 
         internal override int RealWidth => (int)((AbsoluteSize is null ? Texture.Width : AbsoluteSize.Width) * Scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
         internal override int RealHeight => (int)((AbsoluteSize is null ? Texture.Height : AbsoluteSize.Height) * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
@@ -850,16 +991,25 @@ namespace JyunrcaeaFramework
 
         void AddProcedure(ZeneretyObject obj)
         {
+            if (obj.Parent != null)
+            {
+                // 버그 방지 차원으로 넣은 기능
+                throw new JyunrcaeaFrameworkException("이 객체는 이미 다른 그룹에 속해있습니다.");
+            }
+            obj.Parent = this.Parent;
             if (obj is Group)
             {
                 FrameworkFunction.Prepare((Group)obj);
-                ((Group)obj).ObjectList.Ancestor = Ancestor;
                 return;
             }
             if (obj is Image)
             {
                 ((Image)obj).Texture.Ready();
                 return;
+            }
+            if (obj is Text)
+            {
+                ((Text)obj).TFT.Ready();
             }
             if(Ancestor is not null) Ancestor.EventManager.Add(obj);
         }
@@ -929,6 +1079,7 @@ namespace JyunrcaeaFramework
     /// </summary>
     public static class Display
     {
+
         /// <summary>
         /// Zenerety 렌더링 방식에 사용되는 장면 탐색기입니다.
         /// </summary>
@@ -1391,10 +1542,11 @@ namespace JyunrcaeaFramework
 
             if (Framework.NewRenderingSolution)
             {
-                for (int i = 0;i<Display.Target.EventManager.Resize.Count;i++)
-                {
-                    Display.Target.EventManager.Resize[i].Resize();
-                }
+                Display.Target.Resize();
+                //for (int i = 0;i<Display.Target.EventManager.Resize.Count;i++)
+                //{
+                //    Display.Target.EventManager.Resize[i].Resize();
+                //}
                 return;
             }
 
@@ -1456,11 +1608,12 @@ namespace JyunrcaeaFramework
         {
             if (Framework.NewRenderingSolution)
             {
-                for (int i = 0; i < Display.Target.EventManager.Update.Count; i++)
-                {
-                    Display.Target.EventManager.Update[i].Update(ms);
-                }
+                //for (int i = 0; i < Display.Target.EventManager.Update.Count; i++)
+                //{
+                //    Display.Target.EventManager.Update[i].Update(ms);
+                //}
                 Display.Target.ResetPosition(new(Window.Width,Window.Height));
+                Display.Target.Update(ms);
                 Animation.AnimationQueue.Update();
                 updatetime = updatems;
                 return;
@@ -1781,7 +1934,7 @@ namespace JyunrcaeaFramework
     public struct RenderOption
     {
         internal SDL.SDL_RendererFlags option = new();
-        public byte anti_level = 0;
+        public bool anti_alising = true;
 
         public RenderOption(bool sccelerated = true, bool software = true, bool vsync = false, bool anti_aliasing = true)
         {
@@ -1789,18 +1942,7 @@ namespace JyunrcaeaFramework
             if (software) option |= SDL.SDL_RendererFlags.SDL_RENDERER_SOFTWARE;
             if (vsync) option |= SDL.SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC;
             //option |= SDL.SDL_RendererFlags.SDL_RENDERER_TARGETTEXTURE;
-            if (anti_aliasing)
-            {
-                anti_level = 2;
-                if (SDL.SDL_SetHint(SDL.SDL_HINT_RENDER_SCALE_QUALITY, "2") == 0)
-                {
-                    anti_level = 1;
-                    if (SDL.SDL_SetHint(SDL.SDL_HINT_RENDER_SCALE_QUALITY, "1") == 0)
-                    {
-                        anti_level = 0;
-                    }
-                }
-            }
+            this.anti_alising = anti_aliasing;
         }
     }
     /// <summary>
@@ -4155,6 +4297,9 @@ namespace JyunrcaeaFramework
         public byte Alpha { get => this.colorbase.a; set => this.colorbase.a = value; }
 
         internal SDL.SDL_Color colorbase = new();
+
+        public static readonly Color White = new();
+        public static readonly Color Black = new(0,0,0,255);
     }
 
     /// <summary>
@@ -4169,6 +4314,15 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static class Mouse
         {
+            /// <summary>
+            /// 창 포커스를 얻기위해 마우스를 클릭했을때 생긴 입력 이벤트를 차단할지에 대한 여부입니다.
+            /// </summary>
+            public static bool BlockEventAtToFocus
+            {
+                get => SDL.SDL_GetHint(SDL.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH) == "1";
+
+                set => SDL.SDL_SetHint(SDL.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, value ? "1":"0");
+            }
 
             internal static SDL.SDL_Point position = new();
 
@@ -4196,14 +4350,24 @@ namespace JyunrcaeaFramework
             /// </summary>
             public static bool HideCursor
             {
-                get => false;
+                get => cursorhide;
                 set
                 {
                     SDL.SDL_ShowCursor((cursorhide = value) ? 0 : 1);
                 }
             }
 
-
+            /// <summary>
+            /// 커서가 숨겨져 있을때 창 테두리를 조작할수 있게 할지에 대한 여부입니다. (창 조절, 이동 등)
+            /// </summary>
+            public static bool BlockWindowFrame
+            {
+                set
+                {
+                    SDL.SDL_SetHint(SDL.SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN, value ? "1" : "0");
+                }
+                get => SDL.SDL_GetHint(SDL.SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN) == "1";
+            }
 
             /// <summary>
             /// 마우스 버튼 목록
@@ -5025,6 +5189,7 @@ namespace JyunrcaeaFramework
 
         internal virtual void Ready()
         {
+            if (this.texture == IntPtr.Zero) return;
             if (SDL.SDL_SetTextureBlendMode(this.texture, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) < 0) throw new JyunrcaeaFrameworkException($"텍스쳐의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             if (alpha != 255) SDL.SDL_SetTextureAlphaMod(texture, alpha);
             
@@ -5135,13 +5300,14 @@ namespace JyunrcaeaFramework
         }
     }
 
-    public class TextureFromText : DrawableTexture
+    public class TextureFromText : DrawableTexture, IDisposable
     {
         public string Fontfile,Text;
-        public int Size;
+        public int Size { get; internal set; }
         public Color Color;
         public Color? BackgroundColor;
-        public bool Blended;
+        public bool Blended = true;
+        public uint WarpLength = 0;
 
         public TextureFromText(string Fontfile,int Size,string Text,Color Color,Color? BackgroundColor = null,bool Blended = true) {
             this.Fontfile = Fontfile;
@@ -5155,33 +5321,77 @@ namespace JyunrcaeaFramework
         public void ReRender()
         {
             if (this.texture != IntPtr.Zero) Free();
-            Ready();
+            Rendering();
         }
+
+        public void Resize(int size)
+        {
+            if (this.Size == size) return;
+            if (SDL_ttf.TTF_SetFontSize(fontsource,this.Size = size) != 0) throw new JyunrcaeaFrameworkException($"글꼴 크기를 조정하는데 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
+        }
+
+        SDL.SDL_Surface surface;
+        IntPtr buffer;
+        IntPtr fontsource;
 
         internal override void Ready()
         {
-            IntPtr fontsource = SDL_ttf.TTF_OpenFont(Fontfile, Size);
-            if (fontsource == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"불러올수 없는 글꼴 파일 SDL Error: {SDL.SDL_GetError()}"); 
-            IntPtr surface = (BackgroundColor == null) ?
-                (Blended ? SDL_ttf.TTF_RenderUNICODE_Blended(fontsource, Text, Color.colorbase) : SDL_ttf.TTF_RenderUNICODE_Solid(fontsource, Text, Color.colorbase)) : SDL_ttf.TTF_RenderText_Shaded(fontsource,Text, Color.colorbase, BackgroundColor.colorbase);
-            if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스트를 렌더링 하는데 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
-            this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer,surface);
-            SDL.SDL_FreeSurface(surface);
+            fontsource = SDL_ttf.TTF_OpenFont(Fontfile, Size);
+            if (fontsource == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"불러올수 없는 글꼴 파일 SDL Error: {SDL.SDL_GetError()}");
+            //SDL_ttf.TTF_SetFontHinting(fontsource, SDL_ttf.TTF_HINTING_MONO);
+            Rendering();
+            base.Ready();
+        }
+
+        internal void Rendering()
+        {
+            if (this.texture != IntPtr.Zero)
+            {
+                Free();
+            }
+            if (BackgroundColor is null)
+            {
+                if (Blended)
+                {
+                    buffer = SDL_ttf.TTF_RenderUTF8_Blended_Wrapped(fontsource, Text, Color.colorbase,this.WarpLength);
+                }
+                else
+                {
+                    buffer = SDL_ttf.TTF_RenderUTF8_Solid_Wrapped(fontsource, Text, Color.colorbase, this.WarpLength);
+                }
+            }
+            else
+            {
+                buffer = SDL_ttf.TTF_RenderUTF8_Shaded_Wrapped(fontsource, Text, Color.colorbase, BackgroundColor.colorbase, this.WarpLength);
+            }
+            if (buffer == IntPtr.Zero)
+            {
+                throw new JyunrcaeaFrameworkException($"텍스쳐를 렌더링 하는데 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
+            }
+            surface = SDL.PtrToStructure<SDL.SDL_Surface>(buffer);
+            this.absolutesrc.x = surface.w;
+            this.absolutesrc.y = surface.h;
+            this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer, buffer);
+            SDL.SDL_FreeSurface(buffer);
             if (this.texture == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"렌더링 된 텍스트를 텍스쳐로 변환하는데 실패하였습니다. {SDL.SDL_GetError()}");
-            SDL.SDL_QueryTexture(this.texture, out _, out _, out this.absolutesrc.x, out this.absolutesrc.y);
             this.needresettexture = true;
             if (!this.FixedRenderRange)
             {
                 this.src.w = this.absolutesrc.x;
                 this.src.h = this.absolutesrc.y;
             }
-            base.Ready();
         }
 
         internal override void Free()
         {
             SDL.SDL_DestroyTexture(this.texture);
             this.texture = IntPtr.Zero;
+        }
+
+        public void Dispose()
+        {
+            SDL_ttf.TTF_CloseFont(fontsource);
+            if (this.texture != IntPtr.Zero) Free();
         }
     }
 
@@ -5217,20 +5427,37 @@ namespace JyunrcaeaFramework
 
     public class Font : IDisposable
     {
+        /// <summary>
+        /// 기본 글꼴파일의 경로를 설정합니다.
+        /// Text 객체 생성시 글꼴파일 경로를 null로 설정할경우 이 경로가 채택됩니다.
+        /// </summary>
+        public static string DefaultPath = string.Empty;
+
         internal IntPtr fontsource = IntPtr.Zero;
 
         internal int sz = 1;
 
+        /// <summary>
+        /// 글꼴의 크기입니다.
+        /// </summary>
         public int Size { get => sz; set {
                 if (SDL_ttf.TTF_SetFontSize(this.fontsource, this.sz = value) == -1) throw new JyunrcaeaFrameworkException($"폰트 로드에 실패했습니다. SDL_TTF Error: {SDL_ttf.TTF_GetError()}");
             }
         }
 
+        /// <summary>
+        /// 글꼴을 불러옵니다.
+        /// </summary>
+        /// <param name="filename">글꼴 파일 경로</param>
+        /// <param name="size">글자 크기 (높이 기준)</param>
         public Font(string filename,int size)
         {
             this.fontsource = SDL_ttf.TTF_OpenFont(filename, this.sz = size);
         }
 
+        /// <summary>
+        /// 불러온 글꼴을 메모리에서 해제합니다.
+        /// </summary>
         public void Dispose() {
             SDL_ttf.TTF_CloseFont(this.fontsource);
         }

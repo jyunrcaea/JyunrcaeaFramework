@@ -122,7 +122,8 @@ namespace SDL2
 			}
 
 			int bufferSize = Utf8Size(str);
-			byte* buffer = (byte*) Marshal.AllocHGlobal(bufferSize);
+			//SDL2-CS pull request
+			byte* buffer = (byte*) NativeMemory.Alloc((nuint)bufferSize);
 			fixed (char* strPtr = str)
 			{
 				Encoding.UTF8.GetBytes(strPtr, str.Length + 1, buffer, bufferSize);

@@ -11,8 +11,7 @@ C# framework help to make 2D game or application easy.
 * It is more simple and easy than another game engine or framework to setting development environment.
 * It is support multi-core process (or multi-threading).
 * It is lightweight. (maybe)
-* You can use it easy if you knew C#.
-
+* You can use it easy if you kne
 # Disadvantages of Jyunrcaea! Framework
 * It lacks functionality.
 * It is more less convenient than another game engine or framework.

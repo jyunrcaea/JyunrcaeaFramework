@@ -644,8 +644,16 @@ namespace SDL2
 			SDL.SDL_Color fg
 		);
 
-		/* IntPtr refers to an SDL_Surface*, font to a TTF_Font* */
 		[DllImport(nativeLibName, CallingConvention = CallingConvention.Cdecl)]
+		public static extern IntPtr TTF_RenderUNICODE_LCD_Wrapped(
+			IntPtr font,
+            [In()][MarshalAs(UnmanagedType.LPWStr)] string text,
+			SDL.SDL_Color fg,
+			uint wrapped
+            );
+
+        /* IntPtr refers to an SDL_Surface*, font to a TTF_Font* */
+        [DllImport(nativeLibName, CallingConvention = CallingConvention.Cdecl)]
 		public static extern IntPtr TTF_RenderText_Blended_Wrapped(
 			IntPtr font,
 			[In()] [MarshalAs(UnmanagedType.LPStr)]
