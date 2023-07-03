@@ -123,12 +123,6 @@ namespace Jyunrcaea
                 case Input.Keycode.F4:
                     Program.fr.Hide = !Program.fr.Hide;
                     break;
-#if DEBUG
-                case Input.Keycode.F5:
-                    while (Debug.LogCount != 0)
-                        Console.WriteLine(Debug.GetLog);
-                    break;
-#endif
                 case Input.Keycode.F6:
                     Window.Move(null, null);
                     break;

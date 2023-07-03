@@ -158,7 +158,7 @@ namespace Jyunrcaea
             {
                 OriginY = VerticalPositionType.Bottom;
                 DrawY = VerticalPositionType.Top;
-                this.MoveAnimationState.CalculationFunction = Animation.GetAnimation(AnimationType.Ease_Out);
+                this.MoveAnimationState.CalculationFunction = Animation.Type.EaseOutSine;
                 this.FontColor = new(31, 30, 51);
                 this.Move(0, 20);
                 this.Opacity(0);
@@ -373,7 +373,7 @@ namespace Jyunrcaea
             {
                 this.OriginX = HorizontalPositionType.Left;
                 this.Color = new(alpha: 0);
-                this.OpacityAnimationState.CalculationFunction = this.MoveAnimationState.CalculationFunction = Animation.GetAnimation(AnimationType.Ease_Out);
+                this.OpacityAnimationState.CalculationFunction = this.MoveAnimationState.CalculationFunction = Animation.Type.EaseOutSine;
             }
 
             
