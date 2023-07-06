@@ -47,16 +47,11 @@ SDL3 및 바인딩 된 C# 코드가 릴리즈 될때 이 프레임워크를 판�
 SDL2 라이브러리를 .dll 대신 .so 를 사용하면 실행 가능할것으로 보고 있습니다.<br>
 (실행은 .NET Runtime 만 있으면 되므로, Wine 은 필요하지 않겠습니다.)
 ### Android
-.NET 6.0 Runtime도 안되고, 최신 Mono도 C# 8.0 밖에 지원 안해서 (Jyunrcaea! Framework는 C# 10.0 을 씀)<br>
-지원하고 싶어도 못함... Xamarin 또는 Osu! Framework 쓰셈;;
+노답.
 
 ## 라이선스
-이 프로젝트 및 코드들은 MIT License가 적용됩니다.<br><br>
-즉 요약하자면
-* 복제, 배포, 수정 가능
-* 배포시 이 라이선스 사본 첨부해야됨
-* 이 프로젝트의 개발자 본인은 보증 및 책임을 지지 않음
-* 결론적으로 오픈 소스임.
+이 프로젝트 및 코드들은 [Creative Commons Zero v1.0 Universal 라이선스](LICENSE)가 적용됩니다.<br>
+[0.6.2 버전 이하의 프로젝트들은 모두 MIT 라이선스가 적용됩니다.](https://github.com/jyunrcaea/JyunrcaeaFramework/tree/0.6.2-version)
 
 ## 근황
 조만간 SDL3 가 정식으로 출시될꺼 같습니다.<br>
