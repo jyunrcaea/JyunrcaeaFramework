@@ -293,13 +293,13 @@ namespace Jyunrcaea
             public MainScene() {
                 this.EventRejection = true;
                 this.Hide = true;
-                arrangebitmap = new(new (()=>LoadBitmap(this)));
-                this.AddSprite(new ArrangePrograss());
+                //arrangebitmap = new(new (()=>LoadBitmap(this)));
+                //this.AddSprite(new ArrangePrograss());
             }
 
             public override void Start()
             {
-                arrangebitmap.Start();
+                //arrangebitmap.Start();
                 base.Start();
                 Resize();
             }

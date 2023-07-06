@@ -1,4 +1,6 @@
 ﻿using JyunrcaeaFramework;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 class Program
 {
@@ -11,76 +13,181 @@ class Program
         Display.FrameLateLimit *= 2;
         Font.DefaultPath = "font.ttf";
 
-        Window.BackgroundColor = Color.Black;
-        Display.Target.ObjectList.Add(new Box() { Color = new(), Size = new(Window.Width,Window.Height) });
-        Display.Target.ObjectList.Add(new Hello());
+        Window.BackgroundColor = Color.White;
 
-        //Display.Target.ObjectList.Add(new PoweredBy());
-        Framework.Run();
+        Display.Target.Objects.Add(new Windows());
+        Display.Target.Objects.Add(new FrameAnalyze());
+
+        Framework.Run(CallResize: true, ShowWindow: true);
     }
 
 
 }
 
-class Hello :Text
-{
-    public Hello() : base("안녕하세요!", 50, Color.Black) { }
 
-    public override void Resize()
+class Windows : Group, Events.KeyDown
+{
+
+
+    public Windows()
     {
-        base.Resize();
+        this.Objects.AddRange(
+            new WindowForm("614project", 720, 480),
+            new WindowForm("sus", 614, 360, 720, 480)
+            );
     }
+
+    public void KeyDown(Input.Keycode k)
+    {
+        switch (k)
+        {
+            case Input.Keycode.F3:
+#if DEBUG
+                Debug.ObjectDrawDebuging = !Debug.ObjectDrawDebuging;
+#endif
+                break;
+        }
+    }
+}
+
+class WindowForm : Group, Events.MouseMove, Events.MouseKeyDown, Events.MouseKeyUp
+{
+    Box background = new();
+    Box TitleBar = new();
+    Text title;
+    Box Close = new(30,30,new(255,10,10,100));
+
+    Color Normal = new(150, 150, 150, 128);
+    Color Hover = new(150, 150, 200, 150);
+
+    public WindowForm(string title,int width, int height,int x = 0,int y = 0)
+    {
+        this.title = new(title, 20) { RelativeSize = false, X = 2};
+        background.Color = new(200, 200, 200, 128);
+        TitleBar.Color = this.Normal;
+        //this.RenderRange = new(width, height);
+        this.X = x;
+        this.Y = y;
+
+        this.Objects.AddRange(
+            background,
+            TitleBar,
+            Close,
+            this.title
+            );
+
+        background.RelativeSize = TitleBar.RelativeSize = false;
+        background.Size.Width = TitleBar.Size.Width = width;
+        background.Size.Height = height;
+        TitleBar.Size.Height = 30;
+        Close.CenterY = TitleBar.CenterY = this.title.CenterY = this.background.CenterY = 0;
+        Close.DrawY = TitleBar.DrawY = this.title.DrawY = this.background.DrawY = VerticalPositionType.Bottom;
+        TitleBar.CenterX = this.title.CenterX = background.CenterX = 0;
+        TitleBar.DrawX = this.title.DrawX = background.DrawX = HorizontalPositionType.Right;
+
+        Close.CenterX = 0;
+        Close.DrawX = HorizontalPositionType.Left;
+        Close.X = width;
+    }
+
 
     public override void Update(float ms)
     {
         base.Update(ms);
     }
-}
 
-
-class JF : Group
-{
-    Box background = new() { Color = new(255,240,240) };
-    Image icon = new("Icon.png");
-
-    public JF()
+    public void MouseMove()
     {
-        this.ObjectList.Add(background);
-        this.ObjectList.Add(icon);
+        if (grab)
+        {
+            this.X = Input.Mouse.X + mousew;
+            this.Y = Input.Mouse.Y + mouseh;
+            return;
+        }
+        if (Convenience.MouseOver(TitleBar))
+        {
+            TitleBar.Color = this.Hover;
+        }
+        else
+        {
+            TitleBar.Color = this.Normal;
+        }
+        if (Convenience.MouseOver(Close))
+        {
+            Close.Color.Alpha = 255;
+        } else
+        {
+            Close.Color.Alpha = 100;
+        }
     }
 
     public override void Prepare()
     {
         base.Prepare();
-        background.Size.Width = icon.AbsoluteWidth;
-        background.Size.Height = icon.AbsoluteHeight;
-        Animation.Add(new Animation.Info.Rotation(icon, 360, null, 2000, 0, null, Animation.Type.EaseInOutSine));
     }
 
+    bool grab = false;
+
+    int mousew=0;
+    int mouseh = 0;
+
+    public void MouseKeyDown(Input.Mouse.Key key)
+    {
+        if (key != Input.Mouse.Key.Left) return;
+        if (Convenience.MouseOver(Close))
+        {
+            this.Parent!.Objects.Remove(this);
+            return;
+        }
+        if (Convenience.MouseOver(TitleBar))
+        {
+            grab = true;
+            mousew = this.X - Input.Mouse.X;
+            mouseh = this.Y - Input.Mouse.Y;
+            this.Parent!.Objects.Switch(this);
+            return;
+        }
+    }
+
+    public void MouseKeyUp(Input.Mouse.Key key)
+    {
+        if (key != Input.Mouse.Key.Left) return;
+        grab = false;
+    }
 }
 
-class PoweredBy : Group
+class FrameAnalyze : Text
 {
-    Image icon = new("Icon.png");
-    Text title = new("망했어욤", 30);
-
-    public PoweredBy()
+    public FrameAnalyze() : base("측정중...", 20)
     {
-        this.ObjectList.Add(icon);
-        this.ObjectList.Add(title);
-        title.CenterY = 1;
-        title.DrawY = VerticalPositionType.Top;
-        title.Background = new();
+        this.CenterX = 0;
+        this.CenterY = 1;
+        this.DrawX = HorizontalPositionType.Right;
+        this.DrawY = VerticalPositionType.Top;
     }
 
-    public override void Prepare()
-    {
-        base.Prepare();
-        Animation.Add(new Animation.Info.Rotation(icon, 360, null, 2000, 0, null, Animation.Type.EaseInOutSine));
-    }
+    int framecount = 0;
+
+    uint endtime = 1000;
 
     public override void Update(float ms)
     {
+        if (endtime <= Framework.RunningTime)
+        {
+            endtime += 1000;
+            this.Content = "FPS: " + framecount;
+            framecount = 0;
+        }
+        framecount++;
         base.Update(ms);
+    }
+}
+
+class One : Circle
+{
+    public One()
+    {
+        this.Radius = 15;
+        this.Color = new(200, 150, 150,150);
     }
 }

@@ -1,5 +1,8 @@
 ﻿#define WINDOWS
 using SDL2;
+using System.Data;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Xml;
 
@@ -50,6 +53,25 @@ namespace JyunrcaeaFramework
         /// ODD 실행시 장면의 테두리를 표시할 색입니다.
         /// </summary>
         public static Color SceneDrawDebugingLineColor = new(50, 255, 50);
+
+        internal static void ZeneretyODD(Group group)
+        {
+            for (int i = 0; i < group.Objects.Count; i++)
+            {
+                if (group.Objects[i] is Group)
+                {
+                    ZeneretyODD((Group)group.Objects[i]);
+                    continue;
+                }
+
+                if (group.Objects[i] is ZeneretyDrawableObject)
+                {
+                    SDL.SDL_SetRenderDrawColor(Framework.renderer, ObjectDrawDebugingLineColor.colorbase.r, ObjectDrawDebugingLineColor.colorbase.g, ObjectDrawDebugingLineColor.colorbase.b, ObjectDrawDebugingLineColor.colorbase.a);
+                    SDL.SDL_RenderDrawRect(Framework.renderer, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition);
+                }
+
+            }
+        }
     }
 #endif
 
@@ -396,7 +418,7 @@ namespace JyunrcaeaFramework
                 case SDL.SDL_EventType.SDL_TEXTEDITING:
                     unsafe
                     {
-                        //Console.WriteLine("Edit Text: {0}\nCursor Pos: {1}\nSelected Line {2}", new string((sbyte*)e.edit.text), e.edit.start, e.edit.length);
+                        Console.WriteLine("Edit Text: {0}\nCursor Pos: {1}\nSelected Line {2}", new string((sbyte*)e.edit.text), e.edit.start, e.edit.length);
                     }
                     break;
             }
@@ -416,55 +438,182 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static bool NewRenderingSolution = false;
 
-        static Stack<ZeneretySize> DrawPosStack = new();
+        internal static Stack<ZeneretySize> DrawPosStack = new();
 
-        static SDL.SDL_Rect DrawPos = new() { x = 0, y = 0 };
+        internal static SDL.SDL_Rect DrawPos = new() { x = 0, y = 0 };
+
+        internal static SDL.SDL_Rect RenderRange = new();
+
+        //internal static void Rendering(Group group)
+        //{
+        //    DrawPosStack.Push(new() { Width = DrawPos.x, Height = DrawPos.y });
+        //    int wx = DrawPos.x + group.Rx;
+        //    int hy = DrawPos.y + group.Ry;
+        //    if (group.RenderRange is null)
+        //    {
+        //        RenderRange = Window.size;
+        //    } else
+        //    {
+        //        RenderRange = new()
+        //        {
+        //            x = wx,
+        //            y = hy,
+        //            w = group.RenderRange.Width,
+        //            h = group.RenderRange.Height
+        //        };
+        //        wx = 0;
+        //        hy = 0;
+        //    }
+        //    SDL.SDL_RenderSetViewport(Framework.renderer, ref RenderRange);
+
+        //    for (int i = 0; i < group.ObjectList.Count; i++)
+        //    {
+        //        DrawPos.x = wx;
+        //        DrawPos.y = hy;
+
+        //        if (group.ObjectList[i] is Group)
+        //        {
+        //            Rendering((Group)group.ObjectList[i]);
+        //            continue;
+        //        }
+
+        //        if (group.ObjectList[i] is ZeneretyDrawableObject)
+        //        {
+        //            ZeneretyDrawableObject zdo = (ZeneretyDrawableObject)group.ObjectList[i];
+        //            DrawPos.w = zdo.RealWidth;
+        //            DrawPos.h = zdo.RealHeight;
+        //            DrawPos.x += zdo.Rx;
+        //            DrawPos.y += zdo.Ry;
+        //            if (zdo.DrawX != HorizontalPositionType.Right) DrawPos.x -= zdo.DrawX == HorizontalPositionType.Middle ? (int)(DrawPos.w * 0.5f) : DrawPos.w;
+        //            if (zdo.DrawY != VerticalPositionType.Bottom) DrawPos.y -= zdo.DrawY == VerticalPositionType.Middle ? (int)(DrawPos.h * 0.5f) : DrawPos.h;
+
+
+        //            if (zdo is Box)
+        //            {
+        //                SDL.SDL_SetRenderDrawColor(Framework.renderer,((Box)zdo).Color.colorbase.r, ((Box)zdo).Color.colorbase.g, ((Box)zdo).Color.colorbase.b, ((Box)zdo).Color.colorbase.a);
+        //                SDL.SDL_RenderFillRect(Framework.renderer, ref DrawPos);
+        //                continue;
+        //            }
+
+        //            if (zdo is Image)
+        //            {
+        //                SDL.SDL_RenderCopyEx(Framework.renderer, ((Image)zdo).Texture.texture, ref ((Image)zdo).Texture.src, ref DrawPos, ((Image)zdo).Rotation, IntPtr.Zero,SDL.SDL_RendererFlip.SDL_FLIP_NONE);
+        //                continue;
+        //            }
+
+        //            if (zdo is Text)
+        //            {
+        //                SDL.SDL_RenderCopyEx(Framework.renderer, ((Text)zdo).TFT.texture,ref ((Text)zdo).TFT.src, ref DrawPos, ((Text)zdo).Rotation,IntPtr.Zero,SDL.SDL_RendererFlip.SDL_FLIP_NONE);
+        //                continue;
+        //            }
+        //        }
+
+        //    }
+        //    var ret = DrawPosStack.Pop();
+        //    DrawPos.x = ret.Width;
+        //    DrawPos.y = ret.Height;
+        //}
 
         internal static void Rendering(Group group)
+        {
+            if (group.RenderRange is null)
+            {
+                SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
+            } else
+            {
+                SDL.SDL_Rect r = new() { x = 0, y = 0, w = group.RenderRange.Width, h = group.RenderRange.Height };
+                SDL.SDL_RenderSetViewport(Framework.renderer, ref r);
+            }
+            for (int i = 0; i < group.Objects.Count; i++)
+            {
+                if (group.Objects[i] is Group)
+                {
+                    Rendering((Group)group.Objects[i]);
+                    if (group.RenderRange is null)
+                    {
+                        SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
+                    }
+                    else
+                    {
+                        SDL.SDL_Rect r = new() { x = 0, y = 0, w = group.RenderRange.Width, h = group.RenderRange.Height };
+                        SDL.SDL_RenderSetViewport(Framework.renderer, ref r);
+                    }
+                    continue;
+                }
+
+                if (group.Objects[i] is Box)
+                {
+                    SDL.SDL_SetRenderDrawColor(Framework.renderer, ((Box)group.Objects[i]).Color.colorbase.r, ((Box)group.Objects[i]).Color.colorbase.g, ((Box)group.Objects[i]).Color.colorbase.b, ((Box)group.Objects[i]).Color.colorbase.a);
+                    SDL.SDL_RenderFillRect(Framework.renderer, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition);
+                    continue;
+                }
+
+                if (group.Objects[i] is Image)
+                {
+                    SDL.SDL_RenderCopyEx(Framework.renderer, ((Image)group.Objects[i]).Texture.texture, ref ((Image)group.Objects[i]).Texture.src, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition, ((Image)group.Objects[i]).Rotation, IntPtr.Zero, SDL.SDL_RendererFlip.SDL_FLIP_NONE);
+                    continue;
+                }
+
+                if (group.Objects[i] is Text)
+                {
+                    SDL.SDL_RenderCopyEx(Framework.renderer, ((Text)group.Objects[i]).TFT.texture, ref ((Text)group.Objects[i]).TFT.src, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition, ((Text)group.Objects[i]).Rotation, IntPtr.Zero, SDL.SDL_RendererFlip.SDL_FLIP_NONE);
+                    continue;
+                }
+
+                if (group.Objects[i] is Circle)
+                {
+                    SDL_gfx.filledCircleRGBA(Framework.renderer, (short)((Circle)group.Objects[i]).renderposition.x, (short)((Circle)group.Objects[i]).renderposition.y, ((Circle)group.Objects[i]).Radius, ((Circle)group.Objects[i]).Color.colorbase.r, ((Circle)group.Objects[i]).Color.colorbase.g, ((Circle)group.Objects[i]).Color.colorbase.b, ((Circle)group.Objects[i]).Color.colorbase.a);
+                }
+            }
+        }
+
+        internal static void Positioning(Group group)
         {
             DrawPosStack.Push(new() { Width = DrawPos.x, Height = DrawPos.y });
             int wx = DrawPos.x + group.Rx;
             int hy = DrawPos.y + group.Ry;
-            for (int i = 0; i < group.ObjectList.Count; i++)
+            if (group.RenderRange is null)
+            {
+                RenderRange = Window.size;
+            }
+            else
+            {
+                RenderRange = new()
+                {
+                    x = wx,
+                    y = hy,
+                    w = group.RenderRange.Width,
+                    h = group.RenderRange.Height
+                };
+                wx = 0;
+                hy = 0;
+            }
+
+            for (int i = 0; i < group.Objects.Count; i++)
             {
                 DrawPos.x = wx;
                 DrawPos.y = hy;
 
-                if (group.ObjectList[i] is Group)
+                if (group.Objects[i] is Group)
                 {
-                    Rendering((Group)group.ObjectList[i]);
+                    Positioning((Group)group.Objects[i]);
                     continue;
                 }
 
-                if (group.ObjectList[i] is ZeneretyDrawableObject)
+                if (group.Objects[i] is ZeneretyDrawableObject)
                 {
-                    ZeneretyDrawableObject zdo = (ZeneretyDrawableObject)group.ObjectList[i];
+                    ZeneretyDrawableObject zdo = (ZeneretyDrawableObject)group.Objects[i];
                     DrawPos.w = zdo.RealWidth;
                     DrawPos.h = zdo.RealHeight;
                     DrawPos.x += zdo.Rx;
                     DrawPos.y += zdo.Ry;
                     if (zdo.DrawX != HorizontalPositionType.Right) DrawPos.x -= zdo.DrawX == HorizontalPositionType.Middle ? (int)(DrawPos.w * 0.5f) : DrawPos.w;
                     if (zdo.DrawY != VerticalPositionType.Bottom) DrawPos.y -= zdo.DrawY == VerticalPositionType.Middle ? (int)(DrawPos.h * 0.5f) : DrawPos.h;
-
-
-                    if (zdo is Box)
-                    {
-                        SDL.SDL_SetRenderDrawColor(Framework.renderer,((Box)zdo).Color.colorbase.r, ((Box)zdo).Color.colorbase.g, ((Box)zdo).Color.colorbase.b, ((Box)zdo).Color.colorbase.a);
-                        SDL.SDL_RenderFillRect(Framework.renderer, ref DrawPos);
-                        continue;
-                    }
-
-                    if (zdo is Image)
-                    {
-                        SDL.SDL_RenderCopyEx(Framework.renderer, ((Image)zdo).Texture.texture, ref ((Image)zdo).Texture.src, ref DrawPos, ((Image)zdo).Rotation, IntPtr.Zero,SDL.SDL_RendererFlip.SDL_FLIP_NONE);
-                        continue;
-                    }
-
-                    if (zdo is Text)
-                    {
-                        SDL.SDL_RenderCopyEx(Framework.renderer, ((Text)zdo).TFT.texture,ref ((Text)zdo).TFT.src, ref DrawPos, ((Text)zdo).Rotation,IntPtr.Zero,SDL.SDL_RendererFlip.SDL_FLIP_NONE);
-                        continue;
-                    }
+                    zdo.renderposition.w = DrawPos.w;
+                    zdo.renderposition.h = DrawPos.h;
+                    zdo.renderposition.x = DrawPos.x;
+                    zdo.renderposition.y = DrawPos.y;
+                    continue;
                 }
 
             }
@@ -472,8 +621,6 @@ namespace JyunrcaeaFramework
             DrawPos.x = ret.Width;
             DrawPos.y = ret.Height;
         }
-
-
     }
 
     public delegate void ZeneretyEvent();
@@ -509,14 +656,23 @@ namespace JyunrcaeaFramework
         internal List<Events.Update> Update = new();
         internal List<Events.KeyDown> KeyDown = new();
         internal List<Events.KeyUp> keyUp = new();
+        internal List<Events.MouseMove> mouseMoves = new();
+        internal List<Events.MouseKeyDown> mouseKeyDowns = new();
+        internal List<Events.MouseKeyUp> mouseKeyUps = new();
 
         public void Add(ZeneretyObject obj)
         {
+            if (obj is not Group)
+            {
+                 Ad(Resize, obj);
+                 Ad(Update, obj);
+            }
             Ad(Resized, obj);
-            Ad(Resize, obj);
-            Ad(Update, obj);
             Ad(KeyDown, obj);
             Ad(keyUp, obj);
+            Ad(mouseMoves, obj);
+            Ad(mouseKeyDowns, obj);
+            Ad(mouseKeyUps, obj);
         }
 
         public void Remove(object obj)
@@ -526,6 +682,9 @@ namespace JyunrcaeaFramework
             Rd(Update, obj);
             Rd(KeyDown, obj);
             Rd(keyUp, obj);
+            Rd(mouseMoves, obj);
+            Rd(mouseKeyDowns, obj);
+            Rd(mouseKeyUps, obj);
         }
 
         internal void Ad<T>(List<T> li,object obj)
@@ -664,10 +823,11 @@ namespace JyunrcaeaFramework
 
         public Group? Parent { get; internal set; } = null;
 
-        /// <summary>
-        /// 표시할 범위를 제한합니다. null 일경우 부모의 속성을 따릅니다.
-        /// </summary>
-        //public ZeneretySize? RenderRange = null;
+        public T TypedParent<T>() where T : Group
+        {
+            if (this.Parent is null) throw new JyunrcaeaFrameworkException("이 객체가 포함된 그룹이 없습니다.");
+            return (T)this.Parent;
+        }
 
         internal int Cx = 0, Cy = 0;
 
@@ -738,32 +898,10 @@ namespace JyunrcaeaFramework
         /// </summary>
         public bool RelativeSize = true;
 
-        //internal HorizontalPositionType dx = HorizontalPositionType.Middle;
-        //internal VerticalPositionType dy = VerticalPositionType.Middle;
-        //public HorizontalPositionType DrawX
-        //{
-        //    set
-        //    {
-        //        dx = value;
-        //        if (value == HorizontalPositionType.Right) dxw = 0;
-        //        else dxw = (value == HorizontalPositionType.Middle ? (int)(RealWidth * 0.5f) : RealWidth);
-        //    }
-        //    get => dx;
-        //}
-        //public VerticalPositionType DrawY
-        //{
-        //    set
-        //    {
-        //        dy = value;
-        //        if (value == VerticalPositionType.Middle) dyh = 0;
-        //        else dyh = (value == VerticalPositionType.Middle ? (int)(RealHeight * 0.5f) : RealHeight);
-        //    }
-        //    get => dy;
-        //}
+        internal SDL.SDL_Rect renderposition = new();
+
         public HorizontalPositionType DrawX = HorizontalPositionType.Middle;
         public VerticalPositionType DrawY = VerticalPositionType.Middle;
-
-
     }
 
     /// <summary>
@@ -792,7 +930,7 @@ namespace JyunrcaeaFramework
 
         public Group()
         {
-            ObjectList = new(this);
+            Objects = new(this);
         }
 
         internal TopGroup? Ancestor = null;
@@ -800,7 +938,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 묶을 객체들
         /// </summary>
-        public ZeneretyList ObjectList { get; protected set; } = null!;
+        public ZeneretyList Objects { get; protected set; } = null!;
 
         internal virtual void ResetPosition(ZeneretySize Position)
         {
@@ -809,11 +947,11 @@ namespace JyunrcaeaFramework
                 Position.Width = this.RenderRange.Width;
                 Position.Height = this.RenderRange.Height;
             }
-            for (int i = 0; i < ObjectList.Count; i++)
+            for (int i = 0; i < Objects.Count; i++)
             {
-                ObjectList[i].Cx = (int)(Position.Width * ObjectList[i].CxD);
-                ObjectList[i].Cy = (int)(Position.Height * ObjectList[i].CyD);
-                if (ObjectList[i] is Group) ((Group)ObjectList[i]).ResetPosition(Position);
+                Objects[i].Cx = (int)(Position.Width * Objects[i].CxD);
+                Objects[i].Cy = (int)(Position.Height * Objects[i].CyD);
+                if (Objects[i] is Group) ((Group)Objects[i]).ResetPosition(Position);
             }
         }
 
@@ -850,23 +988,27 @@ namespace JyunrcaeaFramework
         /// </summary>
         public virtual void Prepare()
         {
-            for (int i = 0; i < this.ObjectList.Count; i++)
+            for (int i = 0; i < this.Objects.Count; i++)
             {
-                if (this.ObjectList[i] is Group)
+                this.PushEvent(this.Objects[i]);
+
+                if (this.Objects[i] is Group)
                 {
-                    ((Group)this.ObjectList[i]).ObjectList.Ancestor =((Group)this.ObjectList[i]).Ancestor = this.Ancestor;
-                    ((Group)this.ObjectList[i]).Prepare();
+                    ((Group)this.Objects[i]).Objects.Ancestor =((Group)this.Objects[i]).Ancestor = this.Ancestor;
+                    ((Group)this.Objects[i]).Prepare();
                     continue;
                 }
 
-                if (this.ObjectList[i] is Image)
+                if (this.Objects[i] is Image)
                 {
-                    ((Image)this.ObjectList[i]).Texture.Ready();
+                    ((Image)this.Objects[i]).Texture.Ready();
+                    continue;
                 }
 
-                if (this.ObjectList[i] is Text)
+                if (this.Objects[i] is Text)
                 {
-                    ((Text)ObjectList[i]).TFT.Ready();
+                    ((Text)Objects[i]).TFT.Ready();
+                    continue;
                 }
             }
         }
@@ -876,39 +1018,39 @@ namespace JyunrcaeaFramework
         /// </summary>
         public virtual void Release()
         {
-            for (int i = 0; i < this.ObjectList.Count; i++)
+            for (int i = 0; i < this.Objects.Count; i++)
             {
-                if (this.ObjectList[i] is Group)
+                if (this.Objects[i] is Group)
                 {
-                    ((Group)this.ObjectList[i]).Release();
+                    ((Group)this.Objects[i]).Release();
                     continue;
                 }
 
-                if (this.ObjectList[i] is Image)
+                if (this.Objects[i] is Image)
                 {
-                    ((Image)this.ObjectList[i]).Texture.Free();
+                    ((Image)this.Objects[i]).Texture.Free();
                 }
 
-                if (this.ObjectList[i] is Text)
+                if (this.Objects[i] is Text)
                 {
-                    ((Text)this.ObjectList[i]).TFT.Free();
+                    ((Text)this.Objects[i]).TFT.Free();
                 }
             }
         }
 
         public virtual void Update(float ms)
         {
-            for (int i=0;i<this.ObjectList.Count;i++)
+            for (int i=0;i<this.Objects.Count;i++)
             {
-                if (ObjectList[i] is Events.Update) ((Events.Update)ObjectList[i]).Update(ms);
+                if (Objects[i] is Events.Update) ((Events.Update)Objects[i]).Update(ms);
             }
         }
 
         public virtual void Resize()
         {
-            for (int i = 0; i < this.ObjectList.Count; i++)
+            for (int i = 0; i < this.Objects.Count; i++)
             {
-                if (ObjectList[i] is Events.Resize) ((Events.Resize)ObjectList[i]).Resize();
+                if (Objects[i] is Events.Resize) ((Events.Resize)Objects[i]).Resize();
             }
         }
 
@@ -920,9 +1062,9 @@ namespace JyunrcaeaFramework
                 return;
             }
             Group group = (Group)target;
-            for (int i =0;i<group.ObjectList.Count;i++)
+            for (int i =0;i<group.Objects.Count;i++)
             {
-                this.PushEvent(group.ObjectList[i]);
+                this.PushEvent(group.Objects[i]);
             }
         }
     }
@@ -932,15 +1074,21 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class Box : ZeneretyDrawableObject
     {
+        public Box(int width = 0,int height = 0,Color? color = null)
+        {
+            this.Size = new(width, height);
+            this.Color = color is null ? Color.White : color;
+        }
+
         /// <summary>
         /// 직사각형의 너비와 높이
         /// </summary>
-        public ZeneretySize Size = new();
+        public ZeneretySize Size;
 
         /// <summary>
         /// 출력할 색상
         /// </summary>
-        public Color Color = new();
+        public Color Color;
 
         internal override int RealWidth =>  (int)(Size.Width * Scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
         internal override int RealHeight => (int)(Size.Height * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
@@ -972,6 +1120,16 @@ namespace JyunrcaeaFramework
 
         internal override int RealWidth => (int)((AbsoluteSize is null ? Texture.Width : AbsoluteSize.Width) * Scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
         internal override int RealHeight => (int)((AbsoluteSize is null ? Texture.Height : AbsoluteSize.Height) * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
+    }
+
+    public class Circle : ZeneretyDrawableObject
+    {
+        public short Radius = 0;
+
+        public Color Color = new();
+
+        internal override int RealWidth => (int)(Radius * 2 * (RelativeSize ? Window.AppropriateSize : 1));
+        internal override int RealHeight => (int)(Radius * 2 * (RelativeSize ? Window.AppropriateSize : 1));
     }
 
     /// <summary>
@@ -1029,10 +1187,41 @@ namespace JyunrcaeaFramework
             }
         }
 
+        public new void AddRange(IEnumerable<ZeneretyObject> objs)
+        {
+            foreach(var a in objs)
+            {
+                Add(a);
+            }
+        }
+
+        public void AddRange(params ZeneretyObject[] objs)
+        {
+            for (int i =0;i < objs.Length;i++)
+            {
+                this.Add(objs[i]);
+            }
+        }
+
         public new void Insert(int index,ZeneretyObject zo)
         {
             base.Insert(index,zo);
             if (Framework.Running) AddProcedure(zo);
+        }
+
+
+        public bool Switch(ZeneretyObject target,int index = -1)
+        {
+            if (!base.Remove(target)) return false;
+
+            if (index == -1)
+            {
+                base.Add(target);
+            } else
+            {
+                base.Insert(index, target);
+            }
+            return true;
         }
 
         /// <summary>
@@ -1044,12 +1233,17 @@ namespace JyunrcaeaFramework
             if(base.Remove(obj) is false) return false;
             if (obj is Group)
             {
-                FrameworkFunction.Release((Group)obj);
+                ((Group)obj).Release();
                 return true;
             }
             if (obj is Image)
             {
                 ((Image)obj).Texture.Free();
+                return true;
+            }
+            if (obj is Text)
+            {
+                ((Text)obj).TFT.Free();
                 return true;
             }
             return true;
@@ -1062,7 +1256,7 @@ namespace JyunrcaeaFramework
             {
                 if (obj is Group)
                 {
-                    FrameworkFunction.Release((Group)obj);
+                    ((Group)obj).Release();
                     return;
                 }
                 if (obj is Image)
@@ -1070,6 +1264,11 @@ namespace JyunrcaeaFramework
                     ((Image)obj).Texture.Free();
                     return;
                 }
+                if (obj is Text)
+                {
+                    ((Text)obj).TFT.Free();
+                    return;
+                }  
             }
         }
     }
@@ -1221,6 +1420,14 @@ namespace JyunrcaeaFramework
                 if (!value) { Framework.Function.Resize(); Framework.Function.Resized(); }
             }
         }
+
+        public static string Title
+        {
+            get => SDL.SDL_GetWindowTitle(Framework.window);
+            set => SDL.SDL_SetWindowTitle(Framework.window, value);
+        }
+
+
 
         internal static int beforewidth=0, beforeheight=0;
 
@@ -1435,17 +1642,17 @@ namespace JyunrcaeaFramework
         //Start와 비슷
         internal static void Prepare(Group group)
         {
-            for (int i=0;i<group.ObjectList.Count;i++)
+            for (int i=0;i<group.Objects.Count;i++)
             {
-                if (group.ObjectList[i] is Group)
+                if (group.Objects[i] is Group)
                 {
-                    Prepare((Group)group.ObjectList[i]);
+                    Prepare((Group)group.Objects[i]);
                     continue;
                 }
                  
-                if (group.ObjectList[i] is Image)
+                if (group.Objects[i] is Image)
                 {
-                    ((Image)group.ObjectList[i]).Texture.Ready();
+                    ((Image)group.Objects[i]).Texture.Ready();
                 }
             }
         }
@@ -1453,17 +1660,17 @@ namespace JyunrcaeaFramework
         //Stop, Free 와 비슷
         internal static void Release(Group group)
         {
-            for (int i = 0; i < group.ObjectList.Count; i++)
+            for (int i = 0; i < group.Objects.Count; i++)
             {
-                if (group.ObjectList[i] is Group)
+                if (group.Objects[i] is Group)
                 {
-                    Release((Group)group.ObjectList[i]);
+                    Release((Group)group.Objects[i]);
                     continue;
                 }
 
-                if (group.ObjectList[i] is Image)
+                if (group.Objects[i] is Image)
                 {
-                    ((Image)group.ObjectList[i]).Texture.Free();
+                    ((Image)group.Objects[i]).Texture.Free();
                 }
 
 
@@ -1563,7 +1770,7 @@ namespace JyunrcaeaFramework
         internal override void Draw()
         {
             if (endtime > Framework.frametimer.ElapsedTicks) {
-                if (Framework.SavingPerformance && endtime > Framework.frametimer.ElapsedTicks + 2000) Thread.Sleep(1);
+                if (Framework.SavingPerformance && endtime > Framework.frametimer.ElapsedTicks + 2000) SDL.SDL_Delay(1);
                 return;
             }
 
@@ -1572,6 +1779,9 @@ namespace JyunrcaeaFramework
             if (Framework.NewRenderingSolution)
             {
                 Framework.Rendering(Display.Target);
+#if DEBUG
+                if (Debug.ObjectDrawDebuging) Debug.ZeneretyODD(Display.Target);
+#endif
             }
             else
             {
@@ -1590,10 +1800,6 @@ namespace JyunrcaeaFramework
             }
             SDL.SDL_RenderPresent(Framework.renderer);
 
-            //lock (Framework.Function)
-            //{
-                
-            //}
             if (SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size) != 0) throw new JyunrcaeaFrameworkException($"SDL Error: {SDL.SDL_GetError()}");
             SDL.SDL_SetRenderDrawColor(Framework.renderer, Window.BackgroundColor.Red, Window.BackgroundColor.Green, Window.BackgroundColor.Blue, Window.BackgroundColor.Alpha);
             SDL.SDL_RenderClear(Framework.renderer);
@@ -1613,8 +1819,10 @@ namespace JyunrcaeaFramework
                 //    Display.Target.EventManager.Update[i].Update(ms);
                 //}
                 Display.Target.ResetPosition(new(Window.Width,Window.Height));
+                Framework.Positioning(Display.Target);
                 Display.Target.Update(ms);
                 Animation.AnimationQueue.Update();
+                Framework.Positioning(Display.Target);
                 updatetime = updatems;
                 return;
             }
@@ -1768,6 +1976,15 @@ namespace JyunrcaeaFramework
         /// <param name="e"></param>
         public virtual void KeyDown(Input.Keycode e)
         {
+            if (Framework.NewRenderingSolution)
+            {
+                ikd = Display.Target.EventManager.KeyDown.Count;
+                for(int i=0;i<ikd;i++)
+                {
+                    Display.Target.EventManager.KeyDown[i].KeyDown(e);
+                }
+                return;
+            }
             for (ikd = 0; ikd < Display.scenes.Count; ikd++)
                 if (!Display.scenes[ikd].EventRejection) Display.scenes[ikd].KeyDown(e);
         }
@@ -1779,6 +1996,15 @@ namespace JyunrcaeaFramework
         public virtual void MouseMove()
         {
             SDL.SDL_GetMouseState(out Input.Mouse.position.x, out Input.Mouse.position.y);
+            if (Framework.NewRenderingSolution)
+            {
+                int len = Display.Target.EventManager.mouseMoves.Count;
+                for (int i=0; i <len; i++)
+                {
+                    Display.Target.EventManager.mouseMoves[i].MouseMove();
+                }
+                return;
+            }
             for (imm = 0; imm < Display.scenes.Count; imm++)
             {
                 if (!Display.scenes[imm].EventRejection) Display.scenes[imm].MouseMove();
@@ -1789,6 +2015,15 @@ namespace JyunrcaeaFramework
 
         public virtual void MouseKeyDown(Input.Mouse.Key key)
         {
+            if (Framework.NewRenderingSolution)
+            {
+                int len = Display.Target.EventManager.mouseKeyDowns.Count;
+                for (int i = 0; i < len; i++)
+                {
+                    Display.Target.EventManager.mouseKeyDowns[i].MouseKeyDown(key);
+                }
+                return;
+            }
             if (Framework.MultiCoreProcess)
             {
                 Parallel.For(0, Display.scenes.Count, (i, _) => { if (!Display.scenes[i].EventRejection) Display.scenes[i].MouseKeyDown(key); });
@@ -1804,6 +2039,15 @@ namespace JyunrcaeaFramework
 
         public virtual void MouseKeyUp(Input.Mouse.Key key)
         {
+            if (Framework.NewRenderingSolution)
+            {
+                int len = Display.Target.EventManager.mouseKeyUps.Count;
+                for (int i = 0; i < len; i++)
+                {
+                    Display.Target.EventManager.mouseKeyUps[i].MouseKeyUp(key);
+                }
+                return;
+            }
             if (Framework.MultiCoreProcess)
             {
                 Parallel.For(0, Display.scenes.Count, (i, _) => { if (!Display.scenes[i].EventRejection) Display.scenes[i].MouseKeyUp(key); });
@@ -1819,6 +2063,15 @@ namespace JyunrcaeaFramework
 
         public virtual void KeyUp(Input.Keycode key)
         {
+            if (Framework.NewRenderingSolution)
+            {
+                iku = Display.Target.EventManager.keyUp.Count;
+                for (int i = 0; i < iku; i++)
+                {
+                    Display.Target.EventManager.keyUp[i].KeyUp(key);
+                }
+                return;
+            }
             if (Framework.MultiCoreProcess)
             {
                 Parallel.For(0, Display.scenes.Count, (i, _) => { if (!Display.scenes[i].EventRejection) Display.scenes[i].KeyUp(key); });
@@ -2459,89 +2712,6 @@ namespace JyunrcaeaFramework
     }
 #endif
     }
-
-    //public class ZeneretyScene : SceneInterface
-    //{
-
-    //    public Group Target { get; internal set; } = new();
-    //    List<Events.DropFile> drops = new();
-    //    List<Events.Resized> resizes = new();
-    //    List<Events.Update> updates = new();
-    //    List<Events.WindowMove> windowMovedInterfaces = new();
-    //    List<Events.KeyDown> keyDownEvents = new();
-    //    List<Events.MouseMove> mouseMoves = new();
-    //    List<Events.WindowQuit> windowQuits = new();
-    //    List<Events.KeyUp> keyUpEvents = new();
-    //    List<Events.MouseKeyDown> mouseButtonDownEvents = new();
-    //    List<Events.MouseKeyUp> mouseButtonUpEvents = new();
-    //    List<Events.WindowRestore> windowRestores = new();
-    //    List<Events.WindowMaximized> windowMaximizeds = new();
-    //    List<Events.WindowMinimized> windowMinimizeds = new();
-    //    List<Events.KeyFocusIn> keyfocusin = new();
-    //    List<Events.KeyFocusOut> keyfocusout = new();
-    //    List<Events.MouseFocusIn> mousefocusin = new();
-    //    List<Events.MouseFocusOut> mousefocusout = new();
-
-    //    public void AddObject(ZeneretyObject Object)
-    //    {
-    //        this.Target.ObjectList.Add(Object);
-    //        AddAtEventList(Object);
-    //    }
-
-
-
-    //    public bool RemoveObject(ZeneretyObject Object)
-    //    {
-    //        if (!this.Target.ObjectList.Remove(Object)) return false;
-    //        RemoveAtEventList(Object);
-    //        return true;
-    //    }
-
-
-
-    //    internal void AddAtEventList(ZeneretyObject NewSprite)
-    //    {
-    //        if (NewSprite is Events.DropFile) drops.Add((Events.DropFile)NewSprite);
-    //        if (NewSprite is Events.Resized) resizes.Add((Events.Resized)NewSprite);
-    //        if (NewSprite is Events.Update) updates.Add((Events.Update)NewSprite);
-    //        if (NewSprite is Events.WindowMove) windowMovedInterfaces.Add((Events.WindowMove)NewSprite);
-    //        if (NewSprite is Events.KeyDown) keyDownEvents.Add((Events.KeyDown)NewSprite);
-    //        if (NewSprite is Events.MouseMove) mouseMoves.Add((Events.MouseMove)NewSprite);
-    //        if (NewSprite is Events.WindowQuit) windowQuits.Add((Events.WindowQuit)NewSprite);
-    //        if (NewSprite is Events.KeyUp) keyUpEvents.Add((Events.KeyUp)NewSprite);
-    //        if (NewSprite is Events.MouseKeyDown) mouseButtonDownEvents.Add((Events.MouseKeyDown)NewSprite);
-    //        if (NewSprite is Events.MouseKeyUp) mouseButtonUpEvents.Add((Events.MouseKeyUp)NewSprite);
-    //        if (NewSprite is Events.WindowMaximized) windowMaximizeds.Add((Events.WindowMaximized)NewSprite);
-    //        if (NewSprite is Events.WindowMinimized) windowMinimizeds.Add((Events.WindowMinimized)NewSprite);
-    //        if (NewSprite is Events.WindowRestore) windowRestores.Add((Events.WindowRestore)NewSprite);
-    //        if (NewSprite is Events.KeyFocusIn) keyfocusin.Add((Events.KeyFocusIn)NewSprite);
-    //        if (NewSprite is Events.KeyFocusOut) keyfocusout.Add((Events.KeyFocusOut)NewSprite);
-    //        if (NewSprite is Events.MouseFocusIn) mousefocusin.Add((Events.MouseFocusIn)NewSprite);
-    //        if (NewSprite is Events.MouseFocusOut) mousefocusout.Add((Events.MouseFocusOut)NewSprite);
-    //    }
-
-    //    internal void RemoveAtEventList(ZeneretyObject RemovedObject)
-    //    {
-    //        if (RemovedObject is Events.DropFile) drops.Remove((Events.DropFile)RemovedObject);
-    //        if (RemovedObject is Events.Resized) resizes.Remove((Events.Resized)RemovedObject);
-    //        if (RemovedObject is Events.Update) updates.Remove((Events.Update)RemovedObject);
-    //        if (RemovedObject is Events.WindowMove) windowMovedInterfaces.Remove((Events.WindowMove)RemovedObject);
-    //        if (RemovedObject is Events.KeyDown) keyDownEvents.Remove((Events.KeyDown)RemovedObject);
-    //        if (RemovedObject is Events.MouseMove) mouseMoves.Remove((Events.MouseMove)RemovedObject);
-    //        if (RemovedObject is Events.WindowQuit) windowQuits.Remove((Events.WindowQuit)RemovedObject);
-    //        if (RemovedObject is Events.KeyUp) keyUpEvents.Remove((Events.KeyUp)RemovedObject);
-    //        if (RemovedObject is Events.MouseKeyDown) mouseButtonDownEvents.Remove((Events.MouseKeyDown)RemovedObject);
-    //        if (RemovedObject is Events.MouseKeyUp) mouseButtonUpEvents.Remove((Events.MouseKeyUp)RemovedObject);
-    //        if (RemovedObject is Events.WindowMaximized) windowMaximizeds.Remove((Events.WindowMaximized)RemovedObject);
-    //        if (RemovedObject is Events.WindowMinimized) windowMinimizeds.Remove((Events.WindowMinimized)RemovedObject);
-    //        if (RemovedObject is Events.WindowRestore) windowRestores.Remove((Events.WindowRestore)RemovedObject);
-    //        if (RemovedObject is Events.KeyFocusIn) keyfocusin.Remove((Events.KeyFocusIn)RemovedObject);
-    //        if (RemovedObject is Events.KeyFocusOut) keyfocusout.Remove((Events.KeyFocusOut)RemovedObject);
-    //        if (RemovedObject is Events.MouseFocusIn) mousefocusin.Remove((Events.MouseFocusIn)RemovedObject);
-    //        if (RemovedObject is Events.MouseFocusOut) mousefocusout.Remove((Events.MouseFocusOut)RemovedObject);
-    //    }
-    //}
-
 
     /// <summary>
     /// 객체를 담을수 있는 대표적인 장면입니다. 
@@ -4300,6 +4470,8 @@ namespace JyunrcaeaFramework
 
         public static readonly Color White = new();
         public static readonly Color Black = new(0,0,0,255);
+        public static readonly Color Gray = new(127, 127, 127);
+        
     }
 
     /// <summary>
@@ -4364,9 +4536,9 @@ namespace JyunrcaeaFramework
             {
                 set
                 {
-                    SDL.SDL_SetHint(SDL.SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN, value ? "1" : "0");
+                    SDL.SDL_SetHint(SDL.SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN, value ? "0" : "1");
                 }
-                get => SDL.SDL_GetHint(SDL.SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN) == "1";
+                get => SDL.SDL_GetHint(SDL.SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN) == "0";
             }
 
             /// <summary>
@@ -4744,6 +4916,15 @@ namespace JyunrcaeaFramework
             return SDL.SDL_PointInRect(ref Input.Mouse.position, ref part) == SDL.SDL_bool.SDL_TRUE;
         }
 
+        public static bool MouseOver(ZeneretyDrawableObject Target)
+        {
+            if (Target is Circle)
+            {
+                return Math.Sqrt(Math.Pow((Target.Rx - Input.Mouse.X), 2) + Math.Pow((Target.Ry - Input.Mouse.Y), 2)) <= ((Circle)Target).Radius;
+            }
+            return SDL.SDL_PointInRect(ref Input.Mouse.position, ref Target.renderposition) == SDL.SDL_bool.SDL_TRUE;
+        }
+
         /// <summary>
         /// 두 객체의 거리를 구합니다.
         /// </summary>
@@ -4919,7 +5100,7 @@ namespace JyunrcaeaFramework
                 /// <param name="FunctionWhenFinished">완료되었을때 실행할 함수 (null 일경우 아무것도 하지 않음)</param>
                 /// <param name="TimeClaculator">애니메이션 계산기 (null 일경우 기본)</param>
                 /// <param name="RepeatCount">반복 횟수, 0일경우 무한</param>
-                public Movement(ZeneretyObject Target,int X,int Y,double? StartTime, double AnimationTime,uint RepeatCount = 1,Action<ZeneretyObject>? FunctionWhenFinished = null, FunctionForAnimation? TimeClaculator = null) : base(Target,StartTime,AnimationTime,RepeatCount,FunctionWhenFinished,TimeClaculator) {
+                public Movement(ZeneretyObject Target,int X,int Y,double? StartTime, double AnimationTime,uint RepeatCount = 1, FunctionForAnimation? TimeClaculator = null, Action<ZeneretyObject>? FunctionWhenFinished = null) : base(Target,StartTime,AnimationTime,RepeatCount,FunctionWhenFinished,TimeClaculator) {
                     BX = Target.X;
                     BY = Target.Y;
                     AX = X;
@@ -4959,7 +5140,7 @@ namespace JyunrcaeaFramework
             /// </summary>
             public class Rotation : General
             {
-                public Rotation(ZeneretyExtendObject Target,double Rotate,double? StartTime,double AnimationTime, uint RepeatCount = 1, Action<ZeneretyObject>? FunctionWhenFinished = null, FunctionForAnimation? TimeClaculator = null) : base(Target, StartTime, AnimationTime,RepeatCount, FunctionWhenFinished, TimeClaculator)
+                public Rotation(ZeneretyExtendObject Target,double Rotate,double? StartTime,double AnimationTime, uint RepeatCount = 1,  FunctionForAnimation? TimeClaculator = null, Action<ZeneretyObject>? FunctionWhenFinished = null) : base(Target, StartTime, AnimationTime,RepeatCount, FunctionWhenFinished, TimeClaculator)
                 {
                     BR = Target.Rotation;
                     RL = Rotate;
@@ -4987,7 +5168,39 @@ namespace JyunrcaeaFramework
                 }
             }
 
+            /// <summary>
+            /// 투명도와 관련된 정보를 담는 클래스
+            /// </summary>
+            public class Opacity : General
+            {
+                public Opacity(ZeneretyExtendObject Target, byte TargetOpacity, double? StartTime, double AnimationTime, uint RepeatCount = 1, FunctionForAnimation? TimeClaculator = null, Action<ZeneretyObject>? FunctionWhenFinished = null) : base(Target, StartTime, AnimationTime, RepeatCount, FunctionWhenFinished, TimeClaculator)
+                {
+                    this.BO = Target.Opacity;
+                    this.AO = TargetOpacity;
+                    this.RO = (short)(AO - BO);
+                }
 
+                byte BO, AO;
+                short RO;
+
+                internal override void Update()
+                {
+                    if (CheckTime()) return;
+                    ((ZeneretyExtendObject)Target).Opacity = (byte)(BO + RO * Progress);
+                }
+
+                public override void Done()
+                {
+                    ((ZeneretyExtendObject)Target).Opacity = AO;
+                    base.Done();
+                }
+
+                public override void Undo()
+                {
+                    ((ZeneretyExtendObject)Target).Opacity = BO;
+                    base.Undo();
+                }
+            }
         }
 
         public static class Type
@@ -5218,6 +5431,8 @@ namespace JyunrcaeaFramework
             key.Ready();
             this.texture = key.texture;
             this.src = key.size;
+            this.absolutesrc.x = key.size.w;
+            this.absolutesrc.y = key.size.h;
             base.Ready();
         }
 
