@@ -1,389 +1,257 @@
 ﻿using JyunrcaeaFramework;
-using System.Transactions;
+using Microsoft.VisualBasic;
+using System.Runtime;
 
-namespace Jyunrcaea
+namespace Jyunrcaea.MainMenu
 {
-
-    namespace MainMenu
+    public class Scene : Group
     {
-        public class MainScene : Scene
+        public Scene()
         {
-            Title title;
-            PlayGame game;
-            Setting setting;
-            Exit exit;
-            Select select;
-            StartRange startRange;
-            SettingRange settingrange;
-            ExitRange exitRange;
+            this.Objects.Add(new BackgroundImage());
+            this.Objects.Add(new Version());
+            this.Objects.Add(new LeftBar());
+        }
+    }
 
-            int beforeselect = 0;
-            public int nowselect = 0;
+    class Version : Text
+    {
+        public Version() : base($"Jyunrcaea! ({Program.version} ver)",20)
+        {
+            this.CenterY = 1;
+            this.DrawY = VerticalPositionType.Top;
 
-            public MainScene()
+            this.Y = 25;
+            Animation.Add(new Animation.Info.Movement(this, null, 0, 614, 200));
+        }
+
+    }
+
+    class BackgroundImage : Image, Events.Resize, Events.MouseMove
+    {
+        public BackgroundImage() : base("background.png")
+        {
+            this.RelativeSize = false;
+        }
+
+        double ratio;
+        double zoom = 1.2;
+
+        public void Resize()
+        {
+            ratio = (double)Window.Width * zoom / (double)this.Texture.Width;
+            if (ratio * this.Texture.Height < Window.Height * zoom)
             {
-                this.AddSprite(new Background());
-                this.AddSprite(new Menu());
-                this.AddSprite(title = new());
-                this.AddSprite(select = new Select());
-                this.AddSprite(startRange = new StartRange());
-                this.AddSprite(settingrange = new SettingRange());
-                this.AddSprite(exitRange = new ExitRange());    
-                this.AddSprite(game = new());
-                this.AddSprite(setting = new Setting());
-                this.AddSprite(exit = new Exit());
-                this.AddSprite(new Version());
-                //this.AddSprite(new TestGruop());
+                borderlength = (int)(Window.Height * 0.1);
+                ratio = (double)Window.Height * zoom / (double)this.Texture.Height;
+            }
+            else borderlength = (int)(Window.Width * 0.1);
+            this.Scale.X = ratio;
+            this.Scale.Y = ratio;
+        }
+
+        int borderlength = 0;
+
+        public void MouseMove()
+        {
+            this.X = (int)(((double)Input.Mouse.X / (double)Window.Width - 0.5) * borderlength);
+            this.Y = (int)(((double)Input.Mouse.Y / (double)Window.Height - 0.5) * borderlength);
+        }
+    }
+
+    class LeftBar : Group
+    {
+        Box background;
+        public Text Title;
+        Selector Selector = new();
+
+        public LeftBar()
+        {
+            background = new Box(
+                (int)(Window.DefaultWidth * 0.4),
+                Window.Height,
+                new(200, 200, 200, 150)
+            )
+            {
+                RelativeSize = false,
+            };
+            background.CenterX = 0;
+            background.DrawX = HorizontalPositionType.Right;
+
+            Title = new Text(
+                "Jyunrcaea!",
+                38
+            );
+            Title.CenterX = 0;
+            Title.CenterY = 0.2;
+
+
+            this.Objects.AddRange(
+                background,
+                Title,
+                Selector
+            );
+        }
+
+        public override void Resize()
+        {
+            Title.X = (background.Size.Width = (int)(Window.DefaultWidth * 0.4 * Window.AppropriateSize)) / 2;
+            background.Size.Height = Window.Height;
+            base.Resize();
+        }
+    }
+
+    class Selector : Group, Events.MouseMove, Events.MouseKeyDown, Events.MouseKeyUp
+    {
+        Button Start;
+        Button Setting;
+        Button Exit;
+
+        internal Box Select;
+
+        internal const int ButtonWidth = 300;
+        internal const int ButtonHeight = 28;
+        internal const byte ColorValue = 225;
+
+        public Selector()
+        {
+            Start = new("Start", -1);
+            Setting = new("Setting",0);
+            Exit = new("Exit", 1);
+
+            Select = new(ButtonWidth,ButtonHeight,new(ColorValue, ColorValue, ColorValue, 0));
+            Select.CenterX = 0;
+
+            this.Objects.AddRange(
+                Select,
+                Start,
+                Setting,
+                Exit
+            );
+
+        }
+
+        int before = 0;
+        int option = 0;
+
+        public void MouseMove()
+        {
+            if (Convenience.MouseOver(Start.box))
+            {
+                option = 1;
+            } else if (Convenience.MouseOver(Setting.box))
+            {
+                option = 2;
+            } else if (Convenience.MouseOver(Exit.box))
+            {
+                option = 3;
+            } else
+            {
+                option = 0;
             }
 
-            public override void Start()
+            if (before != option)
             {
-                base.Start();
-                Resize();
-            }
-
-            public override void MouseMove()
-            {
-                if (Convenience.MouseOver(startRange)) nowselect = 1;
-                else if (Convenience.MouseOver(settingrange)) nowselect = 2;
-                else if (Convenience.MouseOver(exitRange)) nowselect = 3;
-                else nowselect = 0;
-
-                if (nowselect != beforeselect)
+                if (option != 0) MoveAnimating();
+                if (before == 0 || option == 0)
                 {
-                    if (beforeselect == 0) select.Opacity(100, 100f);
-                    switch (nowselect)
-                    {
-                        case 0:
-                            select.Opacity(0, 100f);
-                            break;
-                        case 1:
-                            select.Move(select.X, game.Y, 100f);
-                            break;
-                        case 2:
-                            select.Move(select.X, setting.Y, 100f);
-                            break;
-                        case 3:
-                            select.Move(select.X, exit.Y, 100f);
-                            break;
-                    }
-                    beforeselect = nowselect;
+                    if (ao is not null) ao.Stop(true);
+                    Animation.Add(new Animation.Info.Opacity(Select,(option == 0) ? byte.MinValue : ColorValue, null, DefaultAnimationTime,TimeClaculator: Animation.Type.EaseInOutSine,FunctionWhenFinished: (i) => ao = null));
                 }
-
-                base.MouseMove();
-            }
-
-            public override void Resize()
-            {
-                title.X = game.X = setting.X = exit.X = select.X = startRange.X =settingrange.X = exitRange.X = (int)(250 * Window.AppropriateSize);
-                base.Resize();
-                if (!select.MoveAnimationState.Complete)
-                {
-                    if (nowselect == 1)
-                    {
-                        select.MoveAnimationState.ModifyArrivalPoint(select.X, game.Y);
-                    }
-                    else if (nowselect == 2) select.MoveAnimationState.ModifyArrivalPoint(select.X, setting.Y);
-                    else if (nowselect == 3) select.MoveAnimationState.ModifyArrivalPoint(select.X, exit.Y);
-                }
-            }
-
-
-            bool ctrl = false;
-
-            public override void KeyDown(Input.Keycode e)
-            {
-                base.KeyDown(e);
-                if (e == Input.Keycode.LCTRL)
-                {
-                    ctrl = true;
-                }
-                else if (e == Input.Keycode.o && ctrl)
-                {
-                    //if (!Program.ss.bd.MoveAnimationState.Complete) return;
-                    if (Program.ss.Hide)
-                    {
-                        Program.ss.Shown();
-                    }
-                    else
-                    {
-                        Program.ss.Hidden();
-                    }
-                }
-            }
-
-            public override void KeyUp(Input.Keycode e)
-            {
-                base.KeyUp(e);
-                if (e == Input.Keycode.LCTRL)
-                {
-                    ctrl = false;
-                }
+                before = option;
             }
         }
 
-        public class Background : Sprite, Events.MouseMove
+        Animation.Info.Opacity? ao = null;
+        const double DefaultAnimationTime = 100;
+        bool IsAnimating = false;
+        Animation.Info.Movement am = null!;
+
+        void MoveAnimating()
         {
-            
-
-            public Background() : base(new TextureFromFile("cache/background.png"))
+            if (IsAnimating)
             {
-                
+                am.Stop();
             }
-
-            public override void Start()
-            {
-                base.Start();
-            }
-
-            float ratio;
-
-            public override void Resize()
-            {
-                if (this.Texture.Width * (ratio = (float)Window.Height / (float)this.Texture.Height) < Window.Width) ratio = (float)Window.Width / (float)this.Texture.Width;
-                this.Size = ratio * 1.1f;
-                base.Resize();
-            }
-
-            public void MouseMove()
-            {
-                this.X = (int)((Input.Mouse.X - Window.Width * 0.5f) * 0.1f);
-                this.Y = (int)((Input.Mouse.Y - Window.Height * 0.5f) * 0.1f);
-            }
+            IsAnimating = true;
+            Animation.Add(am = new Animation.Info.Movement(Select,null,SelectProperSize,null,DefaultAnimationTime,TimeClaculator: Animation.Type.EaseOutQuad,FunctionWhenFinished: (i) => IsAnimating = false));
         }
 
-        public class Version : CustomTextbox
+        int SelectProperSize => (int)(Select.Size.Height * Window.AppropriateSize * (option - 2));
+
+        public override void Resize()
         {
-            public Version() : base(20, $"Jyunrcaea! ({Jyunrcaea.Store.Version})")
+            base.Resize();
+            Select.X = this.TypedParent<LeftBar>().Title.X;
+            if (IsAnimating)
             {
-                OriginY = VerticalPositionType.Bottom;
-                DrawY = VerticalPositionType.Top;
-                this.MoveAnimationState.CalculationFunction = Animation.Type.EaseOutSine;
-                this.FontColor = new(31, 30, 51);
-                this.Move(0, 20);
-                this.Opacity(0);
+                am.EditEndPoint(null, SelectProperSize);
             }
-
-            public override void Start()
-            {
-                base.Start();
-                this.Move(0, 1, 300f, 500f);
-                this.Opacity(255, 300f, 500f);
-            }
-
-            //public override void Resize()
-            //{
-            //    this.Size = (int)(20 * Window.AppropriateSize);
-            //    base.Resize();
-            //}
         }
 
-        public class Title : CustomTextbox
+        int hoveroption = 0;
+
+        public void MouseKeyDown(Input.Mouse.Key k)
         {
-            public Title() : base(48,"Jyunrcaea!")
-            {
-                this.OriginX = HorizontalPositionType.Left;
-                //this.DrawX = HorizontalPositionType.Right;
-                this.OriginY = VerticalPositionType.Top;
-                this.DrawY = VerticalPositionType.Bottom;
-                this.FontColor = new(31, 30, 51);
-                this.Opacity(0);
-            }
-
-            public override void Start()
-            {
-                base.Start();
-                this.Opacity(255, 300f, 500f);
-            }
-
-            public override void Resize()
-            {
-                Y = (int)(100 * Window.AppropriateSize);
-                base.Resize();
-            }
+            if (k != Input.Mouse.Key.Left) return;
+            hoveroption = option;
         }
 
-        public class PlayGame : CustomTextbox
+        public void MouseKeyUp(Input.Mouse.Key k)
         {
-            public PlayGame() : base(30, "Music Play")
+            if (hoveroption != option || k != Input.Mouse.Key.Left) return;
+            switch (hoveroption)
             {
-                this.OriginX = HorizontalPositionType.Left;
-                this.FontColor = new(31, 30, 51);
-                this.Opacity(0);
+                case 0:
+                    return;
+                case 1:
+                    break;
+                case 2:
+                    break;
+                case 3:
+                    Framework.Stop();
+                    break;
             }
-
-            public override void Start()
-            {
-                base.Start();
-                this.Opacity(255, 300f, 500f);
-            }
-
-            //public override void Resize()
-            //{
-            //    this.Size = (int)(30 * Window.AppropriateSize);
-            //    base.Resize();
-            //}   
         }
+    }
 
-        public class Setting : CustomTextbox
+    class Button : Group
+    {
+        public Text text;
+        public GhostBox box;
+
+        int pos;
+
+        public Button(string text,int pos = 0,int width = Selector.ButtonWidth,int height = Selector.ButtonHeight)
         {
-            public Setting() : base(30,"Setting")
-            {
-                this.OriginX = HorizontalPositionType.Left;
-                this.FontColor = new(31, 30, 51);
-                this.Opacity(0);
-            }
+            this.text = new(text,height);
+            this.text.CenterX = 0;
+            box = new(width, height);
+            box.CenterX = 0;
 
-            public override void Start()
-            {
-                base.Start();
-                this.Opacity(255, 300f,500f);
-            }
+            this.pos = pos;
 
-            public override void Resize()
-            {
-                //this.Size = (int)(30 * Window.AppropriateSize);
-                base.Resize();
-                this.Y = (int)(this.Size * this.Scale) + 1;
-
-            }
+            this.Objects.AddRange(
+                box,
+                this.text
+             );
         }
 
-        public class Exit : CustomTextbox
+        public override void Prepare()
         {
-            public Exit() : base(30, "Exit")
-            {
-                this.OriginX = HorizontalPositionType.Left;
-                this.FontColor = new(31, 30, 51);
-                this.Opacity(0);
-            }
-
-            public override void Start()
-            {
-                base.Start();
-                this.Opacity(255, 300f, 500f);
-            }
-
-            public override void Resize()
-            {
-                base.Resize();
-                //this.Size = (int)(30 * Window.AppropriateSize);
-                this.Y = (int)(this.Size * 2 * this.Scale) + 2;
-            }
+            base.Prepare();
+            text.Update(0);
+            this.box.Size.Height = this.text.AbsoluteHeight;
+            this.TypedParent<Selector>().Select.Size.Height = this.text.AbsoluteHeight;
         }
 
-        public class Menu : RectangleForAnimation
+        public override void Resize()
         {
-            public Menu()
-            {
-                this.OriginX = HorizontalPositionType.Left;
-                this.DrawX = HorizontalPositionType.Right;
-                this.Color = new(200, 200, 200,0);
-            }
-
-            public override void Start()
-            {
-                base.Start();
-                this.Opacity(150, 300f, 450f);
-            }
-
-            public override void Resize()
-            {
-                this.Height = Window.Height;
-                this.Width = (int)(500 * Window.AppropriateSize);
-                base.Resize();
-            }
+            base.Resize();
+            this.box.X = this.text.X = this.Parent.TypedParent<LeftBar>().Title.X;
+            this.Y = (int)(this.box.Size.Height * Window.AppropriateSize * this.pos);
         }
 
-        public class StartRange : GhostObject, Events.MouseKeyDown
-        {
-            public StartRange()
-            {
-                this.OriginX = HorizontalPositionType.Left;
-            }
-
-            public override void Resize()
-            {
-                this.Width = (int)(300 * Window.AppropriateSize);
-                this.Height = (int)(30 * Window.AppropriateSize);
-                base.Resize();
-            }
-            
-            public void MouseKeyDown(Input.Mouse.Key key)
-            {
-                if (key != Input.Mouse.Key.Left) return;
-                if (Convenience.MouseOver(this))
-                {
-                    MainScene sc = (MainScene)this.InheritedObject;
-                    Jyunrcaea.Program.musiclistscene.EventRejection = Jyunrcaea.Program.musiclistscene.Hide = false;
-                    sc.EventRejection = sc.Hide = true;
-                }
-            }
-        }
-
-        public class SettingRange : GhostObject, Events.MouseKeyDown
-        {
-            public SettingRange()
-            {
-                this.OriginX = HorizontalPositionType.Left;
-            }
-
-            public override void Resize()
-            {
-                this.Width = (int)(300 * Window.AppropriateSize);
-                this.Height = (int)(30 * Window.AppropriateSize);
-                this.Y = this.Height + 1;
-                base.Resize();
-            }
-
-            public void MouseKeyDown(Input.Mouse.Key key)
-            {
-                if (key != Input.Mouse.Key.Left || !Program.ss.Hide) return;
-                if (Convenience.MouseOver(this))
-                {
-                    Program.ss.Shown();
-                }
-            }
-        }
-
-        public class ExitRange : GhostObject, Events.MouseKeyDown
-        {
-            public ExitRange()
-            {
-                this.OriginX = HorizontalPositionType.Left;
-            }
-
-            public override void Resize()
-            {
-                this.Width = (int)(300 * Window.AppropriateSize);
-                this.Height = (int)(30 * Window.AppropriateSize);
-                this.Y = this.Height * 2 + 2;
-                base.Resize();
-            }
-
-            public void MouseKeyDown(Input.Mouse.Key key)
-            {
-                if (key == Input.Mouse.Key.Left && Convenience.MouseOver(this)) Framework.Stop(); 
-            }
-        }
-
-        public class Select : RectangleForAnimation
-        {
-            public Select()
-            {
-                this.OriginX = HorizontalPositionType.Left;
-                this.Color = new(alpha: 0);
-                this.OpacityAnimationState.CalculationFunction = this.MoveAnimationState.CalculationFunction = Animation.Type.EaseOutSine;
-            }
-
-            
-
-            public override void Resize()
-            {
-                this.Width = (int)(300 * Window.AppropriateSize);
-                this.Height = (int)(30 * Window.AppropriateSize) + 2;
-                base.Resize();
-            }
-        }
+        
     }
 }

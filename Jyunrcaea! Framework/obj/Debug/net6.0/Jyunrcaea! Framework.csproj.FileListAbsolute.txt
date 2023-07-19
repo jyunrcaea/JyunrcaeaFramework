@@ -34,7 +34,6 @@ C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framewor
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\Jyunrcaea! Framework.deps.json
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\Jyunrcaea! Framework.dll
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Debug\net6.0\Jyunrcaea! Framework.pdb
-C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.csproj.AssemblyReference.cache
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.AssemblyInfoInputs.cache
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.AssemblyInfo.cs

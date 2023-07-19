@@ -1,10 +1,6 @@
 ﻿#define WINDOWS
 using SDL2;
-using System.Data;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Security;
-using System.Xml;
 
 namespace JyunrcaeaFramework
 {
@@ -444,100 +440,20 @@ namespace JyunrcaeaFramework
 
         internal static SDL.SDL_Rect RenderRange = new();
 
-        //internal static void Rendering(Group group)
-        //{
-        //    DrawPosStack.Push(new() { Width = DrawPos.x, Height = DrawPos.y });
-        //    int wx = DrawPos.x + group.Rx;
-        //    int hy = DrawPos.y + group.Ry;
-        //    if (group.RenderRange is null)
-        //    {
-        //        RenderRange = Window.size;
-        //    } else
-        //    {
-        //        RenderRange = new()
-        //        {
-        //            x = wx,
-        //            y = hy,
-        //            w = group.RenderRange.Width,
-        //            h = group.RenderRange.Height
-        //        };
-        //        wx = 0;
-        //        hy = 0;
-        //    }
-        //    SDL.SDL_RenderSetViewport(Framework.renderer, ref RenderRange);
-
-        //    for (int i = 0; i < group.ObjectList.Count; i++)
-        //    {
-        //        DrawPos.x = wx;
-        //        DrawPos.y = hy;
-
-        //        if (group.ObjectList[i] is Group)
-        //        {
-        //            Rendering((Group)group.ObjectList[i]);
-        //            continue;
-        //        }
-
-        //        if (group.ObjectList[i] is ZeneretyDrawableObject)
-        //        {
-        //            ZeneretyDrawableObject zdo = (ZeneretyDrawableObject)group.ObjectList[i];
-        //            DrawPos.w = zdo.RealWidth;
-        //            DrawPos.h = zdo.RealHeight;
-        //            DrawPos.x += zdo.Rx;
-        //            DrawPos.y += zdo.Ry;
-        //            if (zdo.DrawX != HorizontalPositionType.Right) DrawPos.x -= zdo.DrawX == HorizontalPositionType.Middle ? (int)(DrawPos.w * 0.5f) : DrawPos.w;
-        //            if (zdo.DrawY != VerticalPositionType.Bottom) DrawPos.y -= zdo.DrawY == VerticalPositionType.Middle ? (int)(DrawPos.h * 0.5f) : DrawPos.h;
-
-
-        //            if (zdo is Box)
-        //            {
-        //                SDL.SDL_SetRenderDrawColor(Framework.renderer,((Box)zdo).Color.colorbase.r, ((Box)zdo).Color.colorbase.g, ((Box)zdo).Color.colorbase.b, ((Box)zdo).Color.colorbase.a);
-        //                SDL.SDL_RenderFillRect(Framework.renderer, ref DrawPos);
-        //                continue;
-        //            }
-
-        //            if (zdo is Image)
-        //            {
-        //                SDL.SDL_RenderCopyEx(Framework.renderer, ((Image)zdo).Texture.texture, ref ((Image)zdo).Texture.src, ref DrawPos, ((Image)zdo).Rotation, IntPtr.Zero,SDL.SDL_RendererFlip.SDL_FLIP_NONE);
-        //                continue;
-        //            }
-
-        //            if (zdo is Text)
-        //            {
-        //                SDL.SDL_RenderCopyEx(Framework.renderer, ((Text)zdo).TFT.texture,ref ((Text)zdo).TFT.src, ref DrawPos, ((Text)zdo).Rotation,IntPtr.Zero,SDL.SDL_RendererFlip.SDL_FLIP_NONE);
-        //                continue;
-        //            }
-        //        }
-
-        //    }
-        //    var ret = DrawPosStack.Pop();
-        //    DrawPos.x = ret.Width;
-        //    DrawPos.y = ret.Height;
-        //}
-
         internal static void Rendering(Group group)
         {
-            if (group.RenderRange is null)
+            SDL.SDL_Rect? before = null;
+            if (group.RenderRange is not null)
             {
-                SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
-            } else
-            {
-                SDL.SDL_Rect r = new() { x = 0, y = 0, w = group.RenderRange.Width, h = group.RenderRange.Height };
-                SDL.SDL_RenderSetViewport(Framework.renderer, ref r);
+                before = RenderRange;
+                RenderRange = new() { x = group.Rx, y = group.Ry, w = group.RenderRange.Width, h = group.RenderRange.Height };
+                SDL.SDL_RenderSetViewport(Framework.renderer, ref RenderRange);
             }
             for (int i = 0; i < group.Objects.Count; i++)
             {
                 if (group.Objects[i] is Group)
                 {
                     Rendering((Group)group.Objects[i]);
-                    if (group.RenderRange is null)
-                    {
-                        SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size);
-                    }
-                    else
-                    {
-                        SDL.SDL_Rect r = new() { x = 0, y = 0, w = group.RenderRange.Width, h = group.RenderRange.Height };
-                        SDL.SDL_RenderSetViewport(Framework.renderer, ref r);
-                    }
                     continue;
                 }
 
@@ -563,7 +479,13 @@ namespace JyunrcaeaFramework
                 if (group.Objects[i] is Circle)
                 {
                     SDL_gfx.filledCircleRGBA(Framework.renderer, (short)((Circle)group.Objects[i]).renderposition.x, (short)((Circle)group.Objects[i]).renderposition.y, ((Circle)group.Objects[i]).Radius, ((Circle)group.Objects[i]).Color.colorbase.r, ((Circle)group.Objects[i]).Color.colorbase.g, ((Circle)group.Objects[i]).Color.colorbase.b, ((Circle)group.Objects[i]).Color.colorbase.a);
+                    continue;
                 }
+            }
+            if (before is not null)
+            {
+                RenderRange = (SDL.SDL_Rect)before;
+                SDL.SDL_RenderSetViewport(Framework.renderer,ref RenderRange);
             }
         }
 
@@ -572,12 +494,10 @@ namespace JyunrcaeaFramework
             DrawPosStack.Push(new() { Width = DrawPos.x, Height = DrawPos.y });
             int wx = DrawPos.x + group.Rx;
             int hy = DrawPos.y + group.Ry;
-            if (group.RenderRange is null)
+            SDL.SDL_Rect? before = null;
+            if (group.RenderRange is not null)
             {
-                RenderRange = Window.size;
-            }
-            else
-            {
+                before = RenderRange;
                 RenderRange = new()
                 {
                     x = wx,
@@ -616,6 +536,11 @@ namespace JyunrcaeaFramework
                     continue;
                 }
 
+            }
+
+            if (before is not null)
+            {
+                RenderRange = (SDL.SDL_Rect)before;
             }
             var ret = DrawPosStack.Pop();
             DrawPos.x = ret.Width;
@@ -715,6 +640,20 @@ namespace JyunrcaeaFramework
         {
             this.Width = Width;
             this.Height = Height;
+        }
+    }
+
+    public class ZeneretyRenderRange : ZeneretySize
+    {
+        HorizontalPositionType DrawX;
+        VerticalPositionType DrawY;
+
+        public ZeneretyRenderRange(int Width=0,int Height=0,HorizontalPositionType DrawX = HorizontalPositionType.Middle,VerticalPositionType DrawY = VerticalPositionType.Middle) : base(Width,Height)
+        {
+            this.Width = Width;
+            this.Height = Height;
+            this.DrawX = DrawX;
+            this.DrawY = DrawY;
         }
     }
 
@@ -872,13 +811,21 @@ namespace JyunrcaeaFramework
     /// <summary>
     /// Zenerety 렌더링 용 그릴수 있는 객체
     /// </summary>
-    public class ZeneretyDrawableObject : ZeneretyObject
+    public abstract class ZeneretyDrawableObject : ZeneretyObject
     {
         internal int rw = 0, rh = 0;
         internal int ww = 0, hh = 0;
 
+        /// <summary>
+        /// 실제 너비
+        /// </summary>
         internal virtual int RealWidth { get; }
+        /// <summary>
+        /// 실제 높이
+        /// </summary>
         internal virtual int RealHeight { get; }
+
+        public abstract byte Opacity { get; set; }
 
         internal int dxw=0, dyh=0;
 
@@ -898,6 +845,9 @@ namespace JyunrcaeaFramework
         /// </summary>
         public bool RelativeSize = true;
 
+        /// <summary>
+        /// 실제 렌더링 범위
+        /// </summary>
         internal SDL.SDL_Rect renderposition = new();
 
         public HorizontalPositionType DrawX = HorizontalPositionType.Middle;
@@ -916,8 +866,6 @@ namespace JyunrcaeaFramework
 
         public int AbsoluteWidth => this.RealWidth;
         public int AbsoluteHeight => this.RealHeight;
-
-        public abstract byte Opacity { get; set; }
     }
 
     /// <summary>
@@ -955,7 +903,9 @@ namespace JyunrcaeaFramework
             }
         }
 
-        public ZeneretySize? RenderRange = null;
+        public ZeneretyRenderRange? RenderRange = null;
+
+        
 
         internal int RealWidth
         {
@@ -1090,6 +1040,8 @@ namespace JyunrcaeaFramework
         /// </summary>
         public Color Color;
 
+        public override byte Opacity { get => Color.Alpha; set => Color.Alpha = value; }
+
         internal override int RealWidth =>  (int)(Size.Width * Scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
         internal override int RealHeight => (int)(Size.Height * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
     }
@@ -1124,12 +1076,37 @@ namespace JyunrcaeaFramework
 
     public class Circle : ZeneretyDrawableObject
     {
-        public short Radius = 0;
+        public Circle(short radius=0, Color? color = null)
+        {
+            this.Radius = radius;
+            this.Color = color is null ? Color.White : color;
+        }
 
-        public Color Color = new();
+        public short Radius;
+
+        public Color Color;
+
+        public override byte Opacity { get => Color.Alpha; set => Color.Alpha = value; }
 
         internal override int RealWidth => (int)(Radius * 2 * (RelativeSize ? Window.AppropriateSize : 1));
         internal override int RealHeight => (int)(Radius * 2 * (RelativeSize ? Window.AppropriateSize : 1));
+    }
+
+    /// <summary>
+    /// 그려지지 않는 가짜 객체입니다.
+    /// </summary>
+    public class GhostBox : ZeneretyDrawableObject
+    {
+        public GhostBox(int width=0,int height=0)
+        {
+            this.Size = new(width, height);
+        }
+        public ZeneretySize Size;
+
+        public override byte Opacity { get; set; } = 0;
+
+        internal override int RealWidth => (int)(Size.Width * Scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
+        internal override int RealHeight => (int)(Size.Height * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
     }
 
     /// <summary>
@@ -1778,6 +1755,8 @@ namespace JyunrcaeaFramework
 
             if (Framework.NewRenderingSolution)
             {
+                Framework.RenderRange = Window.size;
+                SDL.SDL_RenderSetViewport(Framework.renderer,ref Window.size);
                 Framework.Rendering(Display.Target);
 #if DEBUG
                 if (Debug.ObjectDrawDebuging) Debug.ZeneretyODD(Display.Target);
@@ -1814,14 +1793,12 @@ namespace JyunrcaeaFramework
         {
             if (Framework.NewRenderingSolution)
             {
-                //for (int i = 0; i < Display.Target.EventManager.Update.Count; i++)
-                //{
-                //    Display.Target.EventManager.Update[i].Update(ms);
-                //}
                 Display.Target.ResetPosition(new(Window.Width,Window.Height));
+                Framework.RenderRange = Window.size;
                 Framework.Positioning(Display.Target);
                 Display.Target.Update(ms);
                 Animation.AnimationQueue.Update();
+                Framework.RenderRange = Window.size;
                 Framework.Positioning(Display.Target);
                 updatetime = updatems;
                 return;
@@ -4559,6 +4536,28 @@ namespace JyunrcaeaFramework
                 /// </summary>
                 Right = 3
             }
+
+            public static void SetCursor(CursorType t)
+            {
+                SDL.SDL_SetCursor(SDL.SDL_CreateSystemCursor((SDL.SDL_SystemCursor)t));
+            }
+
+            public enum CursorType
+            {
+                Arrow,    // Arrow
+                Ibeam,    // I-beam
+                Wait,     // Wait
+                Crosshair,    // Crosshair
+                WaitArrow,    // Small wait cursor (or Wait if not available)
+                SIZENWSE, // Double arrow pointing northwest and southeast
+                SIZENESW, // Double arrow pointing northeast and southwest
+                HorizonSizing,   // Double arrow pointing west and east
+                VericalSizing,   // Double arrow pointing north and south
+                Move,  // Four pointed arrow pointing north, south, east, and west
+                NO,       // Slashed circle or crossbones
+                HAND,     // Hand
+                SYSTEM_CURSORS
+            }
         }
         /// <summary>
         /// 텍스트 입력과 관련된 클래스입니다.
@@ -4980,7 +4979,7 @@ namespace JyunrcaeaFramework
 
                 if (Framework.MultiCoreProcess)
                 {
-                    Parallel.ForEach(AnimationQueue, (a) => { a.Update(); });
+                    Parallel.ForEach(AnimationQueue, (a) => a.Update());
                     return;
                 }
                 foreach (var a in AnimationQueue) a.Update();
@@ -5009,21 +5008,26 @@ namespace JyunrcaeaFramework
                 public General(ZeneretyObject zo,double? st,double animatime,uint RepeatCount = 1,Action<ZeneretyObject>? fff = null,FunctionForAnimation? ffa = null)
                 {
                     Target = zo;
-                    AnimationTime = animatime;
                     FunctionForFinish = fff;
                     this.RepeatCount = RepeatCount;
                     if (ffa is not null) AnimationCalculator = ffa;
                     StartTime = st is null ? Framework.RunningTime : (double)st;
-                    EndTime = StartTime + animatime;
+                    AnimationTime = animatime;
                 }
 
                 public ZeneretyObject Target { get; internal set; } = null!;
                 public double StartTime { get; internal set; }
                 public double EndTime { get; internal set; }
-                public double AnimationTime { get; internal set; }
+                double animatime;
+                public double AnimationTime { get => animatime; set
+                    {
+                        animatime = value;
+                        this.EndTime = this.StartTime + value;
+                    }
+                }
                 public bool Finished { get; internal set; } = false;
                 public Action<ZeneretyObject>? FunctionForFinish { get; internal set; } = null;
-                public FunctionForAnimation AnimationCalculator { get; internal set; } = JyunrcaeaFramework.Animation.Type.Default;
+                public FunctionForAnimation AnimationCalculator { get; internal set; } = Animation.Type.Default;
                 public uint RepeatCount = 0;
 
                 internal double Progress = 0d;
@@ -5051,7 +5055,7 @@ namespace JyunrcaeaFramework
 
                 internal abstract void Update();
                 /// <summary>
-                /// 애니메이션을 즉시 끝내버립니다.
+                /// 애니메이션을 즉시 마무리 한뒤 끝내버립니다.
                 /// </summary>
                 public virtual void Done()
                 {
@@ -5059,6 +5063,18 @@ namespace JyunrcaeaFramework
                     if (FunctionForFinish is not null) FunctionForFinish(Target);
                     AnimationQueue.Remove(this);
                 }
+
+                /// <summary>
+                /// 애니메이션을 마무리 없이 즉시 종료합니다.
+                /// </summary>
+                /// <param name="CallFinishFunction">애니메이션 완료시 호출해야될 함수 호출 여부 </param>
+                public virtual void Stop(bool CallFinishFunction = false)
+                {
+                    this.Finished = true;
+                    if (CallFinishFunction && FunctionForFinish is not null) FunctionForFinish(Target);
+                    AnimationQueue.Remove(this);
+                }
+
                 /// <summary>
                 /// 애니메이션을 취소합니다. (이전 상태로 되돌립니다.)
                 /// </summary>
@@ -5100,39 +5116,79 @@ namespace JyunrcaeaFramework
                 /// <param name="FunctionWhenFinished">완료되었을때 실행할 함수 (null 일경우 아무것도 하지 않음)</param>
                 /// <param name="TimeClaculator">애니메이션 계산기 (null 일경우 기본)</param>
                 /// <param name="RepeatCount">반복 횟수, 0일경우 무한</param>
-                public Movement(ZeneretyObject Target,int X,int Y,double? StartTime, double AnimationTime,uint RepeatCount = 1, FunctionForAnimation? TimeClaculator = null, Action<ZeneretyObject>? FunctionWhenFinished = null) : base(Target,StartTime,AnimationTime,RepeatCount,FunctionWhenFinished,TimeClaculator) {
+                public Movement(ZeneretyObject Target,int? X = null,int? Y = null,double? StartTime = null, double AnimationTime = 1000,uint RepeatCount = 1, FunctionForAnimation? TimeClaculator = null, Action<ZeneretyObject>? FunctionWhenFinished = null) : base(Target,StartTime,AnimationTime,RepeatCount,FunctionWhenFinished,TimeClaculator) {
                     BX = Target.X;
                     BY = Target.Y;
-                    AX = X;
-                    AY = Y;
-                    LX = AX - BX;
-                    LY = AY - BY;
+                    if (X is null)
+                    {
+                        MX = false;
+                    } else
+                    {
+                        MX = true;
+                        AX = (int)X;
+                        LX = AX - BX;
+                    }
+
+                    if (Y is null)
+                    {
+                        MY = false;
+                    } else
+                    {
+                        MY = true;
+                        AY = (int)Y;
+                        LY = AY - BY;
+                    }
                 }
 
+                bool MX, MY;
                 int BX, BY, AX, AY, LX, LY;
                 internal override void Update()
                 {
                     if (CheckTime()) return;
-                    Target.X = BX + (int)(LX * Progress);
-                    Target.Y = BY + (int)(LY * Progress);
+                    if(MX) Target.X = BX + (int)(LX * Progress);
+                    if(MY) Target.Y = BY + (int)(LY * Progress);
                 }
 
                 
                 public override void Done()
                 {
-                    Target.X = AX;
-                    Target.Y = AY;
+                    if(MX) Target.X = AX;
+                    if(MY) Target.Y = AY;
                     base.Done();
                 }
 
                 public override void Undo()
                 {
-                    Target.X = BX;
-                    Target.Y = BY;
+                    if(MX) Target.X = BX;
+                    if(MY) Target.Y = BY;
                     base.Done();
                 }
 
+                public void EditEndPoint(int? X,int? Y)
+                {
+                    if (X is null)
+                    {
+                        MX = false;
+                    }
+                    else
+                    {
+                        MX = true;
+                        AX = (int)X;
+                        LX = AX - BX;
+                    }
 
+                    if (Y is null)
+                    {
+                        MY = false;
+                    }
+                    else
+                    {
+                        MY = true;
+                        AY = (int)Y;
+                        LY = AY - BY;
+                    }
+                    Update();
+                }
             }
 
             /// <summary>
@@ -5173,7 +5229,7 @@ namespace JyunrcaeaFramework
             /// </summary>
             public class Opacity : General
             {
-                public Opacity(ZeneretyExtendObject Target, byte TargetOpacity, double? StartTime, double AnimationTime, uint RepeatCount = 1, FunctionForAnimation? TimeClaculator = null, Action<ZeneretyObject>? FunctionWhenFinished = null) : base(Target, StartTime, AnimationTime, RepeatCount, FunctionWhenFinished, TimeClaculator)
+                public Opacity(ZeneretyDrawableObject Target, byte TargetOpacity, double? StartTime = null, double AnimationTime = 1000, uint RepeatCount = 1, FunctionForAnimation? TimeClaculator = null, Action<ZeneretyObject>? FunctionWhenFinished = null) : base(Target, StartTime, AnimationTime, RepeatCount, FunctionWhenFinished, TimeClaculator)
                 {
                     this.BO = Target.Opacity;
                     this.AO = TargetOpacity;
@@ -5186,18 +5242,18 @@ namespace JyunrcaeaFramework
                 internal override void Update()
                 {
                     if (CheckTime()) return;
-                    ((ZeneretyExtendObject)Target).Opacity = (byte)(BO + RO * Progress);
+                    ((ZeneretyDrawableObject)Target).Opacity = (byte)(BO + RO * Progress);
                 }
 
                 public override void Done()
                 {
-                    ((ZeneretyExtendObject)Target).Opacity = AO;
+                    ((ZeneretyDrawableObject)Target).Opacity = AO;
                     base.Done();
                 }
 
                 public override void Undo()
                 {
-                    ((ZeneretyExtendObject)Target).Opacity = BO;
+                    ((ZeneretyDrawableObject)Target).Opacity = BO;
                     base.Undo();
                 }
             }
