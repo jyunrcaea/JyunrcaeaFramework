@@ -39,8 +39,6 @@ C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\libtiff-5.dll
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\libwebp-7.dll
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\zlib1.dll
-C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\Jyunrcaea_FrameworkIcon.ico
-C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\Jyunrcaea!FrameworkIcon.png
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\test.png
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\Jyunrcaea.deps.json
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\Jyunrcaea.runtimeconfig.json

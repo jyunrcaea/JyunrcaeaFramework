@@ -1,4 +1,5 @@
 ﻿using JyunrcaeaFramework;
+using System.Text.Encodings.Web;
 
 namespace Jyunrcaea
 {
@@ -11,12 +12,20 @@ namespace Jyunrcaea
             Framework.Init("Jyunrcaea!",1280,720);
             Framework.Function = new FrameworkFunctionCustom();
 
+            Font.DefaultPath = "font.ttf";
+
             Display.Target.Objects.AddRange(
-                new MainMenu.Scene()
-            );
+                new MainMenu.BackgroundImage(),
+                new MainMenu.Scene(),
+                new Setting.Scene(),
+                new MusicSelector.Scene(),
+                new Tools.StatusScene()
+                );
+
 
             Framework.Run(true);
         }
+
     }
 
     class FrameworkFunctionCustom : FrameworkFunction
@@ -30,6 +39,8 @@ namespace Jyunrcaea
 
         public override void Start()
         {
+            Display.FrameLateLimit = 0;
+            Display.FrameLateLimit = 2 * Display.FrameLateLimit;
             base.Start();
         }
 
@@ -39,6 +50,9 @@ namespace Jyunrcaea
             if (e == Input.Keycode.F3)
             {
                 Debug.ObjectDrawDebuging = !Debug.ObjectDrawDebuging;
+            } else if (e == Input.Keycode.F11)
+            {
+                Window.Fullscreen = !Window.Fullscreen;
             }
         }
     }

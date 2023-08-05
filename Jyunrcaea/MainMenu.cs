@@ -1,16 +1,36 @@
 ﻿using JyunrcaeaFramework;
-using Microsoft.VisualBasic;
-using System.Runtime;
+using System.Runtime.CompilerServices;
 
 namespace Jyunrcaea.MainMenu
 {
+    public static class Control
+    {
+        public static Scene Scene = null!;
+
+        public static void Appear()
+        {
+            Scene.Hide = false;
+        }
+
+        public static void Disappear()
+        {
+            Scene.Hide = true;
+        }
+    }
+
     public class Scene : Group
     {
         public Scene()
         {
-            this.Objects.Add(new BackgroundImage());
+            //this.Objects.Add(new BackgroundImage());
             this.Objects.Add(new Version());
             this.Objects.Add(new LeftBar());
+        }
+
+        public override void Prepare()
+        {
+            base.Prepare();
+            Control.Scene = this;
         }
     }
 
@@ -27,13 +47,12 @@ namespace Jyunrcaea.MainMenu
 
     }
 
-    class BackgroundImage : Image, Events.Resize, Events.MouseMove
+    public class BackgroundImage : Image, Events.Resize, Events.MouseMove
     {
         public BackgroundImage() : base("background.png")
         {
             this.RelativeSize = false;
         }
-
         double ratio;
         double zoom = 1.2;
 
@@ -70,7 +89,7 @@ namespace Jyunrcaea.MainMenu
             background = new Box(
                 (int)(Window.DefaultWidth * 0.4),
                 Window.Height,
-                new(200, 200, 200, 150)
+                new(210, 210, 210, 150)
             )
             {
                 RelativeSize = false,
@@ -93,6 +112,13 @@ namespace Jyunrcaea.MainMenu
             );
         }
 
+        public override void Prepare()
+        {
+            this.X = -background.Size.Width;
+            base.Prepare();
+            Animation.Add(new Animation.Info.Movement(this, 0, null, 614, 250, 1, Animation.Type.EaseOutQuad));
+        }
+
         public override void Resize()
         {
             Title.X = (background.Size.Width = (int)(Window.DefaultWidth * 0.4 * Window.AppropriateSize)) / 2;
@@ -111,7 +137,7 @@ namespace Jyunrcaea.MainMenu
 
         internal const int ButtonWidth = 300;
         internal const int ButtonHeight = 28;
-        internal const byte ColorValue = 225;
+        internal const byte ColorValue = 235;
 
         public Selector()
         {
@@ -156,7 +182,7 @@ namespace Jyunrcaea.MainMenu
                 if (before == 0 || option == 0)
                 {
                     if (ao is not null) ao.Stop(true);
-                    Animation.Add(new Animation.Info.Opacity(Select,(option == 0) ? byte.MinValue : ColorValue, null, DefaultAnimationTime,TimeClaculator: Animation.Type.EaseInOutSine,FunctionWhenFinished: (i) => ao = null));
+                    Animation.Add(new Animation.Info.Opacity(Select,(option == 0) ? byte.MinValue : ColorValue, null, DefaultAnimationTime,TimeCalculator: Animation.Type.EaseInOutSine,FunctionWhenFinished: (i) => ao = null));
                 }
                 before = option;
             }
@@ -199,14 +225,16 @@ namespace Jyunrcaea.MainMenu
 
         public void MouseKeyUp(Input.Mouse.Key k)
         {
-            if (hoveroption != option || k != Input.Mouse.Key.Left) return;
+            if (!Jyunrcaea.Setting.Scene.Disappear || hoveroption != option || k != Input.Mouse.Key.Left) return;
             switch (hoveroption)
             {
                 case 0:
                     return;
                 case 1:
+                    Jyunrcaea.MusicSelector.Control.Show = true;
                     break;
                 case 2:
+                    Jyunrcaea.Setting.Scene.Disappear = false;
                     break;
                 case 3:
                     Framework.Stop();
@@ -248,7 +276,7 @@ namespace Jyunrcaea.MainMenu
         public override void Resize()
         {
             base.Resize();
-            this.box.X = this.text.X = this.Parent.TypedParent<LeftBar>().Title.X;
+            this.box.X = this.text.X = this.Parent!.TypedParent<LeftBar>().Title.X;
             this.Y = (int)(this.box.Size.Height * Window.AppropriateSize * this.pos);
         }
 

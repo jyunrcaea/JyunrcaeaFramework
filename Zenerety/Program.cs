@@ -58,7 +58,7 @@ class WindowForm : Group, Events.MouseMove, Events.MouseKeyDown, Events.MouseKey
     GhostBox Horizon;
     GhostBox Vertical;
 
-    Group content;
+    Group content = null!;
 
     public WindowForm(string title, int width, int height, int x = 0, int y = 0, Group? content = null)
     {
@@ -142,7 +142,7 @@ class WindowForm : Group, Events.MouseMove, Events.MouseKeyDown, Events.MouseKey
         {
             background.Size.Height = value;
             this.Vertical.Size.Height = value;
-            if (content is not null) content.RenderRange.Height = value - 30;
+            if (content is not null) content.RenderRange!.Height = value - 30;
             this.Horizon.Y = value;
         }
     }

@@ -1,6 +1,8 @@
 ﻿#define WINDOWS
 using SDL2;
-using System.Security;
+using System.Net;
+using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 
 namespace JyunrcaeaFramework
 {
@@ -451,11 +453,32 @@ namespace JyunrcaeaFramework
             }
             for (int i = 0; i < group.Objects.Count; i++)
             {
+                if (group.Objects[i].Hide) continue;
+
                 if (group.Objects[i] is Group)
                 {
                     Rendering((Group)group.Objects[i]);
                     continue;
                 }
+
+                //if (group.Objects[i] is RoundBox)
+                //{
+                //    SDL.SDL_Rect r = ((ZeneretyDrawableObject)group.Objects[i]).renderposition;
+                //    SDL.SDL_SetRenderDrawColor(Framework.renderer, ((Box)group.Objects[i]).Color.colorbase.r, ((Box)group.Objects[i]).Color.colorbase.g, ((Box)group.Objects[i]).Color.colorbase.b, ((Box)group.Objects[i]).Color.colorbase.a);
+                //    SDL_gfx.roundedBoxRGBA(
+                //        Framework.renderer,
+                //        (short)r.x,
+                //        (short)r.y,
+                //        (short)(r.x + r.w),
+                //        (short)(r.y + r.h),
+                //        ((RoundBox)group.Objects[i]).Radius,
+                //        ((Box)group.Objects[i]).Color.colorbase.r,
+                //        ((Box)group.Objects[i]).Color.colorbase.g,
+                //        ((Box)group.Objects[i]).Color.colorbase.b,
+                //        ((Box)group.Objects[i]).Color.colorbase.a
+                //    );
+                //    continue;
+                //}
 
                 if (group.Objects[i] is Box)
                 {
@@ -568,8 +591,6 @@ namespace JyunrcaeaFramework
         {
             EventManager.Add(target);
         }
-
-
     }
 
     public class EventList
@@ -597,7 +618,8 @@ namespace JyunrcaeaFramework
             Ad(keyUp, obj);
             Ad(mouseMoves, obj);
             Ad(mouseKeyDowns, obj);
-            Ad(mouseKeyUps, obj);
+            if (obj is Events.MouseKeyUp)
+                Ad(mouseKeyUps, obj);
         }
 
         public void Remove(object obj)
@@ -698,6 +720,16 @@ namespace JyunrcaeaFramework
                 refresh = true;
             }
         }
+        public Color TextColor
+        {
+            get => TFT.Color;
+            set
+            {
+                TFT.Color = value;
+                refresh = true;
+            }
+        }
+
         public Color? Background
         {
             get => TFT.BackgroundColor;
@@ -883,6 +915,8 @@ namespace JyunrcaeaFramework
 
         internal TopGroup? Ancestor = null;
 
+        public bool ResourceReady { get; internal set; } = false;
+
         /// <summary>
         /// 묶을 객체들
         /// </summary>
@@ -940,7 +974,8 @@ namespace JyunrcaeaFramework
         {
             for (int i = 0; i < this.Objects.Count; i++)
             {
-                this.PushEvent(this.Objects[i]);
+                this.Ancestor!.PushEvent(this.Objects[i]);
+                //this.PushEvent(this.Objects[i]);
 
                 if (this.Objects[i] is Group)
                 {
@@ -961,6 +996,7 @@ namespace JyunrcaeaFramework
                     continue;
                 }
             }
+            this.ResourceReady = true;
         }
 
         /// <summary>
@@ -968,6 +1004,7 @@ namespace JyunrcaeaFramework
         /// </summary>
         public virtual void Release()
         {
+            this.ResourceReady = false;
             for (int i = 0; i < this.Objects.Count; i++)
             {
                 if (this.Objects[i] is Group)
@@ -990,6 +1027,8 @@ namespace JyunrcaeaFramework
 
         public virtual void Update(float ms)
         {
+            if(this.Objects.AddQueueCount != 0)
+                this.Objects.Update();
             for (int i=0;i<this.Objects.Count;i++)
             {
                 if (Objects[i] is Events.Update) ((Events.Update)Objects[i]).Update(ms);
@@ -1020,7 +1059,7 @@ namespace JyunrcaeaFramework
     }
 
     /// <summary>
-    /// Zenerety 렌더링 방식에 사용되는 직사각형 객체입니다.
+    /// 직사각형을 그리는 객체입니다. (Zenerety 렌더링 전용)
     /// </summary>
     public class Box : ZeneretyDrawableObject
     {
@@ -1046,14 +1085,18 @@ namespace JyunrcaeaFramework
         internal override int RealHeight => (int)(Size.Height * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
     }
 
+    /// <summary>
+    /// 이미지를 출력하는 객체입니다. (Zenerety 렌더링 전용)
+    /// </summary>
     public class Image : ZeneretyExtendObject
     {
         /// <summary>
         /// Image 객체를 생성합니다.
         /// </summary>
         /// <param name="Texture">텍스쳐</param>
-        public Image(DrawableTexture Texture)
+        public Image(DrawableTexture? Texture = null)
         {
+            if (Texture is null) return;
             this.Texture = Texture;
         }
 
@@ -1074,6 +1117,9 @@ namespace JyunrcaeaFramework
         internal override int RealHeight => (int)((AbsoluteSize is null ? Texture.Height : AbsoluteSize.Height) * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
     }
 
+    /// <summary>
+    /// 원을 그리는 객체입니다. (Zenerety 렌더링 전용)
+    /// </summary>
     public class Circle : ZeneretyDrawableObject
     {
         public Circle(short radius=0, Color? color = null)
@@ -1093,7 +1139,7 @@ namespace JyunrcaeaFramework
     }
 
     /// <summary>
-    /// 그려지지 않는 가짜 객체입니다.
+    /// 그려지지 않는 가짜 객체입니다. (Zenerety 렌더링 전용)
     /// </summary>
     public class GhostBox : ZeneretyDrawableObject
     {
@@ -1107,6 +1153,34 @@ namespace JyunrcaeaFramework
 
         internal override int RealWidth => (int)(Size.Width * Scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
         internal override int RealHeight => (int)(Size.Height * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
+    }
+
+    /// <summary>
+    /// 모서리가 둥근 직사각형을 그리는 객체입니다. (Zenerety 렌더링 전용)
+    /// </summary>
+    public class RoundBox : Box
+    {
+        public RoundBox(int Width = 0,int Height = 0,short Radius = 0,Color? color = null) : base(Width,Height,color)
+        {
+            this.Radius = Radius;
+        }
+
+        /// <summary>
+        /// 모서리의 둥글기 정도 (픽셀 기준)
+        /// </summary>
+        public short Radius;
+    }
+
+    class AddTarget
+    {
+        public ZeneretyObject target;
+        public int index;
+
+        public AddTarget(ZeneretyObject obj,int pos = -1)
+        {
+            this.index = pos;
+            this.target = obj;
+        }
     }
 
     /// <summary>
@@ -1124,17 +1198,35 @@ namespace JyunrcaeaFramework
             Ancestor = group.Ancestor;
         }
 
+        Queue<AddTarget> AddList = new();
+        public int AddQueueCount => AddList.Count;
+
+        /// <summary>
+        /// 객체 목록에 변경해야될 사항이 있는 경우 목록을 새로 고칩니다.
+        /// 만약 즉시 추가해야될 객체가 있는경우 이 함수를 호출하여 즉시 추가하세요.
+        /// </summary>
+        public void Update()
+        {
+            if (AddList.Count == 0) return;
+            while (AddList.Count != 0)
+            {
+                var target = AddList.Dequeue();
+                if (target.index == -1) base.Add(target.target);
+                else base.Insert(target.index, target.target);
+                if (target.target is Text)
+                {
+                    Console.WriteLine(((Text)target.target).TFT.ResourceReady);
+                }
+                //AddProcedure(target);
+            }
+        }
+
         void AddProcedure(ZeneretyObject obj)
         {
-            if (obj.Parent != null)
-            {
-                // 버그 방지 차원으로 넣은 기능
-                throw new JyunrcaeaFrameworkException("이 객체는 이미 다른 그룹에 속해있습니다.");
-            }
-            obj.Parent = this.Parent;
             if (obj is Group)
             {
-                FrameworkFunction.Prepare((Group)obj);
+                ((Group)obj).Ancestor = this.Ancestor;
+                ((Group)obj).Prepare();
                 return;
             }
             if (obj is Image)
@@ -1144,9 +1236,9 @@ namespace JyunrcaeaFramework
             }
             if (obj is Text)
             {
-                ((Text)obj).TFT.Ready();
+                if (!((Text)obj).TFT.ResourceReady) ((Text)obj).TFT.Ready();
             }
-            if(Ancestor is not null) Ancestor.EventManager.Add(obj);
+            //if(Ancestor is not null) Ancestor.EventManager.Add(obj);
         }
 
         /// <summary>
@@ -1155,13 +1247,14 @@ namespace JyunrcaeaFramework
         /// <param name="obj">객체</param>
         public new void Add(ZeneretyObject obj)
         {
-            base.Add(obj);
             if (obj.Parent is not null) throw new JyunrcaeaFrameworkException("이미 다른 부모 객체에게 상속된 객체입니다.");
             obj.Parent = this.Parent;
-            if (Framework.Running)
+            if (this.Parent.ResourceReady)
             {
                 AddProcedure(obj);
+                this.AddList.Enqueue(new(obj));
             }
+            else base.Add(obj);
         }
 
         public new void AddRange(IEnumerable<ZeneretyObject> objs)
@@ -1180,10 +1273,23 @@ namespace JyunrcaeaFramework
             }
         }
 
+        public void AddRange(int index = 0,params ZeneretyObject[] objs)
+        {
+            for (int i = 0; i < objs.Length; i++)
+            {
+                this.Insert(index + i, objs[i]);
+            }
+        }
+
         public new void Insert(int index,ZeneretyObject zo)
         {
-            base.Insert(index,zo);
-            if (Framework.Running) AddProcedure(zo);
+            if (zo.Parent is not null) throw new JyunrcaeaFrameworkException("이미 다른 부모 객체에게 상속된 객체입니다.");
+            zo.Parent = this.Parent;
+            if (this.Parent.ResourceReady) {
+                AddProcedure(zo);
+                this.AddList.Enqueue(new(zo, index));
+            }
+            else base.Insert(index, zo);
         }
 
 
@@ -1584,6 +1690,15 @@ namespace JyunrcaeaFramework
                 SDL.SDL_SetHint(SDL.SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4, value ? "1" : "0");
             }
             get => SDL.SDL_GetHint(SDL.SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4) == "1";
+        }
+
+        public static bool Resizable
+        {
+            set {
+                SDL.SDL_SetWindowResizable(Framework.window,
+                    value ? SDL.SDL_bool.SDL_TRUE : SDL.SDL_bool.SDL_FALSE
+                );
+            }
         }
     }
 
@@ -4995,6 +5110,11 @@ namespace JyunrcaeaFramework
             AnimationQueue.Add(info);
         }
 
+        public static void Add(InfoForGroup.General group)
+        {
+            group.Add();
+        }
+
         /// <summary>
         /// 특정한 애니메이션 정보를 담는 클래스가 모여있습니다.
         /// </summary>
@@ -5229,7 +5349,7 @@ namespace JyunrcaeaFramework
             /// </summary>
             public class Opacity : General
             {
-                public Opacity(ZeneretyDrawableObject Target, byte TargetOpacity, double? StartTime = null, double AnimationTime = 1000, uint RepeatCount = 1, FunctionForAnimation? TimeClaculator = null, Action<ZeneretyObject>? FunctionWhenFinished = null) : base(Target, StartTime, AnimationTime, RepeatCount, FunctionWhenFinished, TimeClaculator)
+                public Opacity(ZeneretyDrawableObject Target, byte TargetOpacity, double? StartTime = null, double AnimationTime = 1000, uint RepeatCount = 1, FunctionForAnimation? TimeCalculator = null, Action<ZeneretyObject>? FunctionWhenFinished = null) : base(Target, StartTime, AnimationTime, RepeatCount, FunctionWhenFinished, TimeCalculator)
                 {
                     this.BO = Target.Opacity;
                     this.AO = TargetOpacity;
@@ -5255,6 +5375,114 @@ namespace JyunrcaeaFramework
                 {
                     ((ZeneretyDrawableObject)Target).Opacity = BO;
                     base.Undo();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 그룹용 애니메이션 정보를 담는 클래스가 모여있습니다.
+        /// </summary>
+        public static class InfoForGroup
+        {
+            public abstract class General
+            {
+                protected ZeneretyList targets;
+                protected double starttime;
+                protected double animationtime;
+
+                /// <summary>
+                /// 반복횟수 (기본 1회, 0 일경우 무제한)
+                /// </summary>
+                public uint RepeatCount = 1;
+                /// <summary>
+                /// 애니메이션 시간 계산기
+                /// </summary>
+                public FunctionForAnimation TimeCalculator = Animation.Type.Default;
+
+                protected List<Info.General> ApplyTargets = new();
+
+                public General(Group target, double? StartTime, double AnimationTime) {
+                    this.targets = target.Objects;
+                    this.starttime = StartTime ?? Framework.RunningTime;
+                    this.starttime = AnimationTime;
+                }
+
+                /// <summary>
+                /// 시작 시간 (null 일경우 Framework.RunningTime 적용)
+                /// </summary>
+                public double? StartTime
+                {
+                    get => starttime;
+                    set => starttime = (value ?? Framework.RunningTime);
+                }
+                /// <summary>
+                /// 움직이는 시간 (밀리초 기준)
+                /// </summary>
+                public double AnimationTime
+                {
+                    get => animationtime;
+                    set => animationtime = value;
+                }
+
+                internal virtual void Add()
+                {
+                    if (this.ApplyTargets.Count != 0)
+                    {
+                        this.ApplyTargets.Clear();
+                    }
+                }
+
+                /// <summary>
+                /// 애니메이션을 즉시 마무리 한뒤 끝내버립니다.
+                /// </summary>
+                public void Done()
+                {
+                    for (int i =0;i<this.ApplyTargets.Count;i++)
+                    {
+                        this.ApplyTargets[i].Done();
+                    }
+                }
+
+                /// <summary>
+                /// 애니메이션을 마무리 없이 즉시 종료합니다.
+                /// </summary>
+                public void Stop()
+                {
+                    for (int i = 0; i < this.ApplyTargets.Count; i++)
+                    {
+                        this.ApplyTargets[i].Stop();
+                    }
+                }
+
+                /// <summary>
+                /// 애니메이션이 끝났는지에 대한 여부입니다.
+                /// (적용된 객체가 하나도 없을경우 시간 상으로 계산됩니다.)
+                /// </summary>
+                public bool Finished => this.ApplyTargets.Count == 0 ? (this.starttime + this.animationtime <= Framework.RunningTime) : this.ApplyTargets[0].Finished;
+            }
+
+            /// <summary>
+            /// 투명도에 대한 애니메이션 정보. (투명도 적용이 불가능한 객체는 제외됩니다.)
+            /// </summary>
+            public class Opacity : General
+            {
+                public byte TargetOpacity;
+
+                public Opacity(Group target,byte opacity,double? StartTime=null,double AnimationTime=1000) : base(target,StartTime,AnimationTime)
+                {
+                    this.TargetOpacity = opacity;
+                }
+
+                internal override void Add()
+                {
+                    base.Add();
+                    for (int i = 0;i < this.targets.Count; i++)
+                    {
+                        if (this.targets[i] is not ZeneretyDrawableObject) continue;
+                        var ai = new Info.Opacity((ZeneretyDrawableObject)this.targets[i], this.TargetOpacity, this.starttime, this.animationtime, this.RepeatCount, this.TimeCalculator);
+                        Animation.Add(ai);
+                        this.ApplyTargets.Add(ai);
+                    }  
                 }
             }
         }
@@ -5499,6 +5727,357 @@ namespace JyunrcaeaFramework
             this.src.w = this.src.h = 0;
         }
     }
+
+    class EffectForImage
+    {
+        internal static PaintOnMemory Bluring(ImageOnMemory image)
+        {
+            byte r, g, b, a;
+            int maxw = image.Width - 1;
+            int maxh = image.Height - 1;
+
+            double[,] RedMap = new double[image.Width, image.Height];
+            double[,] BlueMap = new double[image.Width, image.Height];
+            double[,] GreenMap = new double[image.Width, image.Height];
+            double[,] AlphaMap = new double[image.Width, image.Height];
+
+            void Add(int x, int y, double n)
+            {
+                RedMap[x, y] += r * n;
+                BlueMap[x, y] += b * n;
+                GreenMap[x, y] += g * n;
+                AlphaMap[x, y] += a * n;
+            }
+
+            //1단계
+            void OneBlur(int x, int y)
+            {
+                image.GetRGBA(x, y, out r, out g, out b, out a);
+                Add(x, y, 0.25);
+                if (x != 0)
+                {
+                    Add(x - 1, y, 0.125);
+                    if (y != 0)
+                    {
+                        Add(x - 1, y - 1, 0.0625);
+                    }
+                    if (y != maxh)
+                    {
+                        Add(x - 1, y + 1, 0.0625);
+                    }
+                }
+                if (y != 0)
+                {
+                    Add(x, y - 1, 0.125);
+                }
+                if (x != maxw)
+                {
+                    Add(x + 1, y, 0.125);
+                    if (y != 0)
+                    {
+                        Add(x + 1, y - 1, 0.0625);
+                    }
+                    if (y != maxh)
+                    {
+                        Add(x + 1, y + 1, 0.0625);
+                    }
+                }
+                if (y != maxh)
+                {
+                    Add(x, y + 1, 0.125);
+                }
+            }
+
+            for (int x = 0; x < image.Width; x++)
+            {
+                for (int y = 0; y < image.Height; y++)
+                {
+                    OneBlur(x, y);
+                }
+            }
+            //가장자리 처리
+            image.GetRGBA(1, 1, out r, out g, out b, out a);
+            Add(0, 0, 0.4375);
+            image.GetRGBA(maxw - 1, maxh - 1, out r, out g, out b, out a);
+            Add(maxw, maxh, 0.4375);
+            image.GetRGBA(1, maxh - 1, out r, out g, out b, out a);
+            Add(0, maxh, 0.4375);
+            image.GetRGBA(maxw - 1, 1, out r, out g, out b, out a);
+            Add(maxw, 0, 0.4375);
+
+            //가로 처리
+            for (int x = 1; x < maxw; x++)
+            {
+                image.GetRGBA(x, 1, out r, out g, out b, out a);
+                Add(x, 0, 0.25);
+                image.GetRGBA(x, maxh - 1, out r, out g, out b, out a);
+                Add(x, maxh, 0.25);
+            }
+            //세로 처리
+            for (int y = 1; y < maxh; y++)
+            {
+                image.GetRGBA(1, y, out r, out g, out b, out a);
+                Add(0, y, 0.25);
+                image.GetRGBA(maxw - 1, y, out r, out g, out b, out a);
+                Add(maxw, y, 0.25);
+            }
+
+            PaintOnMemory paint = new(image.Width, image.Height);
+
+            for (int x = 0; x < image.Width; x++)
+            {
+                for (int y = 0; y < image.Height; y++)
+                {
+                    //점찍기
+                    paint.Point(x, y, (byte)RedMap[x, y], (byte)GreenMap[x, y], (byte)BlueMap[x, y], (byte)AlphaMap[x, y]);
+                }
+            }
+
+            return paint;
+        }
+    }
+
+    public class PaintOnMemory : IDisposable
+    {
+        IntPtr surface;
+        SDL.SDL_Surface sur;
+        SDL.SDL_PixelFormat format;
+
+        internal IntPtr Address => surface;
+
+        public PaintOnMemory(int width = 0,int height = 0)
+        {
+            surface = SDL.SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL.SDL_PIXELFORMAT_ARGB8888);
+            sur = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.SDL_Surface>(surface);
+            format = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.SDL_PixelFormat>(sur.format);
+            SDL.SDL_SetSurfaceBlendMode(surface, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
+        }
+
+        public unsafe void Point(int x,int y,Color color)
+        {
+            Point(x, y, color.colorbase.r, color.colorbase.g, color.colorbase.b, color.colorbase.a);
+        }
+
+        public unsafe void Point(int x, int y, byte r,byte g,byte b,byte a)
+        {
+            SDL.SDL_LockSurface(surface);
+            byte* pixel_arr = (byte*)sur.pixels;
+            pixel_arr[y * sur.pitch + x * format.BytesPerPixel + 0] = b;
+            pixel_arr[y * sur.pitch + x * format.BytesPerPixel + 1] = g;
+            pixel_arr[y * sur.pitch + x * format.BytesPerPixel + 2] = r;
+            pixel_arr[y * sur.pitch + x * format.BytesPerPixel + 3] = a;
+            SDL.SDL_UnlockSurface(surface);
+        }
+
+        public unsafe Color GetPixel(int x,int y)
+        {
+            uint key = *(UInt32*)((byte*)sur.pixels + y * sur.pitch + x * format.BytesPerPixel);
+            Color color = new();
+            SDL.SDL_GetRGBA(key, sur.format, out color.colorbase.r, out color.colorbase.g, out color.colorbase.b, out color.colorbase.a);
+            return color;
+        }
+
+        public TextureFromMemory GetTexture()
+        {
+            return new(this.surface);
+        }
+
+        public void Rectanlge(int x,int y,int w,int h)
+        {
+            
+        }
+
+        public ImageOnMemory GetImage()
+        {
+            return new(SDL.SDL_DuplicateSurface(this.surface));
+        }
+
+        public void Dispose()
+        {
+            SDL.SDL_FreeSurface(surface);
+            surface = IntPtr.Zero;
+        }
+    }
+
+    public class ImageOnMemory : IDisposable
+    {
+        SDL.SDL_Surface surface;
+        IntPtr surface_ptr;
+
+        public ImageOnMemory(IntPtr address)
+        {
+            Init(address);
+        }
+
+        private void Init(IntPtr address)
+        {
+            surface_ptr = address;
+            if (surface_ptr == IntPtr.Zero) throw new JyunrcaeaFrameworkException("이미지를 불러오는데 실패하였습니다.");
+            surface = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.SDL_Surface>(surface_ptr);
+            format = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.SDL_PixelFormat>(surface.format);
+            bpp = format.BytesPerPixel;
+            unsafe
+            {
+                switch (bpp)
+                {
+                    case 1:
+                        pp = Process.One;
+                        break;
+                    case 2:
+                        pp = Process.Two;
+                        break;
+                    case 3:
+                        pp = Process.Three;
+                        break;
+                    case 4:
+                        pp = Process.Four;
+                        break;
+                    default:
+                        pp = Process.Default;
+                        break;
+                }
+            }
+        }
+
+        private void Init(ImageOnMemory me)
+        {
+            this.surface = me.surface;
+            this.surface_ptr = me.surface_ptr;
+            this.pp = me.pp;
+            this.format = me.format;
+            this.bpp = me.bpp;
+        }
+
+        public ImageOnMemory(string path) : this(SDL_image.IMG_Load(path))
+        {
+
+        }
+
+        public int Width => surface.w; public int Height => surface.h;
+
+        Process.PixelProcesser pp = null!;
+
+        SDL.SDL_PixelFormat format;
+        int bpp;
+
+        public unsafe UInt32 GetPixel(int x,int y)
+        {
+            return pp((byte*)surface.pixels + y * surface.pitch + x * bpp);
+        }
+
+        public void GetRGBA(int x,int y,out byte r,out byte g,out byte b,out byte a)
+        {
+            uint p = GetPixel(x, y);
+            SDL.SDL_GetRGBA(p, surface.format, out r, out g, out b, out a);
+        }
+
+        public ImageOnMemory GetResizedImage(int width,int height)
+        {
+            IntPtr result = SDL.SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL.SDL_PIXELFORMAT_ARGB8888);
+            SDL.SDL_Rect origin = new() { x = 0, y = 0, w = surface.w, h = surface.h };
+            SDL.SDL_Rect targetsize = new() { x = 0, y = 0, w = width, h = height };
+            SDL.SDL_LowerBlitScaled(surface_ptr, ref origin, result,ref targetsize);
+            if (result == IntPtr.Zero) throw new JyunrcaeaFrameworkException("크기 조정에 실패하였습니다.");
+            return new(result);
+        }
+
+        public int BlurProgress { get; internal set; } = -1;
+
+        public void Resize(int width,int height)
+        {
+            var result = GetResizedImage(width, height);
+            this.Release();
+            this.Init(result);
+        }
+
+        public void Blur()
+        {
+            var result = EffectForImage.Bluring(this);
+            this.Release();
+            this.Init(result.GetImage());
+            result.Dispose();
+        }
+
+        public TextureFromMemory GetTexture()
+        {
+            if (surface_ptr == IntPtr.Zero) throw new JyunrcaeaFrameworkException("실패. 불러오지 않은 이미지, 또는 이미 해제된 이미지를 텍스쳐로 변환할려고 했습니다.");
+            return new TextureFromMemory(surface_ptr);
+        }
+
+        public void Dispose()
+        {
+            Release();
+        }
+
+        private void Release()
+        {
+            if (surface_ptr == IntPtr.Zero) return;
+            SDL.SDL_FreeSurface(surface_ptr);
+            surface_ptr = IntPtr.Zero;
+        }
+
+        private static unsafe class Process {
+            internal delegate UInt32 PixelProcesser(byte* p);
+
+            internal static UInt32 One(byte* p)
+            {
+                return *p;
+            }
+
+            internal static UInt32 Two(byte* p)
+            {
+                return *(UInt16*)p;
+            }
+
+            internal static UInt32 Three(byte* p)
+            {
+                return (UInt32)(p[0] | p[1] << 8 | p[2] << 16);
+            }
+
+            internal static UInt32 Four(byte* p)
+            {
+                return *(UInt32*)p;
+            }
+
+            internal unsafe static UInt32 Default(byte* p)
+            {
+                throw new JyunrcaeaFrameworkException("can't read pixel");
+            }
+        }
+    }
+
+    public class TextureFromMemory : DrawableTexture
+    {
+        public TextureFromMemory(IntPtr surface)
+        {
+            this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer,surface);
+            if (this.texture == IntPtr.Zero)
+            {
+                throw new JyunrcaeaFrameworkException("이미지를 불러오는데 실패하였습니다.");
+            }
+        }
+
+        internal override void Ready()
+        {
+            SDL.SDL_QueryTexture(this.texture, out _, out _, out this.absolutesrc.x, out this.absolutesrc.y);
+            this.needresettexture = true;
+            if (!this.FixedRenderRange)
+            {
+                this.src.w = this.absolutesrc.x;
+                this.src.h = this.absolutesrc.y;
+            }
+            base.Ready();
+        }
+
+        internal override void Free()
+        {
+            SDL.SDL_DestroyTexture(this.texture);
+            this.absolutesrc.x = this.absolutesrc.y = 0;
+            this.needresettexture = true;
+            this.texture = IntPtr.Zero;
+        }
+    }
+
     /// <summary>
     /// 이미지 파일을 통해 불러오는 텍스쳐입니다.
     /// </summary>
@@ -5579,6 +6158,7 @@ namespace JyunrcaeaFramework
         public Color? BackgroundColor;
         public bool Blended = true;
         public uint WarpLength = 0;
+        public bool ResourceReady => fontsource != IntPtr.Zero;
 
         public TextureFromText(string Fontfile,int Size,string Text,Color Color,Color? BackgroundColor = null,bool Blended = true) {
             this.Fontfile = Fontfile;

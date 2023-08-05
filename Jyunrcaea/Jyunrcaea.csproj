@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <ApplicationIcon>Jyunrcaea_FrameworkIcon.ico</ApplicationIcon>
     <StartupObject></StartupObject>
   </PropertyGroup>
 
@@ -20,12 +19,6 @@
 
   <ItemGroup>
     <None Remove="FileExplorer.cs~RF2460698a.TMP" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Jyunrcaea_FrameworkIcon.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -52,9 +45,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="font.ttf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Jyunrcaea!FrameworkIcon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="test.png">
