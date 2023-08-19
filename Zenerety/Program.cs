@@ -2,293 +2,149 @@
 
 class Program
 {
-    static void Main(string[] args)
+    static void Main()
     {
-        Framework.Init("Jyunrcaea! Framework", 1280, 720, null, null);
-        Framework.NewRenderingSolution = true;
-
-        Display.FrameLateLimit = 0;
-        Display.FrameLateLimit *= 2;
-        Font.DefaultPath = "font.ttf";
-
-        Window.BackgroundColor = Color.White;
-
-        Display.Target.Objects.Add(new Windows());
-        Display.Target.Objects.Add(new FrameAnalyze());
-
-        Framework.Run(CallResize: true, ShowWindow: true);
-    }
-}
-
-
-class Windows : Group, Events.KeyDown
-{
-
-    public Windows()
-    {
-        this.Objects.AddRange(
-            new WindowForm("614project", 720, 480),
-            new WindowForm("sus", 614, 360, 100, 100,new Info())
+        Init();
+        Display.Target.Objects.AddRange(
+            new MusicList(),
+            new PlayerBar()
             );
+        Framework.Run(true);
     }
 
-    public void KeyDown(Input.Keycode k)
+    static void Init()
     {
-        switch (k)
-        {
-            case Input.Keycode.F3:
-#if DEBUG
-                Debug.ObjectDrawDebuging = !Debug.ObjectDrawDebuging;
-#endif
-                break;
-        }
+        Framework.Init("Jyunni Music Player", 1280, 720);
+        Window.BackgroundColor = Color.White;
+        Framework.NewRenderingSolution = true;
+        Font.DefaultPath = "font.ttf";
+        Window.SetMinimizeSize(480, 320);
     }
 }
 
-class WindowForm : Group, Events.MouseMove, Events.MouseKeyDown, Events.MouseKeyUp
+class PlayerBar : Group
 {
-    Box background = new();
-    Box TitleBar = new();
+    const int bar_height = 150;
+    const float zoom = 0.8f;
+
+    Box background;
+    RoundBox progress;
     Text title;
-    Box Close = new(30, 30, new(255, 10, 10, 100)) { RelativeSize = false };
 
-    Color Normal = new(150, 150, 150, 128);
-    Color Hover = new(150, 150, 200, 150);
-
-    GhostBox Horizon;
-    GhostBox Vertical;
-
-    Group content = null!;
-
-    public WindowForm(string title, int width, int height, int x = 0, int y = 0, Group? content = null)
+    public PlayerBar()
     {
-        //Horizon
-        Horizon = new(width, 6);
-        Horizon.CenterY = 0;
-        Horizon.Y = height;
-        Horizon.CenterX = 0;
-        Horizon.DrawX = HorizontalPositionType.Right;
-        Horizon.RelativeSize = false;
+        background = new(Window.Width, bar_height,new(210,210,210));
+        background.CenterY = 1;
+        background.DrawY = VerticalPositionType.Top;
+        background.RelativeSize = false;
 
-        //Vertical
-        Vertical = new(6, height);
-        Vertical.CenterX = 0;
-        Vertical.X = width;
-        Vertical.CenterY = 0;
-        Vertical.DrawY = VerticalPositionType.Bottom;
-        Vertical.RelativeSize = false;
+        progress = new RoundBox((int)(Window.Width * zoom),8,4,new(150,150,150));
+        progress.CenterY = 1;
+        progress.DrawY = VerticalPositionType.Top;
+        progress.RelativeSize = false;
 
-        //background
-        background.RelativeSize = TitleBar.RelativeSize = false;
-        background.Size.Width = TitleBar.Size.Width = width;
-        background.Size.Height = height;
-        background.Color = new(200, 200, 200, 128);
+        title = new("(재생중인 음악 없음)",20,Color.Gray);
+        title.CenterY = 1;
+        title.DrawY = VerticalPositionType.Top;
 
-        //title
-        this.title = new(title, 20) { RelativeSize = false, X = 2 };
-        TitleBar.Color = this.Normal;
-
-        //this
-        this.X = x;
-        this.Y = y;
         this.Objects.AddRange(
             background,
-            TitleBar,
-            Close,
-            this.title,
-            Horizon,
-            Vertical
+            progress,
+            title
             );
-
-        TitleBar.Size.Height = 30;
-        TitleBar.CenterY = this.title.CenterY = this.background.CenterY = 0;
-        TitleBar.DrawY = this.title.DrawY = this.background.DrawY = VerticalPositionType.Bottom;
-        TitleBar.CenterX = this.title.CenterX = background.CenterX = 0;
-        TitleBar.DrawX = this.title.DrawX = background.DrawX = HorizontalPositionType.Right;
-
-
-        //Close
-        Close.CenterY = 0;
-        Close.CenterX = 0;
-        Close.DrawX = HorizontalPositionType.Left;
-        Close.DrawY = VerticalPositionType.Bottom;
-        Close.X = width;
-
-        if (content is not null)
-        {
-            this.Objects.Add(this.content = content);
-            this.content.RenderRange = new(width,height);
-        }
     }
 
-    public int Width
+    public override void Resize()
     {
-        get => background.Size.Width;
-        set
-        {
-            background.Size.Width = value;
-            TitleBar.Size.Width = value;
-            if (content is not null) content.RenderRange!.Width = value;
-            Close.X = value;
-            this.Horizon.Size.Width = value;
-            this.Vertical.X = value;
-        }
-    }
+        background.Size.Width = Window.Width;
+        background.Size.Height = (int)(bar_height * Window.AppropriateSize);
 
-    public int Height
-    {
-        get => background.Size.Height;
-        set
-        {
-            background.Size.Height = value;
-            this.Vertical.Size.Height = value;
-            if (content is not null) content.RenderRange!.Height = value - 30;
-            this.Horizon.Y = value;
-        }
+        progress.Size.Width = (int)(Window.Width * zoom);
+        progress.Size.Height = (int)(8 * Window.AppropriateSize);
+        progress.Radius = (short)(progress.Size.Height * 0.5f + 1);
+        progress.Y = (int)(background.Size.Height * -0.3f);
+
+        title.Y = (int)(background.Size.Height * -0.7f);
+        base.Resize();
     }
 
     public override void Update(float ms)
     {
         base.Update(ms);
+        this.title.Content = MusicInfo.musicname ?? "(재생중인 음악 없음)";
+        if (MusicInfo.musicname is not null) {
+            var t = TimeSpan.FromSeconds(Music.NowTime);
+            this.title.Content += $" - ({t.Minutes}:{t.Seconds})";
+        }
     }
+}
 
-    public void MouseMove()
+class MusicList : Group
+{
+    public MusicList()
     {
-        if (grab)
-        {
-            this.X = Input.Mouse.X + mousew;
-            this.Y = Input.Mouse.Y + mouseh;
-            if (content is null) return;
-            content.X = this.X;
-            content.Y = this.Y + 30;
-            return;
-        }
-        if (resizing)
-        {
-            if (horizon)
-            {
-                this.Width = Input.Mouse.X - this.X;
-            }
-            else
-            {
-                this.Height = Input.Mouse.Y - this.Y;
-            }
-        }
-        if (Convenience.MouseOver(TitleBar))
-        {
-            TitleBar.Color = this.Hover;
-        }
-        else
-        {
-            TitleBar.Color = this.Normal;
-        }
-        if (Convenience.MouseOver(Close))
-        {
-            Close.Color.Alpha = 255;
-        }
-        else
-        {
-            Close.Color.Alpha = 100;
-        }
+
     }
 
     public override void Prepare()
     {
         base.Prepare();
-    }
-
-    bool grab = false;
-    bool resizing = false;
-    bool horizon = false;
-
-    int mousew = 0;
-    int mouseh = 0;
-
-    public void MouseKeyDown(Input.Mouse.Key key)
-    {
-        if (key != Input.Mouse.Key.Left) return;
-        if (Convenience.MouseOver(Close))
+        var files = Directory.GetFiles("music");
+        foreach ( var file in files )
         {
-            this.Parent!.Objects.Remove(this);
-            return;
+            if (!file.EndsWith(".mp3")) continue;
+            this.Objects.Add(new MusicInfo(file));
         }
-        if (Convenience.MouseOver(TitleBar))
-        {
-            Input.Mouse.SetCursor(Input.Mouse.CursorType.Move);
-            grab = true;
-            mousew = this.X - Input.Mouse.X;
-            mouseh = this.Y - Input.Mouse.Y;
-            this.Parent!.Objects.Switch(this);
-            return;
-        }
-        if (Convenience.MouseOver(Horizon))
-        {
-            Input.Mouse.SetCursor(Input.Mouse.CursorType.VericalSizing);
-            resizing = true;
-            horizon = false;
-            return;
-        }
-        if (Convenience.MouseOver(Vertical))
-        {
-            Input.Mouse.SetCursor(Input.Mouse.CursorType.HorizonSizing);
-            resizing = true;
-            horizon = true;
-            return;
-        }
-    }
-
-    public void MouseKeyUp(Input.Mouse.Key key)
-    {
-        if (key != Input.Mouse.Key.Left) return;
-        grab = false;
-        resizing = false;
-        Input.Mouse.SetCursor(Input.Mouse.CursorType.Arrow);
     }
 }
 
-class Info : Group
+class MusicInfo : Group, Events.MouseKeyDown
 {
-    Text title;
+    const int height = 100;
 
-    public Info()
+    string Title;
+
+    RoundBox background;
+    Text name;
+    Music music;
+
+    public MusicInfo(string path)
     {
-        title = new("1 + 1 = 1",30);
-        this.Objects.Add(title);
-    }
-}
+        this.music = new(path);
+        this.music.PlayReady = true;
+        Title = this.music.Title;
 
-class FrameAnalyze : Text
-{
-    public FrameAnalyze() : base("측정중...", 20)
-    {
-        this.CenterX = 0;
-        this.CenterY = 1;
-        this.DrawX = HorizontalPositionType.Right;
-        this.DrawY = VerticalPositionType.Top;
-    }
-
-    int framecount = 0;
-
-    uint endtime = 1000;
-
-    public override void Update(float ms)
-    {
-        if (endtime <= Framework.RunningTime)
+        if (Title == "")
         {
-            endtime += 1000;
-            this.Content = "FPS: " + framecount;
-            framecount = 0;
+            //Title = path.Remove(path.LastIndexOf(".mp3"));
+            Title = path.Remove(path.Length - 4).Remove(0, 6);
         }
-        framecount++;
-        base.Update(ms);
-    }
-}
 
-class One : Circle
-{
-    public One()
-    {
-        this.Radius = 15;
-        this.Color = new(200, 150, 150,150);
+        background = new(Window.Width, height, 6, new(240,240,240));
+        background.RelativeSize = false;
+
+        name = new(Title, 20);
+
+        this.Objects.AddRange(background, name);
     }
+
+    public override void Resize()
+    {
+        background.Size.Width = Window.Width;
+        background.Size.Height = (int)(height * Window.AppropriateSize);
+        background.Radius = (short)(6 * Window.AppropriateSize);
+        base.Resize();
+    }
+
+    public void MouseKeyDown(Input.Mouse.Key k)
+    {
+        if (k != Input.Mouse.Key.Left) return;
+        if (Convenience.MouseOver(background))
+        {
+            musicname = this.Title;
+            Music.Play(this.music);
+        }
+    }
+
+    public static string? musicname = null;
 }

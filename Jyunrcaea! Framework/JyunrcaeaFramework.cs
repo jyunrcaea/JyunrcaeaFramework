@@ -1,8 +1,5 @@
 ﻿#define WINDOWS
 using SDL2;
-using System.Net;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 
 namespace JyunrcaeaFramework
 {
@@ -119,6 +116,7 @@ namespace JyunrcaeaFramework
         /// <param name="x">가로 위치 (null 일경우 중앙)</param>
         /// <param name="y">세로 위치 (null 일경우 중앙)</param>
         /// <param name="option">초기 창 생성옵션</param>
+        /// <param name="KeepRenderingWhenResize">창 조절 중에도 계속 렌더링 하기 (64비트 운영체제 전용)</param>
         /// <param name="render_option">렌더러 옵션</param>
         /// <exception cref="JyunrcaeaFrameworkException">초기화 실패시</exception>
         public static void Init(string title, uint width, uint height, int? x = null, int? y = null, WindowOption? option = null, RenderOption? render_option = null, AudioOption audio_option = default,bool KeepRenderingWhenResize = true)
@@ -193,7 +191,8 @@ namespace JyunrcaeaFramework
                 else setting = false;
             }
             #endregion
-            if (KeepRenderingWhenResize)
+            //만약 32bit 일경우 계속 렌더링 불가능
+            if (IntPtr.Size != 4 && (Display.KeepRenderingWhenResize = KeepRenderingWhenResize))
             {
                 SDL.SDL_SetEventFilter((_, eventPtr) =>
                     {
@@ -374,19 +373,14 @@ namespace JyunrcaeaFramework
                             break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
                             break;
-#if !WINDOWS
-                                                case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
-                                                    //SDL.SDL_GetWindowSize(window, out var w, out var h);
-                                                    //Window.w = (uint)w;
-                                                    //Window.h = (uint)h;
-                                                    //Window.wh = w * 0.5f;
-                                                    //Window.hh = h * 0.5f;
-                                                    //function.Resize();
-                                                    Framework.function.Resize();
-                                                    break;
-#endif
-
-
+                        case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
+                            if (Display.KeepRenderingWhenResize) break;
+                            Window.size.w = e.window.data1;
+                            Window.size.h = e.window.data2;
+                            Window.wh = Window.size.w * 0.5f;
+                            Window.hh = Window.size.h * 0.5f;
+                            Framework.Function.Resize();
+                            break;
                     }
                     break;
                 case SDL.SDL_EventType.SDL_DROPFILE:
@@ -461,27 +455,25 @@ namespace JyunrcaeaFramework
                     continue;
                 }
 
-                //if (group.Objects[i] is RoundBox)
-                //{
-                //    SDL.SDL_Rect r = ((ZeneretyDrawableObject)group.Objects[i]).renderposition;
-                //    SDL.SDL_SetRenderDrawColor(Framework.renderer, ((Box)group.Objects[i]).Color.colorbase.r, ((Box)group.Objects[i]).Color.colorbase.g, ((Box)group.Objects[i]).Color.colorbase.b, ((Box)group.Objects[i]).Color.colorbase.a);
-                //    SDL_gfx.roundedBoxRGBA(
-                //        Framework.renderer,
-                //        (short)r.x,
-                //        (short)r.y,
-                //        (short)(r.x + r.w),
-                //        (short)(r.y + r.h),
-                //        ((RoundBox)group.Objects[i]).Radius,
-                //        ((Box)group.Objects[i]).Color.colorbase.r,
-                //        ((Box)group.Objects[i]).Color.colorbase.g,
-                //        ((Box)group.Objects[i]).Color.colorbase.b,
-                //        ((Box)group.Objects[i]).Color.colorbase.a
-                //    );
-                //    continue;
-                //}
-
                 if (group.Objects[i] is Box)
                 {
+                    if (group.Objects[i] is RoundBox)
+                    {
+                        SDL.SDL_Rect r = ((ZeneretyDrawableObject)group.Objects[i]).renderposition;
+                        SDL_gfx.roundedBoxRGBA(
+                            Framework.renderer,
+                            (short)r.x,
+                            (short)r.y,
+                            (short)(r.x + r.w),
+                            (short)(r.y + r.h),
+                            ((RoundBox)group.Objects[i]).Radius,
+                            ((Box)group.Objects[i]).Color.colorbase.r,
+                            ((Box)group.Objects[i]).Color.colorbase.g,
+                            ((Box)group.Objects[i]).Color.colorbase.b,
+                            ((Box)group.Objects[i]).Color.colorbase.a
+                        );
+                        continue;
+                    }
                     SDL.SDL_SetRenderDrawColor(Framework.renderer, ((Box)group.Objects[i]).Color.colorbase.r, ((Box)group.Objects[i]).Color.colorbase.g, ((Box)group.Objects[i]).Color.colorbase.b, ((Box)group.Objects[i]).Color.colorbase.a);
                     SDL.SDL_RenderFillRect(Framework.renderer, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition);
                     continue;
@@ -1223,6 +1215,7 @@ namespace JyunrcaeaFramework
 
         void AddProcedure(ZeneretyObject obj)
         {
+            if (this.Ancestor is not null) this.Ancestor.EventManager.Add(obj);
             if (obj is Group)
             {
                 ((Group)obj).Ancestor = this.Ancestor;
@@ -1436,6 +1429,8 @@ namespace JyunrcaeaFramework
                 framelatelimit = (long)(1d / fps * 10000000);
             }
         }
+
+        public static bool KeepRenderingWhenResize { get; internal set; }
     }
 
     /// <summary>
@@ -6199,6 +6194,10 @@ namespace JyunrcaeaFramework
             if (this.texture != IntPtr.Zero)
             {
                 Free();
+            }
+            if (this.Text == "")
+            {
+                this.Text = " ";
             }
             if (BackgroundColor is null)
             {

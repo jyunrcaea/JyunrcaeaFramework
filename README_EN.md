@@ -24,8 +24,9 @@ Estimated early 2024
 
 # Support Platform
 ## Windows
-Jyunrcaea! Framework support Windows OS 7 or higher<br>
-(Actually, This framework just need to installed .NET 6.0 Runtime)
+Jyunrcaea! Framework support Windows OS 7 or higher (64bit)<br>
+(Actually, This framework just need to installed .NET 6.0 Runtime)<br>
+(And, Jyunrcaea! Framework support 32bit operating system soon.)
 ## MacOS, iOS
 Never, I'm not about to support this.
 ## Linux
