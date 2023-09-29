@@ -61,3 +61,4 @@ C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\obj\Debug
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\obj\Debug\net6.0\ref\Jyunrcaea.dll
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\font.ttf
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\bin\Debug\net6.0\background.png
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea\obj\Debug\net6.0\Jyunrcaea.sourcelink.json

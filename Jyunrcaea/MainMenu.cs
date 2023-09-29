@@ -25,6 +25,7 @@ namespace Jyunrcaea.MainMenu
             //this.Objects.Add(new BackgroundImage());
             this.Objects.Add(new Version());
             this.Objects.Add(new LeftBar());
+            //this.Objects.Add(new Design.VerticalList(2,new Text("hello",20),new Text("world",30),new Design.Button("Hello world",200,20)));
         }
 
         public override void Prepare()
@@ -89,7 +90,7 @@ namespace Jyunrcaea.MainMenu
             background = new Box(
                 (int)(Window.DefaultWidth * 0.4),
                 Window.Height,
-                new(210, 210, 210, 150)
+                new(230, 230, 230, 140)
             )
             {
                 RelativeSize = false,
@@ -137,7 +138,8 @@ namespace Jyunrcaea.MainMenu
 
         internal const int ButtonWidth = 300;
         internal const int ButtonHeight = 28;
-        internal const byte ColorValue = 235;
+        internal const byte ColorValue = 250;
+        internal const byte OpacityValue = 150;
 
         public Selector()
         {
@@ -182,14 +184,14 @@ namespace Jyunrcaea.MainMenu
                 if (before == 0 || option == 0)
                 {
                     if (ao is not null) ao.Stop(true);
-                    Animation.Add(new Animation.Info.Opacity(Select,(option == 0) ? byte.MinValue : ColorValue, null, DefaultAnimationTime,TimeCalculator: Animation.Type.EaseInOutSine,FunctionWhenFinished: (i) => ao = null));
+                    Animation.Add(new Animation.Info.Opacity(Select,(option == 0) ? byte.MinValue : OpacityValue, null, DefaultAnimationTime,TimeCalculator: Animation.Type.EaseInQuad,FunctionWhenFinished: (i) => ao = null));
                 }
                 before = option;
             }
         }
 
         Animation.Info.Opacity? ao = null;
-        const double DefaultAnimationTime = 100;
+        const double DefaultAnimationTime = 90;
         bool IsAnimating = false;
         Animation.Info.Movement am = null!;
 

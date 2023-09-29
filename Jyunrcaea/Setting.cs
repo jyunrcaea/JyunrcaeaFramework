@@ -66,11 +66,10 @@ namespace Jyunrcaea.Setting
 
         public Background()
         {
-            back = new(Window.Width, Window.Height, new(150,150,150,100));
+            back = new(Window.Width, Window.Height, new(120,120,120,180));
             back.RelativeSize = false;
 
             front = new((int)(Window.Width * Data.zoom),(int)(Window.Height * Data.zoom));
-            front.Color.Alpha = 200;
 
             close = new(" ×",26);
             close.DrawX = HorizontalPositionType.Right;
@@ -106,7 +105,7 @@ namespace Jyunrcaea.Setting
             }
             this.Parent!.Hide = false;
             Animation.Add(ab = new(back, 100, null, Data.opacitytime, 1, Animation.Type.EaseOutSine));
-            Animation.Add(af = new(front, 200, null, Data.opacitytime, 1, Animation.Type.EaseOutSine));
+            Animation.Add(af = new(front, 240, null, Data.opacitytime, 1, Animation.Type.EaseOutSine));
             Animation.Add(ae = new(close, 255, null, Data.opacitytime, 1, Animation.Type.EaseOutSine));
         }
 
@@ -152,16 +151,20 @@ namespace Jyunrcaea.Setting
     {
         Text Title;
         Text Madeby;
+        SettingOption perf;
 
         public Options()
         {
-            Title = new("Setting", 30);
-            Title.DrawY = VerticalPositionType.Bottom;
+            Title = new("Setting", 30,Color.White);
+            Title.DrawY = VerticalPositionType.Top;
 
-            Madeby = new("Made by Jyunni", 18);
-            Madeby.DrawY = VerticalPositionType.Top;
+            Madeby = new("Made by Jyunni", 18,Color.White);
+            Madeby.DrawY = VerticalPositionType.Bottom;
+
+            perf = new SettingOption();
 
             this.Objects.Add(Title);
+            this.Objects.Add(perf);
             this.Objects.Add(Madeby);
         }
 
@@ -170,6 +173,8 @@ namespace Jyunrcaea.Setting
             base.Resize();
             Madeby.Y = (int)(Data.height * 0.5);
             Title.Y = -Madeby.Y;
+            perf.X = (int)(Data.width * -0.45);
+            perf.Y = (int)(Data.height * -0.4);
         }
 
         public override void Prepare()
@@ -199,6 +204,65 @@ namespace Jyunrcaea.Setting
             }
             ag.TargetOpacity = 0;
             Animation.Add(ag);
+        }
+    }
+
+    class CustomButton : Design.Button
+    {
+        public Action<CustomButton> OnClick;
+
+        public CustomButton(string text,Action<CustomButton> onclick) : base(text,300,24,5)
+        {
+            this.Background = new Box(300, 24) { Color = new(50, 50, 50, 50) };
+            this.OnClick = onclick;
+        }
+
+        public override void MouseClick()
+        {
+            base.MouseClick();
+            this.OnClick(this);
+        }
+    }
+
+    class SettingOption : Design.VerticalList
+    {
+        CustomButton performancesaving = new("최고 성능 모드: 꺼짐",(me) =>
+        {
+            if (Framework.SavingPerformance = !Framework.SavingPerformance)
+            {
+                me.Content = "최고 성능 모드: 꺼짐";
+            }
+            else
+            {
+                me.Content = "최고 성능 모드: 켜짐";
+            }
+        });
+        static byte level = 2;
+        CustomButton setframelimit = new("초당 프레임: " + Display.MonitorRefreshRate * 2, (me) =>
+        {
+            if ((level *= 2) > 8) level = 1;
+            Display.FrameLateLimit = Display.MonitorRefreshRate * level;
+            me.Content = "초당 프레임: " + Display.FrameLateLimit;
+        });
+        CustomButton eventmutilthreading = new("이벤트 멀티스레딩: 사용", (me) =>
+        {
+            Framework.EventMultiThreading = !Framework.EventMultiThreading;
+            me.Content = "이벤트 멀티스레딩: " + (Framework.EventMultiThreading ? "사용" : "미사용");
+        });
+
+        public SettingOption() : base(2)
+        {
+            this.DrawX = HorizontalPositionType.Right;
+            //Performance
+            this.Objects.Add(new Text("성능:", 34));
+            this.Objects.Add(this.performancesaving);
+            this.Objects.Add(this.setframelimit);
+            this.Objects.Add(this.eventmutilthreading);
+        }
+
+        public override void Prepare()
+        {
+            base.Prepare();
         }
     }
 

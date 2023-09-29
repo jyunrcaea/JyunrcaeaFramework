@@ -2,6 +2,69 @@
 
 namespace FunctionTest
 {
+    class ImageWithDragable : Image, Events.MouseMove, Events.MouseKeyDown, Events.MouseKeyUp
+    {
+        public ImageWithDragable(string path) : base(path) { }
+
+        public void MouseMove()
+        {
+            if (grab)
+            {
+                this.X = Input.Mouse.X + wlen;
+                this.Y = Input.Mouse.Y + hlen;
+            }
+        }
+
+        bool grab = false;
+        int wlen = 0, hlen = 0;
+
+        public void MouseKeyDown(Input.Mouse.Key k)
+        {
+            if (k != Input.Mouse.Key.Left) return;
+            if (!Convenience.MouseOver(this)) return;
+            grab = true;
+            wlen = this.X - Input.Mouse.X;
+            hlen = this.Y - Input.Mouse.Y;
+        } 
+
+        public void MouseKeyUp(Input.Mouse.Key k)
+        {
+            if (k != Input.Mouse.Key.Left) return;
+            grab = false;
+        }
+    }
+
+    class TestDynamic : DynamicGroup, Events.KeyDown
+    {
+        public TestDynamic()
+        {
+            this.Objects.Add(new ImageWithDragable("paimon.png") { RelativeSize = false , X = -250});
+            this.Objects.Add(new ImageWithDragable("image.png") { RelativeSize = false, Scale = new(0.5,0.5), X = 250 });
+        }
+
+        public void KeyDown(Input.Keycode k)
+        {
+            if (k == Input.Keycode.F3)
+            {
+                Debug.ObjectDrawDebuging = !Debug.ObjectDrawDebuging;
+            }
+        }
+    }
+
+    class Background : RoundBox, Events.Resize
+    {
+        public Background() : base(Window.Width,Window.Height,40)
+        {
+            this.RelativeSize = false;
+        }
+
+        public void Resize()
+        {
+            this.Size.Width = Window.Width;
+            this.Size.Height = Window.Height;
+        }
+    }
+    
     internal class Program
     {
         static void Main(string[] args)
@@ -9,23 +72,26 @@ namespace FunctionTest
             //기본
             Framework.Init("Jyunrcaea! Framework", 1000, 500);
             Framework.NewRenderingSolution = true;
+            Display.Target.Objects.Add(new Background());
+            Display.Target.Objects.Add(new TestDynamic());
+            Framework.Run(true);
+        }
+
+        static void BlurTest()
+        {
             Window.Resizable = false;
-            //블러 테스트
             ImageOnMemory img = new("paimon.png");
-            //img.Blur();
-            //img.Resize(img.Width / 4, img.Height / 4);
-            //img.Blur();
-            //img.Resize(img.Width * 2, img.Height *2);
-            //img.Blur();
-            //img.Resize(img.Width * 2, img.Height * 2);
-            //img.Blur();
-            img.Resize(img.Width/4, img.Height/4);
+            img.Blur();
+            img.Resize(img.Width / 4, img.Height / 4);
+            img.Blur();
+            img.Resize(img.Width * 2, img.Height * 2);
+            img.Blur();
+            img.Resize(img.Width * 2, img.Height * 2);
+            img.Blur();
+            img.Resize(img.Width / 4, img.Height / 4);
             img.Resize(img.Width * 4, img.Height * 4);
-            //객체 추가
-            Display.Target.Objects.Add(new Image("paimon.png") { X = -img.Width/2});
-            Display.Target.Objects.Add(new Image(img.GetTexture()) { X= img.Width/2 });
-            //실행
-            Framework.Run();
+            Display.Target.Objects.Add(new Image("paimon.png") { X = -img.Width / 2 });
+            Display.Target.Objects.Add(new Image(img.GetTexture()) { X = img.Width / 2 });
         }
 
         static PaintOnMemory Bluring(ImageOnMemory image,byte level = 1)

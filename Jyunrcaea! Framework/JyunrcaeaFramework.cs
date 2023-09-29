@@ -1,5 +1,8 @@
 ﻿#define WINDOWS
 using SDL2;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Threading.Tasks.Dataflow;
 
 namespace JyunrcaeaFramework
 {
@@ -49,6 +52,31 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static Color SceneDrawDebugingLineColor = new(50, 255, 50);
 
+        /// <summary>
+        /// (Zenerety 렌더링 전용) 객체의 범위를 표시할때 사용할 테두리 색을 지정합니다.
+        /// </summary>
+        public static class LineColor
+        {
+            /// <summary>
+            /// 그릴수 있는 일반 객체 (Image, Text, Rectanlge)
+            /// </summary>
+            public static Color DrawableObject = new(255,100,100);
+            /// <summary>
+            /// 동적 그룹
+            /// </summary>
+            public static Color DynamicGroup = new(100, 255, 100);
+            /// <summary>
+            /// 고정된 그룹
+            /// </summary>
+            public static Color StaticGroup = new(200, 255, 200);
+        }
+
+        internal static void ObjectRangeDraw(Color c,ref SDL.SDL_Rect r)
+        {
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, c.colorbase.r, c.colorbase.g, c.colorbase.b, c.colorbase.a);
+            SDL.SDL_RenderDrawRect(Framework.renderer, ref r);
+        }
+
         internal static void ZeneretyODD(Group group)
         {
             for (int i = 0; i < group.Objects.Count; i++)
@@ -56,13 +84,13 @@ namespace JyunrcaeaFramework
                 if (group.Objects[i] is Group)
                 {
                     ZeneretyODD((Group)group.Objects[i]);
+                    if (group.Objects[i] is DynamicGroup) ObjectRangeDraw(LineColor.DynamicGroup, ref ((DynamicGroup)group.Objects[i]).contentrange);
                     continue;
                 }
 
                 if (group.Objects[i] is ZeneretyDrawableObject)
                 {
-                    SDL.SDL_SetRenderDrawColor(Framework.renderer, ObjectDrawDebugingLineColor.colorbase.r, ObjectDrawDebugingLineColor.colorbase.g, ObjectDrawDebugingLineColor.colorbase.b, ObjectDrawDebugingLineColor.colorbase.a);
-                    SDL.SDL_RenderDrawRect(Framework.renderer, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition);
+                    ObjectRangeDraw(LineColor.DrawableObject, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition);
                 }
 
             }
@@ -318,8 +346,6 @@ namespace JyunrcaeaFramework
 
         public static async void AsyncEventProcess(SDL.SDL_Event e)
         {
-            //SDL.SDL_Event e;
-            //SDL.SDL_PollEvent(out e);
             await Task.Run(() => EventProcess(e));
         }
 
@@ -438,13 +464,7 @@ namespace JyunrcaeaFramework
 
         internal static void Rendering(Group group)
         {
-            SDL.SDL_Rect? before = null;
-            if (group.RenderRange is not null)
-            {
-                before = RenderRange;
-                RenderRange = new() { x = group.Rx, y = group.Ry, w = group.RenderRange.Width, h = group.RenderRange.Height };
-                SDL.SDL_RenderSetViewport(Framework.renderer, ref RenderRange);
-            }
+            SDL.SDL_Rect? before = null;    
             for (int i = 0; i < group.Objects.Count; i++)
             {
                 if (group.Objects[i].Hide) continue;
@@ -510,19 +530,19 @@ namespace JyunrcaeaFramework
             int wx = DrawPos.x + group.Rx;
             int hy = DrawPos.y + group.Ry;
             SDL.SDL_Rect? before = null;
-            if (group.RenderRange is not null)
-            {
-                before = RenderRange;
-                RenderRange = new()
-                {
-                    x = wx,
-                    y = hy,
-                    w = group.RenderRange.Width,
-                    h = group.RenderRange.Height
-                };
-                wx = 0;
-                hy = 0;
-            }
+            //if (group.RenderRange is not null)
+            //{
+            //    before = RenderRange;
+            //    RenderRange = new()
+            //    {
+            //        x = wx,
+            //        y = hy,
+            //        w = group.RenderRange.Width,
+            //        h = group.RenderRange.Height
+            //    };
+            //    wx = 0;
+            //    hy = 0;
+            //}
 
             for (int i = 0; i < group.Objects.Count; i++)
             {
@@ -569,6 +589,92 @@ namespace JyunrcaeaFramework
 
     public delegate void ZeneretyClickEvent(Input.Mouse.Key e);
 
+    public class StaticGroup : Group
+    {
+        /// <summary>
+        /// 제한된 범위의 크기를 지정합니다.
+        /// </summary>
+        public ZeneretySize LimitedRange = new();
+
+        
+    }
+
+    /// <summary>
+    /// 크기를 구하거나 렌더 방향을 지정할수 있는 동적인 그룹입니다.
+    /// </summary>
+    public class DynamicGroup : Group, DetailOfObject.Size
+    {
+        public int DisplayedWidth => contentrange.w;
+        public int DisplayedHeight => contentrange.h;
+
+        internal SDL.SDL_Rect contentrange = new();
+
+        public override void Update(float ms)
+        {
+            base.Update(ms);
+            int i = 0;
+            while (this.Objects[i] is not ZeneretyDrawableObject || this.Objects[i] is not DynamicGroup)
+            {
+                // 그릴수 있는 객체가 없는경우
+                if (i++ >= this.Objects.Count)
+                {
+                    contentrange.x = -1;
+                    contentrange.y = -1;
+                    contentrange.w = 0;
+                    contentrange.h = 0;
+                    return;
+                }
+            }
+            int left = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.x, right = left + ((ZeneretyDrawableObject)this.Objects[i]).renderposition.w;
+            int top = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.y, bottom = top + ((ZeneretyDrawableObject)this.Objects[i]).renderposition.h;
+            int ww, hh;
+            for (;i<this.Objects.Count;i++)
+            {
+                if (this.Objects[i] is ZeneretyDrawableObject)
+                {
+                    // 왼쪽
+                    ww = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.x;
+                    if (ww < left) left = ww;
+                    // 오른쪽
+                    ww += ((ZeneretyDrawableObject)this.Objects[i]).renderposition.w;
+                    if (ww > right) right = ww;
+                    //위
+                    hh = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.y;
+                    if (hh < top) top = hh;
+                    //아레
+                    hh += ((ZeneretyDrawableObject)this.Objects[i]).renderposition.h;
+                    if (hh > bottom) bottom = hh;
+                }
+                if (this.Objects[i] is DynamicGroup)
+                {
+                    // 왼쪽
+                    ww = ((DynamicGroup)this.Objects[i]).contentrange.x;
+                    if (ww < left) left = ww;
+                    // 오른쪽
+                    ww += ((DynamicGroup)this.Objects[i]).contentrange.w;
+                    if (ww > right) right = ww;
+                    //위
+                    hh = ((DynamicGroup)this.Objects[i]).contentrange.y;
+                    if (hh < top) top = hh;
+                    //아레
+                    hh += ((DynamicGroup)this.Objects[i]).contentrange.h;
+                    if (hh > bottom) bottom = hh;
+                }
+            }
+
+            this.contentrange.x = left;
+            this.contentrange.y = top;
+            this.contentrange.w = right - left;
+            this.contentrange.h = bottom - top;
+        }
+
+
+    }
+
+
+    /// <summary>
+    /// 최상위 그룹입니다.
+    /// </summary>
     public class TopGroup : Group
     {
         public TopGroup()
@@ -765,10 +871,19 @@ namespace JyunrcaeaFramework
     public class ZeneretyScale
     {
         public double X, Y;
-        public ZeneretyScale(double x=1d,double y=1d)
+        public ZeneretyScale(double x,double y)
         {
             X = x;
             Y = y;
+        }
+        public ZeneretyScale(double xy)
+        {
+            X = Y = xy;
+        }
+        public ZeneretyScale()
+        {
+            X = 1d;
+            Y = 1d;
         }
     }
 
@@ -835,7 +950,7 @@ namespace JyunrcaeaFramework
     /// <summary>
     /// Zenerety 렌더링 용 그릴수 있는 객체
     /// </summary>
-    public abstract class ZeneretyDrawableObject : ZeneretyObject
+    public abstract class ZeneretyDrawableObject : ZeneretyObject, DetailOfObject.Size
     {
         internal int rw = 0, rh = 0;
         internal int ww = 0, hh = 0;
@@ -848,6 +963,9 @@ namespace JyunrcaeaFramework
         /// 실제 높이
         /// </summary>
         internal virtual int RealHeight { get; }
+
+        public int DisplayedWidth => this.RealWidth;
+        public int DisplayedHeight => this.RealHeight;
 
         public abstract byte Opacity { get; set; }
 
@@ -873,6 +991,9 @@ namespace JyunrcaeaFramework
         /// 실제 렌더링 범위
         /// </summary>
         internal SDL.SDL_Rect renderposition = new();
+
+        public bool MouseOver => SDL.SDL_PointInRect(ref Input.Mouse.position, ref this.renderposition) == SDL.SDL_bool.SDL_TRUE;
+        public bool OverLap(ZeneretyDrawableObject OtherTarget) => SDL.SDL_IntersectRect(ref this.renderposition, ref OtherTarget.renderposition, out _) == SDL.SDL_bool.SDL_TRUE;
 
         public HorizontalPositionType DrawX = HorizontalPositionType.Middle;
         public VerticalPositionType DrawY = VerticalPositionType.Middle;
@@ -916,11 +1037,6 @@ namespace JyunrcaeaFramework
 
         internal virtual void ResetPosition(ZeneretySize Position)
         {
-            if (this.RenderRange is not null)
-            {
-                Position.Width = this.RenderRange.Width;
-                Position.Height = this.RenderRange.Height;
-            }
             for (int i = 0; i < Objects.Count; i++)
             {
                 Objects[i].Cx = (int)(Position.Width * Objects[i].CxD);
@@ -929,35 +1045,9 @@ namespace JyunrcaeaFramework
             }
         }
 
-        public ZeneretyRenderRange? RenderRange = null;
+        internal int RealWidth => base.Parent is null ? Window.Width : base.Parent.RealWidth;
 
-        
-
-        internal int RealWidth
-        {
-            get
-            {
-                if (RenderRange is null)
-                {
-                    if (base.Parent is null) return Window.Width;
-                    return base.Parent.RealWidth;
-                }
-                return RenderRange.Width;
-            }
-        }
-
-        internal int RealHeight
-        {
-            get
-            {
-                if (RenderRange is null)
-                {
-                    if (base.Parent is null) return Window.Height;
-                    return base.Parent.RealHeight;
-                }
-                return RenderRange.Height;
-            }
-        }
+        internal int RealHeight => base.Parent is null ? Window.Height : base.Parent.RealHeight;
 
         /// <summary>
         /// 오브젝트 준비
@@ -1053,7 +1143,7 @@ namespace JyunrcaeaFramework
     /// <summary>
     /// 직사각형을 그리는 객체입니다. (Zenerety 렌더링 전용)
     /// </summary>
-    public class Box : ZeneretyDrawableObject
+    public class Box : ZeneretyDrawableObject, Animation.Available.Opacity, Animation.Available.Size
     {
         public Box(int width = 0,int height = 0,Color? color = null)
         {
@@ -1064,7 +1154,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 직사각형의 너비와 높이
         /// </summary>
-        public ZeneretySize Size;
+        public ZeneretySize Size { get; set; }
 
         /// <summary>
         /// 출력할 색상
@@ -1080,7 +1170,7 @@ namespace JyunrcaeaFramework
     /// <summary>
     /// 이미지를 출력하는 객체입니다. (Zenerety 렌더링 전용)
     /// </summary>
-    public class Image : ZeneretyExtendObject
+    public class Image : ZeneretyExtendObject, Animation.Available.Opacity
     {
         /// <summary>
         /// Image 객체를 생성합니다.
@@ -1112,7 +1202,7 @@ namespace JyunrcaeaFramework
     /// <summary>
     /// 원을 그리는 객체입니다. (Zenerety 렌더링 전용)
     /// </summary>
-    public class Circle : ZeneretyDrawableObject
+    public class Circle : ZeneretyDrawableObject, Animation.Available.Opacity
     {
         public Circle(short radius=0, Color? color = null)
         {
@@ -1836,11 +1926,9 @@ namespace JyunrcaeaFramework
 
             if (Framework.NewRenderingSolution)
             {
+                Framework.Positioning(Display.Target);
                 Display.Target.Resize();
-                //for (int i = 0;i<Display.Target.EventManager.Resize.Count;i++)
-                //{
-                //    Display.Target.EventManager.Resize[i].Resize();
-                //}
+                Framework.Positioning(Display.Target);
                 return;
             }
 
@@ -2293,7 +2381,7 @@ namespace JyunrcaeaFramework
         internal int ch, cs, hz;
         internal bool trylow;
 
-        public AudioOption(byte Channals = 8, bool TryLowChannals = true, int ChunkSize = 2048, int Hz = 48000)
+        public AudioOption(byte Channals = 8, bool TryLowChannals = true, int ChunkSize = 8192, int Hz = 48000)
         {
             trylow = TryLowChannals;
             ch = Channals;
@@ -2801,7 +2889,7 @@ namespace JyunrcaeaFramework
     }
 
     /// <summary>
-    /// 객체를 담을수 있는 대표적인 장면입니다. 
+    /// 객체를 담을수 있는 대표적인 장면입니다. (0.7.1 부터 삭제됩니다.)
     /// </summary>
     public class Scene : SceneInterface, DefaultObjectPositionInterface
     {
@@ -4553,12 +4641,47 @@ namespace JyunrcaeaFramework
 
         public byte Alpha { get => this.colorbase.a; set => this.colorbase.a = value; }
 
+        public Color Copy => new(this.Red, this.Green, this.Blue, this.Alpha);
+
         internal SDL.SDL_Color colorbase = new();
 
-        public static readonly Color White = new();
-        public static readonly Color Black = new(0,0,0,255);
-        public static readonly Color Gray = new(127, 127, 127);
-        
+        //흑백 계열
+        public static Color White => new(255, 255, 255);
+        public static Color Black => new(0,0,0,255);
+        public static Color Gray => new(127, 127, 127);
+        public static Color Silver => new(192, 192, 192);
+        public static Color DarkGray => new(63, 63, 63);
+        //보라 계열
+        public static Color Purple = new(128, 0, 128);
+        public static Color Violet => new(127, 0, 255);
+        public static Color Lilac => new(200, 162, 200);
+        public static Color Lavender => new(230,230,255);
+        //남보라 계열
+        public static Color Periwinkle => new(128, 128, 255);
+        public static Color LightPeriwinkle => new(204, 204, 255);
+        //남색 계열
+        public static Color Indigo => new(75, 0, 130);
+        public static Color Navy => new(0, 0, 128);
+        //초록 계열
+        public static Color Lime => new(0, 255, 0);
+        public static Color DarkGreen => new(0, 128, 0);
+        //연두 계열
+        public static Color YellowGreen => new (154, 205, 50);
+        public static Color GreenYellow = new (173, 255, 47);
+        public static Color Chartreuse => new(127, 255, 0);
+        public static Color GrassGreen => new (117, 166, 74);
+        public static Color YellowishGreen => new (160, 176, 54);
+        //청록 계열
+        //추가 예정
+        //노랑 계열
+        public static Color Yellow => new(255, 255, 0);
+        public static Color Turbo = new(255, 204, 33);
+        public static Color MoonYellow => new (240, 196, 32);
+        public static Color VividYellow => new (255, 227, 2);
+        public static Color GoldenYellow => new (255, 140, 0);
+        //주황 계열
+        public static Color Orange => new(255, 127, 0);
+        public static Color DarkOrange => new (255, 140, 0);
     }
 
     /// <summary>
@@ -5371,6 +5494,22 @@ namespace JyunrcaeaFramework
                     ((ZeneretyDrawableObject)Target).Opacity = BO;
                     base.Undo();
                 }
+
+                public virtual void Modify(byte opacity)
+                {
+                    if (this.Finished)
+                    {
+                        this.BO = ((Available.Opacity)this.Target).Opacity;
+                    }
+                    this.AO = opacity;
+                    this.RO = (short)(AO - BO);
+                }
+
+                public virtual double? ResetStartTime { set
+                    {
+                        this.EndTime = (this.StartTime = value ?? Framework.RunningTime) + this.AnimationTime;
+                    }
+                }
             }
         }
 
@@ -5518,7 +5657,20 @@ namespace JyunrcaeaFramework
             }
         }
 
+        public static class Available
+        {
+            public interface Opacity
+            {
+                public byte Opacity { get; set; }
+            }
 
+            public interface Size
+            {
+                public ZeneretySize Size { get; set; }
+            }
+
+
+        }
     }
 
     /// <summary>
@@ -5602,6 +5754,40 @@ namespace JyunrcaeaFramework
         public RectSize(int x = 0,int y = 0, int w = 0, int h = 0)
         {
             size = new() { x = x, y = y, w = w, h = h };
+        }
+    }
+
+    public class EventForScheduler
+    {
+        public Action Function { get; internal set; }
+        public double StartTime { get; internal set; }
+
+        public EventForScheduler(Action Function,double StartTime=0)
+        {
+            this.Function = Function;
+            this.StartTime = Framework.RunningTime + StartTime;
+        }
+    }
+
+    public class Scheduler
+    {
+        public LinkedList<EventForScheduler> Queue { get; internal set; } = new();
+        internal Queue<EventForScheduler> CallList = new();
+
+        /// <summary>
+        /// 곧 호출해야할 함수들을 호출리스트에 넣습니다.
+        /// </summary>
+        internal void Update()
+        {
+            
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        internal void Refresh()
+        {
+
         }
     }
 
@@ -6343,6 +6529,12 @@ namespace JyunrcaeaFramework
     /// </summary>
     public static class DetailOfObject
     {
+        public interface Size
+        {
+            public int DisplayedWidth { get; }
+            public int DisplayedHeight { get; }
+        }
+
         /// <summary>
         /// 화면에 출력되는 실제 픽셀 가로길이를 알아냅니다.
         /// </summary>
@@ -6351,6 +6543,11 @@ namespace JyunrcaeaFramework
         public static int DrawWidth(DrawableObject obj)
         {
             return obj.dst.w;
+        }   
+
+        public static int DrawWidth(ZeneretyDrawableObject obj)
+        {
+            return obj.RealWidth;
         }
 
         /// <summary>
@@ -6361,6 +6558,11 @@ namespace JyunrcaeaFramework
         public static int DrawHeight(DrawableObject obj)
         {
             return obj.dst.h;
+        }
+
+        public static int DrawHeight(ZeneretyDrawableObject obj)
+        {
+            return obj.RealHeight;
         }
 
         /// <summary>
@@ -6383,7 +6585,34 @@ namespace JyunrcaeaFramework
             y = obj.dst.y;
         }
 
-
+        /// <summary>
+        /// 하위 객체의 위치를 다시 맞춥니다.
+        /// </summary>
+        [Obsolete("정확하지 않음")]
+        public static void ResetPosition(Group target)
+        {
+            if (target.Parent is not null)
+            {
+                Stack<Group> top = new();
+                top.Push(target.Parent);
+                Group? g;
+                while ((g = top.First().Parent) is not TopGroup)
+                {
+                    if (g is null) break;
+                    top.Push(g);
+                }
+                int x=0, y=0;
+                while (top.Count != 0)
+                {
+                    g = top.Pop();
+                    x += g.Rx;
+                    y += g.Ry;
+                }
+                Framework.DrawPos.x = x;
+                Framework.DrawPos.y = y;
+            }
+            Framework.Positioning(target);
+        }
     }
 
 

@@ -42,3 +42,4 @@ C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framewor
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\refint\Jyunrcaea! Framework.dll
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.pdb
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\ref\Jyunrcaea! Framework.dll
+C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Debug\net6.0\Jyunrcaea! Framework.sourcelink.json

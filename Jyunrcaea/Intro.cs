@@ -10,7 +10,7 @@ namespace Jyunrcaea.Intro
 
         public static void Disappear()
         {
-            ai = new(scene, 0, null, 250);
+            ai = new(scene, 0, null, 250);  
             ai.TimeCalculator = Animation.Type.EaseInSine;
             Animation.Add(ai);
         }
@@ -36,6 +36,9 @@ namespace Jyunrcaea.Intro
         public override void Prepare()
         {
             base.Prepare();
+            Animation.Add(
+                new Animation.InfoForGroup.Opacity(this, 0, Framework.RunningTime + 1000, 300)
+                );
         }
 
         public override void Resize()

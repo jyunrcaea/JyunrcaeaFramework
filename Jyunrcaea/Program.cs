@@ -1,18 +1,22 @@
 ﻿using JyunrcaeaFramework;
-using System.Text.Encodings.Web;
 
 namespace Jyunrcaea
 {
     class Program
     {
-        public static readonly Version version = new(0, 1, 1);
+        public static readonly Version version = new(0, 1, 2);
 
         static void Main()
         {
             Framework.Init("Jyunrcaea!",1280,720);
             Framework.Function = new FrameworkFunctionCustom();
+            
 
             Font.DefaultPath = "font.ttf";
+
+            //Display.Target.Objects.Add(
+            //    new Intro.Scene()
+            //    );
 
             Display.Target.Objects.AddRange(
                 new MainMenu.BackgroundImage(),
