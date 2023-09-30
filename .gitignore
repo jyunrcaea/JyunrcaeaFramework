@@ -7,9 +7,9 @@
 FunctionTest
 Jyunrcaea
 Zenerety
-FunctionTest/*
-Jyunrcaea/*
-Zenerety/*
+FunctionTest/*.*
+Jyunrcaea/*.*
+Zenerety/*.*
 
 # User-specific files
 *.rsuser
