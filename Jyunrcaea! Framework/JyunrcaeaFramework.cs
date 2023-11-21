@@ -1,14 +1,11 @@
 ﻿#define WINDOWS
 using SDL2;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
-using System.Threading.Tasks.Dataflow;
 
 namespace JyunrcaeaFramework
 {
 #if DEBUG
     /// <summary>
-    /// 프레임워크 개발용 테스를 하기 위한 기능이 모여있습니다.
+    /// 프레임워크 개발용 테스트를 하기 위한 기능이 모여있습니다.
     /// 프레임워크 기여자가 아닌이상 쓸 필요는 없습니다.
     /// </summary>
     public static class Debug
@@ -120,7 +117,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 현재 프레임워크의 버전을 알려줍니다.
         /// </summary>
-        public static readonly Version Version = new(0, 6, 2);
+        public static readonly Version Version = new(0, 6, 5);
         /// <summary>
         /// 프레임워크가 이벤트를 받았을때 실행될 함수들이 들어있습니다.
         /// 'FrameworkFunction'을 상속해 기능을 추가할수 있습니다.
@@ -226,7 +223,7 @@ namespace JyunrcaeaFramework
                     {
                         var e = (SDL.SDL_Event)System.Runtime.InteropServices.Marshal.PtrToStructure(eventPtr, typeof(SDL.SDL_Event))!;
                         //if (e.type == SDL.SDL_EventType.SDL_KEYDOWN && Input.TextInput.Enable && e.key.keysym.sym == SDL.SDL_Keycode.SDLK_BACKSPACE)
-                        if (e.key.repeat != 0) return 0;
+                        if (e.key.repeat != 0) return Input.Text.ti ? 1 : 0;
                         if (e.type != SDL.SDL_EventType.SDL_WINDOWEVENT) return 1;
                         switch (e.window.windowEvent)
                         {
@@ -414,6 +411,11 @@ namespace JyunrcaeaFramework
                     break;
                 case SDL.SDL_EventType.SDL_KEYDOWN:
                     Framework.Function.KeyDown((Input.Keycode)e.key.keysym.sym);
+                    if((Input.Keycode)e.key.keysym.sym == Input.Keycode.BACKSPACE && Input.Text.InputedText.Length > 0)
+                    {
+                        Input.Text.InputedText = Input.Text.InputedText.Remove(Input.Text.InputedText.Length - 1);
+                        Function.InputText();
+                    }
                     break;
                 case SDL.SDL_EventType.SDL_MOUSEMOTION:
                     Framework.Function.MouseMove();
@@ -430,7 +432,8 @@ namespace JyunrcaeaFramework
                 case SDL.SDL_EventType.SDL_TEXTINPUT:
                     unsafe
                     {
-                        Input.TextInput.InputedText += new string((sbyte*)e.text.text);
+                        Input.Text.InputedText += new string((sbyte*)e.text.text);
+                        Function.InputText();
                     }
                     break;
                 case SDL.SDL_EventType.SDL_TEXTEDITING:
@@ -454,7 +457,7 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 새로운 렌더링 방식(Zenerety)을 사용할지에 대한 여부입니다.
         /// </summary>
-        public static bool NewRenderingSolution = false;
+        public static bool NewRenderingSolution = true;
 
         internal static Stack<ZeneretySize> DrawPosStack = new();
 
@@ -1807,7 +1810,8 @@ namespace JyunrcaeaFramework
         Events.KeyFocusIn,
         Events.KeyFocusOut,
         Events.MouseFocusIn,
-        Events.MouseFocusOut
+        Events.MouseFocusOut,
+        Events.InputText
     {
 
     }
@@ -2042,6 +2046,23 @@ namespace JyunrcaeaFramework
                 }
             }
 
+        }
+
+        public virtual void InputText()
+        {
+            //Thread t = new(() =>
+            //{
+            //    SDL.SDL_Delay(Input.Text.WaitTime);
+            //    SDL.SDL_GetKeyboardState(out int r);
+            //    SDL.SDL_Keycode key = (SDL.SDL_Keycode)r;
+            //    if (key.HasFlag(SDL.SDL_Keycode.SDLK_BACKSPACE))
+            //    {
+            //        while(Input.Text.InputedText.Length > 0)
+            //        {
+            //            Input.Text
+            //        }
+            //    }
+            //});
         }
 
         int winrestore, winmax, winmin;
@@ -2549,6 +2570,7 @@ namespace JyunrcaeaFramework
     /// <summary>
     /// 장면의 기본이 되는 장면 인터페이스입니다. 객체 인터페이스와 모든 이벤트 인터페이스를 상속하고 있습니다. 
     /// </summary>
+    [Obsolete("0.7 부터 삭제됨")]
     public abstract class SceneInterface : ObjectInterface, AllEventInterface
     {
         public RectSize? RenderRange = null;
@@ -2598,6 +2620,8 @@ namespace JyunrcaeaFramework
         public abstract void MouseFocusIn();
 
         public abstract void MouseFocusOut();
+
+        public abstract void InputText();
     }
 
     public interface DefaultObjectPositionInterface
@@ -2736,6 +2760,14 @@ namespace JyunrcaeaFramework
     /// </summary>
     public class Events
     {
+        /// <summary>
+        /// 글자를 입력함.
+        /// </summary>
+        public interface InputText
+        {
+            public void InputText();
+        }
+
         /// <summary>
         /// 마우스 포커스를 잃음
         /// </summary>
@@ -2946,6 +2978,7 @@ namespace JyunrcaeaFramework
         List<Events.KeyFocusOut> keyfocusout = new();
         List<Events.MouseFocusIn> mousefocusin = new();
         List<Events.MouseFocusOut> mousefocusout = new();
+        List<Events.InputText> inputTexts = new();
 
         internal void AddAtEventList(DrawableObject NewSprite)
         {
@@ -2966,6 +2999,7 @@ namespace JyunrcaeaFramework
             if (NewSprite is Events.KeyFocusOut) keyfocusout.Add((Events.KeyFocusOut)NewSprite);
             if (NewSprite is Events.MouseFocusIn) mousefocusin.Add((Events.MouseFocusIn)NewSprite);
             if (NewSprite is Events.MouseFocusOut) mousefocusout.Add((Events.MouseFocusOut)NewSprite);
+            if (NewSprite is Events.InputText) inputTexts.Add((Events.InputText)NewSprite);
         }
 
         internal void RemoveAtEventList(DrawableObject RemovedObject)
@@ -2987,6 +3021,7 @@ namespace JyunrcaeaFramework
             if (RemovedObject is Events.KeyFocusOut) keyfocusout.Remove((Events.KeyFocusOut)RemovedObject);
             if (RemovedObject is Events.MouseFocusIn) mousefocusin.Remove((Events.MouseFocusIn)RemovedObject);
             if (RemovedObject is Events.MouseFocusOut) mousefocusout.Remove((Events.MouseFocusOut)RemovedObject);
+            if (RemovedObject is Events.InputText) inputTexts.Remove((Events.InputText)RemovedObject);
         } 
 
         /// <summary>
@@ -3083,6 +3118,14 @@ namespace JyunrcaeaFramework
             else SDL.SDL_RenderDrawRect(Framework.renderer, ref this.RenderRange.size);
         }
 #endif
+
+        public override void InputText()
+        {
+            for (int i = 0; i < inputTexts.Count; i++)
+            {
+                inputTexts[i].InputText();
+            }
+        }
 
         public override void WindowMaximized()
         {
@@ -4797,7 +4840,7 @@ namespace JyunrcaeaFramework
         /// 한국어 및 여러 문자들을 입력받기 위한 기능이 존재합니다.
         /// (0.8 이후부터 지원될 예정입니다.)
         /// </summary>
-        public static class TextInput
+        public static class Text
         {
             public static string InputedText = string.Empty;
 
@@ -4805,7 +4848,14 @@ namespace JyunrcaeaFramework
             public static int SelectionLenght = 0;
             public static string SelectedText = string.Empty;
 
-            static bool ti = false;
+            public static uint WaitTime = 614;
+            public static uint RemoveRepeatTime = 100;
+            public static bool Removing { get; internal set; } = false;
+
+            /// <summary>
+            /// 텍스트 입력 활성/비활성
+            /// </summary>
+            internal static bool ti = false;
             [Obsolete("아직 구현되지 않은 기능")]
             public static bool Enable
             {
@@ -5215,7 +5265,7 @@ namespace JyunrcaeaFramework
                     Parallel.ForEach(AnimationQueue, (a) => a.Update());
                     return;
                 }
-                foreach (var a in AnimationQueue) a.Update();
+                foreach (var a in AnimationQueue) if (a is not null) lock (a) { a.Update(); }
 
                 while(RemoveTarget.Count!=0) base.Remove(RemoveTarget.Dequeue());
             }
@@ -5524,6 +5574,8 @@ namespace JyunrcaeaFramework
                 protected double starttime;
                 protected double animationtime;
 
+                public bool ApplySubGroup = false;
+
                 /// <summary>
                 /// 반복횟수 (기본 1회, 0 일경우 무제한)
                 /// </summary>
@@ -5610,13 +5662,22 @@ namespace JyunrcaeaFramework
                 internal override void Add()
                 {
                     base.Add();
-                    for (int i = 0;i < this.targets.Count; i++)
+                    AddOnGroup(this.targets);
+                }
+
+                internal virtual void AddOnGroup(ZeneretyList targets)
+                {
+                    for (int i = 0; i < targets.Count; i++)
                     {
-                        if (this.targets[i] is not ZeneretyDrawableObject) continue;
-                        var ai = new Info.Opacity((ZeneretyDrawableObject)this.targets[i], this.TargetOpacity, this.starttime, this.animationtime, this.RepeatCount, this.TimeCalculator);
+                        if (targets[i] is not ZeneretyDrawableObject)
+                        {
+                            if (this.ApplySubGroup && targets[i] is Group) AddOnGroup(((Group)targets[i]).Objects);
+                            continue;
+                        }
+                        var ai = new Info.Opacity((ZeneretyDrawableObject)targets[i], this.TargetOpacity, this.starttime, this.animationtime, this.RepeatCount, this.TimeCalculator);
                         Animation.Add(ai);
                         this.ApplyTargets.Add(ai);
-                    }  
+                    }
                 }
             }
         }
