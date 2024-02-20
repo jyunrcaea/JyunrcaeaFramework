@@ -65,9 +65,6 @@
     <None Update="fmod.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="fmodL.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="font.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
