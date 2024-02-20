@@ -16,7 +16,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCopyrightAttribute("Copyright 2023. 614project. All rights reserved.")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("This is C# framework for make game!")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.6.1.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.6.1+91c06282e9eb8c059702f286907f3f5d301e1906")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.6.1+1d35ca1d0cfb03613bd3fdb3d14f492f701bf116")]
 [assembly: System.Reflection.AssemblyProductAttribute("Jyunrcaea! Framework")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Jyunrcaea! Framework")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.6.1.0")]
