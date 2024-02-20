@@ -1,5 +1,4 @@
 ﻿using JyunrcaeaFramework;
-using System.Runtime.CompilerServices;
 
 namespace Jyunrcaea.MainMenu
 {
@@ -23,6 +22,7 @@ namespace Jyunrcaea.MainMenu
         public Scene()
         {
             //this.Objects.Add(new BackgroundImage());
+            this.Objects.Add(new FullBox(64, 64, 64, 64));
             this.Objects.Add(new Version());
             this.Objects.Add(new LeftBar());
             //this.Objects.Add(new Design.VerticalList(2,new Text("hello",20),new Text("world",30),new Design.Button("Hello world",200,20)));
@@ -37,7 +37,7 @@ namespace Jyunrcaea.MainMenu
 
     class Version : Text
     {
-        public Version() : base($"Jyunrcaea! ({Program.version} ver)",20)
+        public Version() : base($"{Program.Name} ({Program.version} ver)",20,Color.White)
         {
             this.CenterY = 1;
             this.DrawY = VerticalPositionType.Top;
@@ -50,9 +50,12 @@ namespace Jyunrcaea.MainMenu
 
     public class BackgroundImage : Image, Events.Resize, Events.MouseMove
     {
-        public BackgroundImage() : base("background.png")
+        public static BackgroundImage self;
+
+        public BackgroundImage() : base("bg1.jpg")
         {
             this.RelativeSize = false;
+            self = this;
         }
         double ratio;
         double zoom = 1.2;
@@ -99,7 +102,7 @@ namespace Jyunrcaea.MainMenu
             background.DrawX = HorizontalPositionType.Right;
 
             Title = new Text(
-                "Jyunrcaea!",
+                Program.Name,
                 38
             );
             Title.CenterX = 0;
@@ -180,7 +183,11 @@ namespace Jyunrcaea.MainMenu
 
             if (before != option)
             {
-                if (option != 0) MoveAnimating();
+                if (option != 0)
+                {
+                    if(Jyunrcaea.Setting.Scene.Disappear) Sounds.default_hover.Play();
+                    MoveAnimating();
+                }
                 if (before == 0 || option == 0)
                 {
                     if (ao is not null) ao.Stop(true);
@@ -217,7 +224,7 @@ namespace Jyunrcaea.MainMenu
             }
         }
 
-        int hoveroption = 0;
+        int hoveroption;
 
         public void MouseKeyDown(Input.Mouse.Key k)
         {
@@ -228,14 +235,17 @@ namespace Jyunrcaea.MainMenu
         public void MouseKeyUp(Input.Mouse.Key k)
         {
             if (!Jyunrcaea.Setting.Scene.Disappear || hoveroption != option || k != Input.Mouse.Key.Left) return;
+            //if (hoveroption != 0) Sounds.button_play_select.Play();
             switch (hoveroption)
             {
                 case 0:
                     return;
                 case 1:
+                    Sounds.button_play_select.Play();
                     Jyunrcaea.MusicSelector.Control.Show = true;
                     break;
                 case 2:
+                    Sounds.dropdown_open.Play();
                     Jyunrcaea.Setting.Scene.Disappear = false;
                     break;
                 case 3:

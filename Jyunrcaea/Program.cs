@@ -4,30 +4,33 @@ namespace Jyunrcaea
 {
     class Program
     {
-        public static readonly Version version = new(0, 1, 2);
-
+        public static readonly Version version = new(1, 0, 1);
+        public const string Name = "Jyunrcaea!";
+        
         static void Main()
         {
-            Framework.Init("Jyunrcaea!",1280,720);
+            Framework.Init(Name,1280,720,KeepRenderingWhenResize:true);
             Framework.Function = new FrameworkFunctionCustom();
-            
-
             Font.DefaultPath = "font.ttf";
-
-            //Display.Target.Objects.Add(
-            //    new Intro.Scene()
-            //    );
-
             Display.Target.Objects.AddRange(
                 new MainMenu.BackgroundImage(),
                 new MainMenu.Scene(),
                 new Setting.Scene(),
                 new MusicSelector.Scene(),
-                new Tools.StatusScene()
+                Setting.Data.fps = new Tools.StatusScene()
                 );
-
-
-            Framework.Run(true);
+            try
+            {
+                Framework.Run(true);
+            }
+            catch (Exception e)
+            {
+                Framework.Stop(true);
+                Display.Target.Objects.Clear();
+                Framework.Init(Name+" Error",960,540,KeepRenderingWhenResize: false);
+                Display.Target.Objects.Add(new ErrorScene(e.Message));
+                Framework.Run(true);
+            }
         }
 
     }
@@ -43,8 +46,10 @@ namespace Jyunrcaea
 
         public override void Start()
         {
+            Sounds.Init();
             Display.FrameLateLimit = 0;
             Display.FrameLateLimit = 2 * Display.FrameLateLimit;
+            Music.RepeatPlay = true;
             base.Start();
         }
 
@@ -53,11 +58,13 @@ namespace Jyunrcaea
             base.KeyDown(e);
             if (e == Input.Keycode.F3)
             {
+#if DEBUG
                 Debug.ObjectDrawDebuging = !Debug.ObjectDrawDebuging;
+#endif
             } else if (e == Input.Keycode.F11)
             {
                 Window.Fullscreen = !Window.Fullscreen;
-            }
+            } 
         }
     }
 }
