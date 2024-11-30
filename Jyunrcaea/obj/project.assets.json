@@ -27,19 +27,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\박대호\\.nuget\\packages\\": {}
+    "C:\\Users\\박대호\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\박대호\\source\\repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea\\Jyunrcaea.csproj",
+      "projectUniqueName": "D:\\Documents\\JyunrcaeaFramework\\Jyunrcaea\\Jyunrcaea.csproj",
       "projectName": "Jyunrcaea",
-      "projectPath": "C:\\Users\\박대호\\source\\repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea\\Jyunrcaea.csproj",
+      "projectPath": "D:\\Documents\\JyunrcaeaFramework\\Jyunrcaea\\Jyunrcaea.csproj",
       "packagesPath": "C:\\Users\\박대호\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\박대호\\source\\repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea\\obj\\",
+      "outputPath": "D:\\Documents\\JyunrcaeaFramework\\Jyunrcaea\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
         "C:\\Users\\박대호\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -48,15 +53,14 @@
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "C:\\Program Files\\dotnet\\library-packs": {},
-        "https://api.nuget.org/v3/index.json": {},
-        "https://nuget.pkg.github.com/614project/index.json": {}
+        "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net6.0": {
           "targetAlias": "net6.0",
           "projectReferences": {
-            "C:\\Users\\박대호\\source\\repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj": {
-              "projectPath": "C:\\Users\\박대호\\source\\repos\\jyunrcaea\\JyunrcaeaFramework\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj"
+            "D:\\Documents\\JyunrcaeaFramework\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj": {
+              "projectPath": "D:\\Documents\\JyunrcaeaFramework\\Jyunrcaea! Framework\\Jyunrcaea! Framework.csproj"
             }
           }
         }
@@ -69,8 +73,9 @@
       "restoreAuditProperties": {
         "enableAudit": "true",
         "auditLevel": "low",
-        "auditMode": "direct"
-      }
+        "auditMode": "all"
+      },
+      "SdkAnalysisLevel": "9.0.100"
     },
     "frameworks": {
       "net6.0": {
@@ -86,12 +91,30 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[6.0.36, 6.0.36]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Host.win-x64",
+            "version": "[6.0.36, 6.0.36]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[6.0.36, 6.0.36]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[6.0.36, 6.0.36]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.200-preview.23624.5\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100\\RuntimeIdentifierGraph.json"
       }
     }
   }
