@@ -13,13 +13,13 @@ using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("Jyunrcaea!")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
-[assembly: System.Reflection.AssemblyCopyrightAttribute("Copyright 2023. 614project. All rights reserved.")]
+[assembly: System.Reflection.AssemblyCopyrightAttribute("Copyright 2024. 614project. All rights reserved.")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("This is C# framework for make game!")]
-[assembly: System.Reflection.AssemblyFileVersionAttribute("0.6.1.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.6.1+1d35ca1d0cfb03613bd3fdb3d14f492f701bf116")]
+[assembly: System.Reflection.AssemblyFileVersionAttribute("0.7.1.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.7.1+f6db90b0c4ebbd05c5dbd7d2370611eb0771b0de")]
 [assembly: System.Reflection.AssemblyProductAttribute("Jyunrcaea! Framework")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Jyunrcaea! Framework")]
-[assembly: System.Reflection.AssemblyVersionAttribute("0.6.1.0")]
+[assembly: System.Reflection.AssemblyVersionAttribute("0.7.1.0")]
 [assembly: System.Reflection.AssemblyMetadataAttribute("RepositoryUrl", "https://github.com/jyunrcaea/JyunrcaeaFramework")]
 
 // MSBuild WriteCodeFragment 클래스에서 생성되었습니다.

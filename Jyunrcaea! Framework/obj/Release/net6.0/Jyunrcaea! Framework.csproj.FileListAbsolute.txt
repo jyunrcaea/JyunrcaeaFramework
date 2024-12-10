@@ -43,3 +43,26 @@ C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framewor
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\refint\Jyunrcaea! Framework.dll
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.pdb
 C:\Users\박대호\source\repos\jyunrcaea\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\ref\Jyunrcaea! Framework.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\dll\SDL2.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\dll\SDL2_gfx.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\dll\SDL2_image.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\dll\SDL2_mixer.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\dll\SDL2_ttf.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\libfreetype-6.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\libjpeg-9.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\libpng16-16.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\libtiff-5.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\libwebp-7.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\zlib1.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\Jyunrcaea! Framework.deps.json
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\Jyunrcaea! Framework.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\bin\Release\net6.0\Jyunrcaea! Framework.pdb
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.GeneratedMSBuildEditorConfig.editorconfig
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.AssemblyInfoInputs.cache
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.AssemblyInfo.cs
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.csproj.CoreCompileInputs.cache
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.sourcelink.json
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\refint\Jyunrcaea! Framework.dll
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\Jyunrcaea! Framework.pdb
+D:\Documents\JyunrcaeaFramework\Jyunrcaea! Framework\obj\Release\net6.0\ref\Jyunrcaea! Framework.dll

@@ -13,7 +13,7 @@ public static class Framework
     /// <summary>
     /// 가능한 CPU 사용량을 줄입니다. 안정적인 초당 프레임을 내는데에 방해가 될수 있습니다.
     /// </summary>
-    public static bool SavingPerformance = true;
+    public static bool SavingPerformance { get; set; } = true;
     /// <summary>
     /// 현재 프레임워크의 버전을 알려줍니다.
     /// </summary>
@@ -308,10 +308,10 @@ public static class Framework
                 Framework.Function.MouseMove();
                 break;
             case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                Framework.Function.MouseKeyDown((Input.Mouse.Key)e.button.button);
+                Framework.Function.MouseKeyDown((MouseKey)e.button.button);
                 break;
             case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
-                Framework.Function.MouseKeyUp((Input.Mouse.Key)e.button.button);
+                Framework.Function.MouseKeyUp((MouseKey)e.button.button);
                 break;
             case SDL.SDL_EventType.SDL_KEYUP:
                 Framework.Function.KeyUp((Keycode)e.key.keysym.sym);
@@ -476,7 +476,7 @@ public delegate void NormalEvent();
 
 public delegate void KeyboardEvent(Keycode e);
 
-public delegate void ClickEvent(Input.Mouse.Key e);
+public delegate void ClickEvent(MouseKey e);
 
 public class StaticGroup : Group
 {
@@ -581,65 +581,6 @@ public class TopGroup : Group
     }
 }
 
-public class EventList
-{
-    internal Queue<BaseObject> ObjectQueue = new();
-
-    internal List<Events.Resized> Resized = new();
-    internal List<Events.Resize> Resize = new();
-    internal List<Events.Update> Update = new();
-    internal List<Events.KeyDown> KeyDown = new();
-    internal List<Events.KeyUp> keyUp = new();
-    internal List<Events.MouseMove> mouseMoves = new();
-    internal List<Events.MouseKeyDown> mouseKeyDowns = new();
-    internal List<Events.MouseKeyUp> mouseKeyUps = new();
-
-    public void Add(BaseObject obj)
-    {
-        if (obj is not Group)
-        {
-             Ad(Resize, obj);
-             Ad(Update, obj);
-        }
-        Ad(Resized, obj);
-        Ad(KeyDown, obj);
-        Ad(keyUp, obj);
-        Ad(mouseMoves, obj);
-        Ad(mouseKeyDowns, obj);
-        if (obj is Events.MouseKeyUp)
-            Ad(mouseKeyUps, obj);
-    }
-
-    public void Remove(object obj)
-    {
-        Rd(Resized, obj);
-        Rd(Resize, obj);
-        Rd(Update, obj);
-        Rd(KeyDown, obj);
-        Rd(keyUp, obj);
-        Rd(mouseMoves, obj);
-        Rd(mouseKeyDowns, obj);
-        Rd(mouseKeyUps, obj);
-    }
-
-    internal void Ad<T>(List<T> li,object obj)
-    {
-        if (obj is not T) return;
-        li.Add((T)obj);
-    }
-
-    internal bool Rd<T>(List<T> li,object obj)
-    {
-        if (obj is not T) return false;
-        return li.Remove((T)obj);
-    }
-
-    public void Refresh()
-    {
-        while (ObjectQueue.Count != 0) Add(ObjectQueue.Dequeue());
-    }
-}
-
 /// <summary>
 /// 크기 조정 클래스입니다.
 /// </summary>
@@ -664,94 +605,6 @@ public class RenderRange2D : Size2D
         this.Height = Height;
         this.DrawX = DrawX;
         this.DrawY = DrawY;
-    }
-}
-
-public class Text : ExtendDrawableObject, Events.Update, Events.Resize
-{
-    /// <summary>
-    /// Text 오브젝트를 생성합니다. (Zenerety 렌더링 전용)
-    /// </summary>
-    /// <param name="content">출력할 내용. (null 일경우 빈 텍스트)</param>
-    /// <param name="textcolor">글자 색깔. (null 일경우 검은색)</param>
-    public Text(string? content = null, int size = 0, Color? textcolor = null, string? fontfilepath = null)
-    {
-        this.TFT = new TextureFromText(fontfilepath is null ? Font.DefaultPath : fontfilepath, realsize = size, content is null ? string.Empty : content, textcolor is null ? Color.Black : textcolor);
-    }
-
-    internal TextureFromText TFT;
-    public string Content
-    {
-        get => TFT.Text;
-        set
-        {
-            TFT.Text = value;
-            refresh = true;
-        }
-    }
-    internal int realsize;
-    public int FontSize {
-        get => realsize;
-        set
-        {
-            realsize = value;
-            TFT.Resize(this.RelativeSize ? (int)(Window.AppropriateSize * (float)realsize) : realsize);
-            refresh = true;
-        }
-    }
-    public uint WrapWidth
-    {
-        get => TFT.WarpLength;
-        set
-        {
-            TFT.WarpLength = value;
-            refresh = true;
-        }
-    }
-    public Color TextColor
-    {
-        get => TFT.Color;
-        set
-        {
-            TFT.Color = value;
-            refresh = true;
-        }
-    }
-
-    public Color? Background
-    {
-        get => TFT.BackgroundColor;
-        set
-        {
-            TFT.BackgroundColor = value;
-            refresh = true;
-        }
-    }
-
-    internal override int RealWidth => (int)((AbsoluteSize is null ? TFT.Width : AbsoluteSize.Width) * Scale.X);
-    internal override int RealHeight => (int)((AbsoluteSize is null ? TFT.Height : AbsoluteSize.Height) * Scale.Y);
-
-    public bool Blended { get => TFT.Blended; set => TFT.Blended = value; }
-    internal bool refresh = false;
-
-    public override byte Opacity { get => TFT.Opacity; set => TFT.Opacity = value; }
-
-    /// <summary>
-    /// 변경 사항이 있을경우 텍스트를 다시 렌더링합니다. (일반적으로 이 코드는 마지막에 호출하는게 좋습니다.)
-    /// </summary>
-    /// <param name="ms"></param>
-    public virtual void Update(float ms)
-    {
-        if (refresh)
-        {
-            if (this.FontSize != 0) TFT.ReRender();
-            refresh = false;
-        }
-    }
-
-    public virtual void Resize()
-    {
-        if (this.RelativeSize) { TFT.Resize((int)(Window.AppropriateSize * (float)realsize)); refresh = true; }
     }
 }
 
@@ -1049,38 +902,6 @@ public class Box : DrawableObject, Animation.Available.Opacity, Animation.Availa
 
     internal override int RealWidth =>  (int)(Size.Width * Scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
     internal override int RealHeight => (int)(Size.Height * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
-}
-
-/// <summary>
-/// 이미지를 출력하는 객체입니다.
-/// </summary>
-public class Image : ExtendDrawableObject, Animation.Available.Opacity
-{
-    /// <summary>
-    /// Image 객체를 생성합니다.
-    /// </summary>
-    /// <param name="Texture">텍스쳐</param>
-    public Image(DrawableTexture? Texture = null)
-    {
-        if (Texture is null) return;
-        this.Texture = Texture;
-    }
-
-    public Image(string ImageFilePath)
-    {
-        this.Texture = new TextureFromFile(ImageFilePath);
-    }
-
-    public DrawableTexture Texture = null!;
-
-    public override byte Opacity { get => Texture.Opacity;
-        set {
-            Texture.Opacity = value;
-        }
-    }
-
-    internal override int RealWidth => (int)((AbsoluteSize is null ? Texture.Width : AbsoluteSize.Width) * Scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
-    internal override int RealHeight => (int)((AbsoluteSize is null ? Texture.Height : AbsoluteSize.Height) * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
 }
 
 /// <summary>
@@ -1671,263 +1492,13 @@ public interface AllEventInterface :
 {
 
 }
-/// <summary>
-/// 프레임워크가 이벤트를 받았으때 실행될 함수들이 모인 클래스입니다.
-/// </summary>
-public class FrameworkFunction : ObjectInterface, AllEventInterface
-{
-    //Start와 비슷
-    internal static void Prepare(Group group)
-    {
-        group.Prepare();
-    }
-    public virtual void Prepare()
-    {
-        Prepare(Display.Target);
-    }
 
-    //Stop, Free 와 비슷
-    internal static void Release(Group group)
-    {
-        group.Release();
-    }
-    public virtual void Release()
-    {
-        Release(Display.Target);
-    }
-
-    /// <summary>
-    /// 'Framework.Run' 함수를 호출시 실행되는 함수입니다.
-    /// </summary>
-    public override void Start()
-    {
-        Display.Target.Prepare();
-    }
-    /// <summary>
-    /// 'Framework.Stop' 함수를 호출시 실행되는 함수입니다.
-    /// </summary>
-    public override void Stop()
-    {
-        Display.Target.Release();
-    }
-
-    /// <summary>
-    /// 창의 크기가 조절될경우 실행되는 함수입니다.
-    /// (창 크기 조절이 완전히 끝날때 실행되진 않습니다.)
-    /// 창이 처음 생성될때는 실행되지 않습니다.
-    /// </summary>
-    public override void Resize()
-    {
-        Framework.Positioning(Display.Target);
-        Display.Target.Resize();
-        Framework.Positioning(Display.Target);
-    }
-
-    internal static long endtime = 0;
-    /// <summary>
-    /// Rendering
-    /// </summary>
-    internal override void Draw()
-    {
-        if (endtime > Framework.frametimer.ElapsedTicks) {
-            if (Framework.SavingPerformance && endtime > Framework.frametimer.ElapsedTicks + 2000) SDL.SDL_Delay(1);
-            return;
-        }
-
-        Update(((updatems = Framework.frametimer.ElapsedTicks) - updatetime) * 0.0001f);
-
-        Framework.RenderRange = Window.size;
-        SDL.SDL_RenderSetViewport(Framework.renderer,ref Window.size);
-        Framework.Rendering(Display.Target);
-
-        SDL.SDL_RenderPresent(Framework.renderer);
-
-        if (SDL.SDL_RenderSetViewport(Framework.renderer, ref Window.size) != 0) throw new JyunrcaeaFrameworkException($"SDL Error: {SDL.SDL_GetError()}");
-        SDL.SDL_SetRenderDrawColor(Framework.renderer, Window.BackgroundColor.Red, Window.BackgroundColor.Green, Window.BackgroundColor.Blue, Window.BackgroundColor.Alpha);
-        SDL.SDL_RenderClear(Framework.renderer);
-        if (endtime <= Framework.frametimer.ElapsedTicks - Display.framelatelimit)
-            endtime = Framework.frametimer.ElapsedTicks + Display.framelatelimit;
-        else endtime += Display.framelatelimit;
-    }
-
-    internal static long updatetime = 0, updatems = 0;
-
-    public virtual void Update(float ms)
-    {
-        Display.Target.ResetPosition(new(Window.Width , Window.Height));
-        Framework.RenderRange = Window.size;
-        Framework.Positioning(Display.Target);
-        Display.Target.Update(ms);
-        Animation.AnimationQueue.Update();
-        Framework.RenderRange = Window.size;
-        Framework.Positioning(Display.Target);
-        updatetime = updatems;
-    }
-    /// <summary>
-    /// 창 크기 조절이 완전히 끝날때 호출되는 함수입니다.
-    /// </summary>
-    public virtual void Resized()
-    {
-        for (int i = 0 ; i < Display.Target.EventManager.Resized.Count ; i++)
-        {
-            Display.Target.EventManager.Resized[i].Resized();
-        }
-    }
-
-    public virtual void InputText()
-    {
-        //Thread t = new(() =>
-        //{
-        //    SDL.SDL_Delay(Input.Text.WaitTime);
-        //    SDL.SDL_GetKeyboardState(out int r);
-        //    SDL.SDL_Keycode key = (SDL.SDL_Keycode)r;
-        //    if (key.HasFlag(SDL.SDL_Keycode.SDLK_BACKSPACE))
-        //    {
-        //        while(Input.Text.InputedText.Length > 0)
-        //        {
-        //            Input.Text
-        //        }
-        //    }
-        //});
-    }
-
-    int winrestore, winmax, winmin;
-
-    public virtual void WindowMaximized()
-    {
-        
-    }
-    public virtual void WindowMinimized()
-    {
-
-    }
-    public virtual void WindowRestore()
-    {
-
-    }
-    /// <summary>
-    /// 창 위치가 조정될떄 호출되는 함수입니다.
-    /// </summary>
-    public virtual void WindowMove()
-    {
-
-    }
-
-    static int iwq;
-    /// <summary>
-    /// 창 나가기 버튼을 클릭했을때 호출되는 함수입니다.
-    /// </summary>
-    public virtual void WindowQuit()
-    {
-        if (Window.FrameworkStopWhenClose) Framework.Stop();
-    }
-    /// <summary>
-    /// 파일이 드래그 드롭될때 호출되는 함수입니다.
-    /// </summary>
-    /// <param name="filename"></param>
-    public virtual void DropFile(string filename)
-    {
-
-    }
-
-    static int ikd;
-    /// <summary>
-    /// 키보드의 특정 키가 눌렸을때 실행되는 함수입니다.
-    /// </summary>
-    /// <param name="e"></param>
-    public virtual void KeyDown(Keycode e)
-    {
-        ikd = Display.Target.EventManager.KeyDown.Count;
-        for (int i = 0 ; i < ikd ; i++)
-        {
-            Display.Target.EventManager.KeyDown[i].KeyDown(e);
-        }
-    }
-
-    static int imm;
-    /// <summary>
-    /// 마우스가 움직일때 호출되는 함수입니다.
-    /// </summary>
-    public virtual void MouseMove()
-    {
-        SDL.SDL_GetMouseState(out Input.Mouse.position.x, out Input.Mouse.position.y);
-        int len = Display.Target.EventManager.mouseMoves.Count;
-        for (int i = 0 ; i < len ; i++)
-        {
-            Display.Target.EventManager.mouseMoves[i].MouseMove();
-        }
-    }
-
-    static int imd, imu, iku;
-
-    public virtual void MouseKeyDown(Input.Mouse.Key key)
-    {
-        int len = Display.Target.EventManager.mouseKeyDowns.Count;
-        for (int i = 0 ; i < len ; i++)
-        {
-            Display.Target.EventManager.mouseKeyDowns[i].MouseKeyDown(key);
-        }
-    }
-
-    public virtual void MouseKeyUp(Input.Mouse.Key key)
-    {
-        int len = Display.Target.EventManager.mouseKeyUps.Count;
-        for (int i = 0 ; i < len ; i++)
-        {
-            Display.Target.EventManager.mouseKeyUps[i].MouseKeyUp(key);
-        }
-    }
-
-    public virtual void KeyUp(Keycode key)
-    {
-        iku = Display.Target.EventManager.keyUp.Count;
-        for (int i = 0 ; i < iku ; i++)
-        {
-            Display.Target.EventManager.keyUp[i].KeyUp(key);
-        }
-    }
-
-    int kfi, kfo;
-
-    public virtual void KeyFocusIn()
-    {
-
-    }
-
-    public virtual void KeyFocusOut()
-    {
-
-    }
-
-    int mfi, mfo;
-
-    public virtual void MouseFocusIn()
-    {
-
-    }
-
-    public virtual void MouseFocusOut()
-    {
-
-    }
-
-    public virtual void DisplayChange()
-    {
-        if (Window.Fullscreen)
-        {
-            Window.Resize(Display.MonitorWidth, Display.MonitorHeight);
-        }
-        if (Display.FrameLateLimit == 0) Display.FrameLateLimit = 0;
-    }
-}
 /// <summary>
 /// 창을 생성할때 쓰일 창 옵션입니다.
 /// </summary>
 public struct WindowOption
 {
     internal SDL.SDL_WindowFlags option;
-
-    //public WindowOption() { option = SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN; }
 
     public WindowOption(bool resize = true, bool borderless = false, bool fullscreen = false, bool hide = true)
     {
@@ -1940,6 +1511,7 @@ public struct WindowOption
         if (hide) option |= SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN;
     }
 }
+
 /// <summary>
 /// 프레임워크를 초기화 할때 쓰일 렌더러 옵션입니다.
 /// </summary>
@@ -1957,6 +1529,7 @@ public struct RenderOption
         this.anti_alising = anti_aliasing;
     }
 }
+
 /// <summary>
 /// 프레임워크를 초기화 할때 쓰일 오디오 옵션입니다.
 /// </summary>
@@ -1973,93 +1546,6 @@ public struct AudioOption
         hz = Hz;
     }
 }
-
-public abstract class PlayableSound : IDisposable
-{
-    internal IntPtr sound;
-    public abstract void Dispose();
-    ~PlayableSound()
-    {
-        Dispose();
-    }
-}
-
-public class Music : PlayableSound
-{
-    public Music(string FileName)
-    {
-        this.sound = SDL_mixer.Mix_LoadMUS(FileName);
-        if (this.sound == IntPtr.Zero)
-            throw new JyunrcaeaFrameworkException($"음악을 불러오는데 실패하였습니다. SDL mixer Error: {SDL_mixer.Mix_GetError()}");
-    }
-
-    public override void Dispose()
-    {
-        SDL_mixer.Mix_FreeMusic(this.sound);
-        GC.SuppressFinalize(this);
-    }
-    /// <summary>
-    /// 음악을 재생합니다.
-    /// </summary>
-    /// <param name="music">음악</param>
-    /// <returns>성공시 true</returns>
-    public static bool Play(Music music)
-    {
-        playingmusic = music;
-        if (SDL_mixer.Mix_PlayMusic(music.sound, 1) == -1) return false;
-        return true;
-    }
-    public bool Play() => Music.Play(this);
-
-    public static bool Resume()
-    {
-        if (SDL_mixer.Mix_PlayingMusic() != 0) return false;
-        SDL_mixer.Mix_ResumeMusic();
-        return true;
-    }
-
-    static Music? playingmusic = null;
-    public static Music? NowPlaying => playingmusic;
-
-    /// <summary>
-    /// 음악 제목을 가져옵니다. (시간이 다소 걸립니다.)
-    /// 'PlayReady' 가 켜져있거나, 이 음악이 재생중일 경우 좀 더 빠르게 불러올수 있습니다.
-    /// </summary>
-    public string Title => SDL_mixer.Mix_GetMusicTitle(this.sound);
-
-    public static void Skip()
-    {
-        SDL_mixer.Mix_HaltMusic();
-    }
-
-    public static bool Paused => SDL_mixer.Mix_PausedMusic() == 1;
-
-    public static void Pause()
-    {
-        SDL_mixer.Mix_PauseMusic();
-    }
-
-    /// <summary>
-    /// 원하는 시간대로 이동합니다.
-    /// </summary>
-    public static double NowTime { get { return NowPlaying == null ? -1 : SDL_mixer.Mix_GetMusicPosition(NowPlaying.sound); }
-        set
-        {
-            if (SDL_mixer.Mix_SetMusicPosition(value) == -1) throw new JyunrcaeaFrameworkException("잘못된 위치");
-        }
-    }
-
-    internal static void Finished()
-    {
-        if (SDL_mixer.Mix_PlayingMusic() == 0) return;
-        if (NowPlaying != null) NowPlaying.Dispose();
-        if (MusicFinished != null) MusicFinished();
-    }
-
-    public static FunctionWhenMusicFinished? MusicFinished = null;
-}
-
-public delegate Music? FunctionWhenMusicFinished();
 
 /// <summary>
 /// 객체의 기본이 되는 객체 인터페이스입니다. (사실 추상 클래스이긴 하지만...)
@@ -2206,7 +1692,7 @@ public class Events
     /// </summary>
     public interface MouseKeyDown
     {
-        public void MouseKeyDown(Input.Mouse.Key key);
+        public void MouseKeyDown(MouseKey key);
     }
 
     /// <summary>
@@ -2214,7 +1700,7 @@ public class Events
     /// </summary>
     public interface MouseKeyUp
     {
-        public void MouseKeyUp(Input.Mouse.Key key);
+        public void MouseKeyUp(MouseKey key);
     }
 
     /// <summary>
@@ -2248,13 +1734,6 @@ public class Events
     {
         public void WindowRestore();
     }
-
-#if DEBUG
-public abstract class ODDInterface
-{
-    internal abstract void ODD();
-}
-#endif
 }
 
 public delegate double FunctionForAnimation(double x);
@@ -2362,7 +1841,11 @@ public class Color
 /// </summary>
 public static class Input
 {
-    
+    public static unsafe bool IsKeyPressed(Keycode key)
+    {
+        var scancode = SDL.SDL_GetScancodeFromKey((SDL.SDL_Keycode)key);
+        return ((byte*)SDL.SDL_GetKeyboardState(out _))[(int)scancode] != 0;
+    }
 
     /// <summary>
     /// 마우스와 관련된 클래스입니다.
@@ -2422,25 +1905,6 @@ public static class Input
                 SDL.SDL_SetHint(SDL.SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN, value ? "0" : "1");
             }
             get => SDL.SDL_GetHint(SDL.SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN) == "0";
-        }
-
-        /// <summary>
-        /// 마우스 버튼 목록
-        /// </summary>
-        public enum Key : byte
-        {
-            /// <summary>
-            /// 왼쪽
-            /// </summary>
-            Left = 1,
-            /// <summary>
-            /// 중간 (마우스 휠)
-            /// </summary>
-            Middle = 2,
-            /// <summary>
-            /// 오른쪽
-            /// </summary>
-            Right = 3
         }
 
         public static void SetCursor(CursorType t)
@@ -2506,81 +1970,100 @@ public static class Input
 }
 
 /// <summary>
+/// 마우스 버튼 목록
+/// </summary>
+public enum MouseKey : byte
+{
+    /// <summary>
+    /// 왼쪽
+    /// </summary>
+    Left = 1,
+    /// <summary>
+    /// 중간 (마우스 휠)
+    /// </summary>
+    Middle = 2,
+    /// <summary>
+    /// 오른쪽
+    /// </summary>
+    Right = 3
+}
+
+/// <summary>
 /// 키보드 키코드
 /// </summary>
-public enum Keycode
+public enum Keycode :int
 {
     UNKNOWN = 0,
 
-    RETURN = '\r',
-    ESCAPE = 27,
-    BACKSPACE = '\b',
-    TAB = '\t',
-    SPACE = ' ',
-    EXCLAIM = '!',
-    QUOTEDBL = '"',
-    HASH = '#',
-    PERCENT = '%',
-    DOLLAR = '$',
-    AMPERSAND = '&',
-    QUOTE = '\'',
-    LEFTPAREN = '(',
-    RIGHTPAREN = ')',
-    ASTERISK = '*',
-    PLUS = '+',
-    COMMA = ',',
-    MINUS = '-',
-    PERIOD = '.',
-    SLASH = '/',
-    _0 = '0',
-    _1 = '1',
-    _2 = '2',
-    _3 = '3',
-    _4 = '4',
-    _5 = '5',
-    _6 = '6',
-    _7 = '7',
-    _8 = '8',
-    _9 = '9',
-    COLON = ':',
-    SEMICOLON = ';',
-    LESS = '<',
-    EQUALS = '=',
-    GREATER = '>',
-    QUESTION = '?',
-    AT = '@',
-    LEFTBRACKET = '[',
-    BACKSLASH = '\\',
-    RIGHTBRACKET = ']',
-    CARET = '^',
-    UNDERSCORE = '_',
-    BACKQUOTE = '`',
-    A = 'a',
-    B = 'b',
-    C = 'c',
-    D = 'd',
-    E = 'e',
-    F = 'f',
-    G = 'g',
-    H = 'h',
-    I = 'i',
-    J = 'j',
-    K = 'k',
-    L = 'l',
-    M = 'm',
-    N = 'n',
-    O = 'o',
-    P = 'p',
-    Q = 'q',
-    R = 'r',
-    S = 's',
-    T = 't',
-    U = 'u',
-    V = 'v',
-    W = 'w',
-    X = 'x',
-    Y = 'y',
-    Z = 'z',
+    RETURN = 13,         // '\r'의 ASCII 값
+    ESCAPE = 27,         // 27 (Escape의 ASCII 값)
+    BACKSPACE = 8,       // '\b'의 ASCII 값
+    TAB = 9,             // '\t'의 ASCII 값
+    SPACE = 32,          // ' ' (공백)의 ASCII 값
+    EXCLAIM = 33,        // '!'의 ASCII 값
+    QUOTEDBL = 34,       // '"'의 ASCII 값
+    HASH = 35,           // '#'의 ASCII 값
+    PERCENT = 37,        // '%'의 ASCII 값
+    DOLLAR = 36,         // '$'의 ASCII 값
+    AMPERSAND = 38,      // '&'의 ASCII 값
+    QUOTE = 39,          // '\''의 ASCII 값
+    LEFTPAREN = 40,      // '('의 ASCII 값
+    RIGHTPAREN = 41,     // ')'의 ASCII 값
+    ASTERISK = 42,       // '*'의 ASCII 값
+    PLUS = 43,           // '+'의 ASCII 값
+    COMMA = 44,          // ','의 ASCII 값
+    MINUS = 45,          // '-'의 ASCII 값
+    PERIOD = 46,         // '.'의 ASCII 값
+    SLASH = 47,          // '/'의 ASCII 값
+    _0 = 48,             // '0'의 ASCII 값
+    _1 = 49,             // '1'의 ASCII 값
+    _2 = 50,             // '2'의 ASCII 값
+    _3 = 51,             // '3'의 ASCII 값
+    _4 = 52,             // '4'의 ASCII 값
+    _5 = 53,             // '5'의 ASCII 값
+    _6 = 54,             // '6'의 ASCII 값
+    _7 = 55,             // '7'의 ASCII 값
+    _8 = 56,             // '8'의 ASCII 값
+    _9 = 57,             // '9'의 ASCII 값
+    COLON = 58,          // ':'의 ASCII 값
+    SEMICOLON = 59,      // ';'의 ASCII 값
+    LESS = 60,           // '<'의 ASCII 값
+    EQUALS = 61,         // '='의 ASCII 값
+    GREATER = 62,        // '>'의 ASCII 값
+    QUESTION = 63,       // '?'의 ASCII 값
+    AT = 64,             // '@'의 ASCII 값
+    LEFTBRACKET = 91,    // '['의 ASCII 값
+    BACKSLASH = 92,      // '\\'의 ASCII 값
+    RIGHTBRACKET = 93,   // ']'의 ASCII 값
+    CARET = 94,          // '^'의 ASCII 값
+    UNDERSCORE = 95,     // '_'의 ASCII 값
+    BACKQUOTE = 96,      // '`'의 ASCII 값
+    A = 97,              // 'a'의 ASCII 값
+    B = 98,              // 'b'의 ASCII 값
+    C = 99,              // 'c'의 ASCII 값
+    D = 100,             // 'd'의 ASCII 값
+    E = 101,             // 'e'의 ASCII 값
+    F = 102,             // 'f'의 ASCII 값
+    G = 103,             // 'g'의 ASCII 값
+    H = 104,             // 'h'의 ASCII 값
+    I = 105,             // 'i'의 ASCII 값
+    J = 106,             // 'j'의 ASCII 값
+    K = 107,             // 'k'의 ASCII 값
+    L = 108,             // 'l'의 ASCII 값
+    M = 109,             // 'm'의 ASCII 값
+    N = 110,             // 'n'의 ASCII 값
+    O = 111,             // 'o'의 ASCII 값
+    P = 112,             // 'p'의 ASCII 값
+    Q = 113,             // 'q'의 ASCII 값
+    R = 114,             // 'r'의 ASCII 값
+    S = 115,             // 's'의 ASCII 값
+    T = 116,             // 't'의 ASCII 값
+    U = 117,             // 'u'의 ASCII 값
+    V = 118,             // 'v'의 ASCII 값
+    W = 119,             // 'w'의 ASCII 값
+    X = 120,             // 'x'의 ASCII 값
+    Y = 121,             // 'y'의 ASCII 값
+    Z = 122,              // 'z'의 ASCII 값
 
     CAPSLOCK = SDL.SDL_Keycode.SDLK_CAPSLOCK,
 
@@ -2822,7 +2305,6 @@ public interface CanGetLenght
     public int Width { get; }
     public int Height { get; }
 }
-
 
 /// <summary>
 /// 부드러운 움직임을 구현하기 위한 편리한 기능이 모여있습니다.
@@ -3368,86 +2850,6 @@ public class Scheduler
     }
 }
 
-/// <summary>
-/// 객체가 그릴수 있는 텍스쳐의 추상 클래스입니다.
-/// </summary>
-public abstract class DrawableTexture : IDisposable
-{
-    public bool FixedRenderRange = false;
-
-    internal bool needresettexture = false;
-
-    internal IntPtr texture;
-
-    internal SDL.SDL_Rect src = new();
-
-    internal SDL.SDL_Point absolutesrc = new();
-
-    public int Width => absolutesrc.x;
-
-    public int Height => absolutesrc.y;
-
-    /// <summary>
-    /// 원본 이미지 크기에 맞게 조절되고 있는지에 대한 여부입니다.
-    /// RenderRange에 null 이외의 값을 넣을 경우 이 변수는 false가 됩니다.
-    /// </summary>
-    public bool AutoRange { get; internal set; } = true;
-
-    internal byte alpha = 255;
-
-    public byte Opacity
-    {
-        get
-        {
-            return alpha;
-        }
-        set
-        {
-            alpha = value;
-            if (this.texture != IntPtr.Zero) SDL.SDL_SetTextureAlphaMod(texture, alpha);
-        }
-    }
-
-    public void SetRenderRange(int x,int y,int width,int height)
-    {
-        src.x = x; src.y = y; src.w = width; src.h = height;
-        needresettexture = true;
-    }
-
-    public RectSize? RenderRange
-    {
-        get { if (AutoRange) return null; return new(src.x, src.y, src.w, src.h); }
-        set
-        {
-                needresettexture = true;
-            if (value == null)
-            {
-                AutoRange = true;
-                src.x = src.y = 0;
-                src.w = absolutesrc.x;
-                src.h = absolutesrc.y;
-                return;
-            }
-            AutoRange = false;
-            src = value.size;
-        }
-    }
-
-    internal void Ready()
-    {
-        if (this.texture == IntPtr.Zero) return;
-        if (SDL.SDL_SetTextureBlendMode(this.texture, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) < 0) throw new JyunrcaeaFrameworkException($"텍스쳐의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
-        if (alpha != 255) SDL.SDL_SetTextureAlphaMod(texture, alpha);
-    }
-
-    public virtual void Dispose()
-    {
-        SDL.SDL_DestroyTexture(texture);
-    }
-
-
-}
-
 class EffectForImage
 {
     internal static PaintOnMemory Bluring(ImageOnMemory image)
@@ -3597,7 +2999,7 @@ public class PaintOnMemory : IDisposable
         return color;
     }
 
-    public TextureFromMemory GetTexture()
+    public Texture GetTexture()
     {
         return new(this.surface);
     }
@@ -3718,10 +3120,10 @@ public class ImageOnMemory : IDisposable
         result.Dispose();
     }
 
-    public TextureFromMemory GetTexture()
+    public Texture GetTexture()
     {
         if (surface_ptr == IntPtr.Zero) throw new JyunrcaeaFrameworkException("실패. 불러오지 않은 이미지, 또는 이미 해제된 이미지를 텍스쳐로 변환할려고 했습니다.");
-        return new TextureFromMemory(surface_ptr);
+        return new Texture(surface_ptr);
     }
 
     public void Dispose()
@@ -3766,68 +3168,7 @@ public class ImageOnMemory : IDisposable
     }
 }
 
-public class TextureFromMemory : DrawableTexture
-{
-    public TextureFromMemory(IntPtr surface)
-    {
-        this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer,surface);
-        if (this.texture == IntPtr.Zero)
-        {
-            throw new JyunrcaeaFrameworkException("이미지를 불러오는데 실패하였습니다.");
-        }
-        SDL.SDL_QueryTexture(this.texture , out _ , out _ , out this.absolutesrc.x , out this.absolutesrc.y);
-        this.needresettexture = true;
-        if (!this.FixedRenderRange)
-        {
-            this.src.w = this.absolutesrc.x;
-            this.src.h = this.absolutesrc.y;
-        }
-        Ready();
-    }
-
-    public override void Dispose()
-    {
-        SDL.SDL_DestroyTexture(this.texture);
-        this.absolutesrc.x = this.absolutesrc.y = 0;
-        this.needresettexture = true;
-        this.texture = IntPtr.Zero;
-    }
-}
-
-/// <summary>
-/// 이미지 파일을 통해 불러오는 텍스쳐입니다.
-/// </summary>
-public class TextureFromFile : DrawableTexture
-{
-    public string filename = string.Empty;
-
-    public TextureFromFile(string filename)
-    {
-        this.filename = filename;
-        if ((this.texture = SDL_image.IMG_LoadTexture(Framework.renderer , filename)) == IntPtr.Zero)
-            throw new JyunrcaeaFrameworkException("SDL image Error: " + SDL.SDL_GetError());
-        SDL.SDL_QueryTexture(this.texture , out _ , out _ , out this.absolutesrc.x , out this.absolutesrc.y);
-        this.needresettexture = true;
-        if (!this.FixedRenderRange)
-        {
-            this.src.w = this.absolutesrc.x;
-            this.src.h = this.absolutesrc.y;
-        }
-        Ready();
-    }
-
-    public TextureFromFile() { }
-
-    public override void Dispose()
-    {
-        SDL.SDL_DestroyTexture(this.texture);
-        this.absolutesrc.x = this.absolutesrc.y = 0;
-        this.needresettexture = true;
-        this.texture = IntPtr.Zero;
-    }
-}
-
-public class TextureFromStringForXPM : DrawableTexture
+public class TextureFromStringForXPM : Texture
 {
     public TextureFromStringForXPM(string[] xpmdata)
     {
@@ -3858,99 +3199,7 @@ public class TextureFromStringForXPM : DrawableTexture
     }
 }
 
-public class TextureFromText : DrawableTexture, IDisposable
-{
-    public string Fontfile,Text;
-    public int Size { get; internal set; }
-    public Color Color;
-    public Color? BackgroundColor;
-    public bool Blended = true;
-    public uint WarpLength = 0;
-    public bool ResourceReady => fontsource != IntPtr.Zero;
-
-    public TextureFromText(string Fontfile,int Size,string Text,Color Color,Color? BackgroundColor = null,bool Blended = true) {
-        this.Fontfile = Fontfile;
-        this.Size = Size;
-        this.Color = Color;
-        this.BackgroundColor = BackgroundColor;
-        this.Text = Text;
-        this.Blended = Blended;
-
-        fontsource = SDL_ttf.TTF_OpenFont(Fontfile , Size);
-        if (fontsource == IntPtr.Zero)
-            throw new JyunrcaeaFrameworkException($"불러올수 없는 글꼴 파일 SDL Error: {SDL.SDL_GetError()}");
-        Rendering();
-        Ready();
-    }
-
-    public void ReRender()
-    {
-        if (this.texture != IntPtr.Zero) Dispose();
-        Rendering();
-    }
-
-    public void Resize(int size)
-    {
-        if (this.Size == size) return;
-        if (SDL_ttf.TTF_SetFontSize(fontsource,this.Size = size) != 0) throw new JyunrcaeaFrameworkException($"글꼴 크기를 조정하는데 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
-    }
-
-    SDL.SDL_Surface surface;
-    IntPtr buffer;
-    IntPtr fontsource;
-
-    internal void Rendering()
-    {
-        if (this.texture != IntPtr.Zero)
-        {
-            Dispose();
-        }
-        if (this.Text == "")
-        {
-            this.Text = " ";
-        }
-        if (BackgroundColor is null)
-        {
-            if (Blended)
-            {
-                buffer = SDL_ttf.TTF_RenderUTF8_Blended_Wrapped(fontsource, Text, Color.colorbase,this.WarpLength);
-            }
-            else
-            {
-                buffer = SDL_ttf.TTF_RenderUTF8_Solid_Wrapped(fontsource, Text, Color.colorbase, this.WarpLength);
-            }
-        }
-        else
-        {
-            buffer = SDL_ttf.TTF_RenderUTF8_Shaded_Wrapped(fontsource, Text, Color.colorbase, BackgroundColor.colorbase, this.WarpLength);
-        }
-        if (buffer == IntPtr.Zero)
-        {
-            throw new JyunrcaeaFrameworkException($"텍스쳐를 렌더링 하는데 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
-        }
-        surface = SDL.PtrToStructure<SDL.SDL_Surface>(buffer);
-        this.absolutesrc.x = surface.w;
-        this.absolutesrc.y = surface.h;
-        this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer, buffer);
-        SDL.SDL_FreeSurface(buffer);
-        if (this.texture == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"렌더링 된 텍스트를 텍스쳐로 변환하는데 실패하였습니다. {SDL.SDL_GetError()}");
-        this.needresettexture = true;
-        if (!this.FixedRenderRange)
-        {
-            this.src.w = this.absolutesrc.x;
-            this.src.h = this.absolutesrc.y;
-        }
-    }
-
-    public override void Dispose()
-    {
-        SDL.SDL_DestroyTexture(this.texture);
-        this.texture = IntPtr.Zero;
-        SDL_ttf.TTF_CloseFont(fontsource);
-    }
-}
-
-public class TextureFromTextFileForXPM : DrawableTexture
+public class TextureFromTextFileForXPM : Texture
 {
     public TextureFromTextFileForXPM(string FilePath)
     {
@@ -3971,44 +3220,6 @@ public class TextureFromTextFileForXPM : DrawableTexture
     public override void Dispose()
     {
         SDL.SDL_DestroyTexture(this.texture);
-    }
-}
-
-public class Font : IDisposable
-{
-    /// <summary>
-    /// 기본 글꼴파일의 경로를 설정합니다.
-    /// Text 객체 생성시 글꼴파일 경로를 null로 설정할경우 이 경로가 채택됩니다.
-    /// </summary>
-    public static string DefaultPath = string.Empty;
-
-    internal IntPtr fontsource = IntPtr.Zero;
-
-    internal int sz = 1;
-
-    /// <summary>
-    /// 글꼴의 크기입니다.
-    /// </summary>
-    public int Size { get => sz; set {
-            if (SDL_ttf.TTF_SetFontSize(this.fontsource, this.sz = value) == -1) throw new JyunrcaeaFrameworkException($"폰트 로드에 실패했습니다. SDL_TTF Error: {SDL_ttf.TTF_GetError()}");
-        }
-    }
-
-    /// <summary>
-    /// 글꼴을 불러옵니다.
-    /// </summary>
-    /// <param name="filename">글꼴 파일 경로</param>
-    /// <param name="size">글자 크기 (높이 기준)</param>
-    public Font(string filename,int size)
-    {
-        this.fontsource = SDL_ttf.TTF_OpenFont(filename, this.sz = size);
-    }
-
-    /// <summary>
-    /// 불러온 글꼴을 메모리에서 해제합니다.
-    /// </summary>
-    public void Dispose() {
-        SDL_ttf.TTF_CloseFont(this.fontsource);
     }
 }
 

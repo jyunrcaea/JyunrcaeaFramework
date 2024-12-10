@@ -11,29 +11,37 @@
     <Company>Jyunrcaea!</Company>
     <Authors>614project</Authors>
     <Description>This is C# framework for make game!</Description>
-    <PackageProjectUrl>http://jyunrcaeaframework.kro.kr</PackageProjectUrl>
+    <PackageProjectUrl>https://614.kro.kr/jf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/jyunrcaea/JyunrcaeaFramework</RepositoryUrl>
     <PackageId>JyunrcaeaFramework</PackageId>
     <PackageReadmeFile>README_EN.md</PackageReadmeFile>
     <PackageIcon>Icon.png</PackageIcon>
-    <Copyright>Copyright 2023. 614project. All rights reserved.</Copyright>
+    <Copyright>Copyright 2024. 614project. All rights reserved.</Copyright>
     <PackAsTool>True</PackAsTool>
-    <Version>0.6.1</Version>
-    <SignAssembly>False</SignAssembly>
+    <Version>0.7.1</Version>
+    <SignAssembly>True</SignAssembly>
     <GenerateDocumentationFile>False</GenerateDocumentationFile>
     <ApplicationIcon>Jyunrcaea_FrameworkIcon.ico</ApplicationIcon>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-    <Platforms>AnyCPU;x86</Platforms>
+    <Platforms>AnyCPU;x86;x64</Platforms>
+    <IncludeSymbols>False</IncludeSymbols>
+    <AssemblyOriginatorKeyFile>D:\Documents\JyunrcaeaFramework\JyunrcaeaFramework.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <Optimize>False</Optimize>
+    <Optimize>True</Optimize>
+    <WarningLevel>9999</WarningLevel>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Optimize>True</Optimize>
     <WarningLevel>9999</WarningLevel>
     <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-    <Optimize>False</Optimize>
+    <Optimize>True</Optimize>
     <WarningLevel>9999</WarningLevel>
     <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
   </PropertyGroup>
@@ -41,13 +49,19 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <WarningLevel>9999</WarningLevel>
     <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
-    <Optimize>False</Optimize>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <WarningLevel>9999</WarningLevel>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
+    <Optimize>True</Optimize>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <WarningLevel>9999</WarningLevel>
     <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
-    <Optimize>False</Optimize>
+    <Optimize>True</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
