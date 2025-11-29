@@ -87,11 +87,8 @@ public class TextTexture : Texture
         }
     }
 
-    public override void Dispose()
-    {
-        SDL.SDL_DestroyTexture(this.texture);
-        this.texture = IntPtr.Zero;
-        GC.SuppressFinalize(this);
+    internal override void Free() {
+        base.Free();
     }
 
     ~TextTexture()

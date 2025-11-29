@@ -1,6 +1,7 @@
 ﻿using SDL2;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ namespace JyunrcaeaFramework;
 /// <summary>
 /// 프레임워크가 이벤트를 받았으때 실행될 함수들이 모인 클래스입니다.
 /// </summary>
-public class FrameworkFunction : ObjectInterface, AllEventInterface
+public class FrameworkFunction : ObjectInterface, IAllEventInterface
 {
     static EventList EventManager => Display.Target.EventManager;
 
@@ -75,25 +76,24 @@ public class FrameworkFunction : ObjectInterface, AllEventInterface
             return;
         }
 
-        Update(((updatems = Framework.frametimer.ElapsedTicks) - updatetime) * 0.0001f);
+        Update(((updateMs = Framework.frametimer.ElapsedTicks) - updateTime) * 0.0001f);
 
         Framework.RenderRange = Window.size;
-        SDL.SDL_RenderSetViewport(Framework.renderer , ref Window.size);
+        _ = SDL.SDL_RenderSetViewport(Framework.renderer , ref Window.size);
         Framework.Rendering(Display.Target);
 
         SDL.SDL_RenderPresent(Framework.renderer);
 
-        if (SDL.SDL_RenderSetViewport(Framework.renderer , ref Window.size) != 0)
-            throw new JyunrcaeaFrameworkException($"SDL Error: {SDL.SDL_GetError()}");
-        SDL.SDL_SetRenderDrawColor(Framework.renderer , Window.BackgroundColor.Red , Window.BackgroundColor.Green , Window.BackgroundColor.Blue , Window.BackgroundColor.Alpha);
-        SDL.SDL_RenderClear(Framework.renderer);
+        _ = SDL.SDL_RenderSetViewport(Framework.renderer , ref Window.size);
+        _ = SDL.SDL_SetRenderDrawColor(Framework.renderer , Window.BackgroundColor.Red , Window.BackgroundColor.Green , Window.BackgroundColor.Blue , Window.BackgroundColor.Alpha);
+        _ = SDL.SDL_RenderClear(Framework.renderer);
         if (endtime <= Framework.frametimer.ElapsedTicks - Display.framelatelimit)
             endtime = Framework.frametimer.ElapsedTicks + Display.framelatelimit;
         else
             endtime += Display.framelatelimit;
     }
 
-    internal static long updatetime = 0, updatems = 0;
+    internal static long updateTime = 0, updateMs = 0;
 
     public virtual void Update(float ms)
     {
@@ -104,7 +104,7 @@ public class FrameworkFunction : ObjectInterface, AllEventInterface
         Animation.AnimationQueue.Update();
         Framework.RenderRange = Window.size;
         Framework.Positioning(Display.Target);
-        updatetime = updatems;
+        updateTime = updateMs;
     }
     /// <summary>
     /// 창 크기 조절이 완전히 끝날때 호출되는 함수입니다.

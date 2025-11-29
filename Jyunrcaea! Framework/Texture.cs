@@ -3,7 +3,7 @@
 namespace JyunrcaeaFramework;
 
 /// <summary>
-/// 객체가 그릴수 있는 텍스쳐의 추상 클래스입니다.
+/// 객체가 그릴수 있는 텍스쳐입니다.
 /// </summary>
 public class Texture : IDisposable
 {
@@ -108,12 +108,16 @@ public class Texture : IDisposable
             SDL.SDL_SetTextureAlphaMod(texture , alpha);
     }
 
-    public virtual void Dispose()
-    {
+    internal virtual void Free() {
         SDL.SDL_DestroyTexture(this.texture);
         this.absolutesrc.x = this.absolutesrc.y = 0;
         this.needresettexture = true;
         this.texture = IntPtr.Zero;
+    }
+
+    public virtual void Dispose()
+    {
+        if (this.texture != IntPtr.Zero) Free();
         GC.SuppressFinalize(this);
     }
 

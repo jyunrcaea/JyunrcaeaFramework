@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace JyunrcaeaFramework;
 
-public class Text : ExtendDrawableObject, Events.Update, Events.Resize
+public class Text : ExtendDrawableObject, Events.IUpdate, Events.IResize
 {
     public Text(string? content = null , int size = 16 , Color? textcolor = null , Font? font = null)
     {
@@ -53,8 +53,8 @@ public class Text : ExtendDrawableObject, Events.Update, Events.Resize
         }
     }
 
-    internal override int RealWidth => (int)((AbsoluteSize is null ? TFT.Width : AbsoluteSize.Width) * Scale.X);
-    internal override int RealHeight => (int)((AbsoluteSize is null ? TFT.Height : AbsoluteSize.Height) * Scale.Y);
+    internal override int RealWidth => (int)((absoluteSize is null ? TFT.Width : absoluteSize.Width) * scale.X);
+    internal override int RealHeight => (int)((absoluteSize is null ? TFT.Height : absoluteSize.Height) * scale.Y);
 
     public bool Blended { get => TFT.Blended; set => TFT.Blended = value; }
     internal bool refresh = false;

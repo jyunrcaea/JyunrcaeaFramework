@@ -10,23 +10,23 @@ public class EventList
 {
     internal Queue<BaseObject> ObjectQueue = new();
 
-    internal List<Events.Resized> Resized = new();
-    internal List<Events.Resize> Resize = new();
-    internal List<Events.Update> Update = new();
-    internal List<Events.KeyDown> KeyDown = new();
-    internal List<Events.KeyUp> keyUp = new();
-    internal List<Events.MouseMove> mouseMoves = new();
-    internal List<Events.MouseKeyDown> mouseKeyDowns = new();
-    internal List<Events.MouseKeyUp> mouseKeyUps = new();
+    internal List<Events.IResized> Resized = new();
+    internal List<Events.IResize> Resize = new();
+    internal List<Events.IUpdate> Update = new();
+    internal List<Events.IKeyDown> KeyDown = new();
+    internal List<Events.IKeyUp> keyUp = new();
+    internal List<Events.IMouseMove> mouseMoves = new();
+    internal List<Events.IMouseKeyDown> mouseKeyDowns = new();
+    internal List<Events.IMouseKeyUp> mouseKeyUps = new();
 
-    internal List<Events.WindowMove> windowMoves = new();
-    internal List<Events.WindowQuit> windowQuits = new();
-    internal List<Events.WindowMaximized> windowMaximizeds = new();
-    internal List<Events.WindowMinimized> windowMinimizeds = new();
-    internal List<Events.WindowRestore> windowRestores = new();
-    internal List<Events.DropFile> dropFiles = new();
-    internal List<Events.KeyFocusIn> keyFocusIns = new();
-    internal List<Events.KeyFocusOut> keyFocusOuts = new();
+    internal List<Events.IWindowMove> windowMoves = new();
+    internal List<Events.IWindowQuit> windowQuits = new();
+    internal List<Events.IWindowMaximized> windowMaximizeds = new();
+    internal List<Events.IWindowMinimized> windowMinimizeds = new();
+    internal List<Events.IWindowRestore> windowRestores = new();
+    internal List<Events.IDropFile> dropFiles = new();
+    internal List<Events.IKeyFocusIn> keyFocusIns = new();
+    internal List<Events.IKeyFocusOut> keyFocusOuts = new();
 
     public void Add(BaseObject obj)
     {

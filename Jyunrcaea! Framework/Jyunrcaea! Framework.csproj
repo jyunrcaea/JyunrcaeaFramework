@@ -19,7 +19,6 @@
     <Copyright>Copyright 2024. 614project. All rights reserved.</Copyright>
     <PackAsTool>True</PackAsTool>
     <Version>0.7.1</Version>
-    <SignAssembly>True</SignAssembly>
     <GenerateDocumentationFile>False</GenerateDocumentationFile>
     <ApplicationIcon>Jyunrcaea_FrameworkIcon.ico</ApplicationIcon>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>

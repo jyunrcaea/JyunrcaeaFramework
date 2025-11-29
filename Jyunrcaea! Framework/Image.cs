@@ -35,6 +35,6 @@ public class Image : ExtendDrawableObject, Animation.Available.Opacity
         }
     }
 
-    internal override int RealWidth => (int)((AbsoluteSize is null ? Texture.Width : AbsoluteSize.Width) * Scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
-    internal override int RealHeight => (int)((AbsoluteSize is null ? Texture.Height : AbsoluteSize.Height) * Scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
+    internal override int RealWidth => (int)((absoluteSize is null ? Texture.Width : absoluteSize.Width) * scale.X * (this.RelativeSize ? Window.AppropriateSize : 1));
+    internal override int RealHeight => (int)((absoluteSize is null ? Texture.Height : absoluteSize.Height) * scale.Y * (this.RelativeSize ? Window.AppropriateSize : 1));
 }
