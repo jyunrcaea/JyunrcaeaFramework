@@ -40,13 +40,13 @@ public static class Framework
     /// <param name="x">가로 위치 (null 일경우 중앙)</param>
     /// <param name="y">세로 위치 (null 일경우 중앙)</param>
     /// <param name="option">초기 창 생성옵션</param>
-    /// <param name="KeepRenderingWhenResize">창 조절 중에도 계속 렌더링 하기 (64비트 운영체제 전용)</param>
-    /// <param name="render_option">렌더러 옵션</param>
+    /// <param name="keepRenderingWhenResize">창 조절 중에도 계속 렌더링 하기 (64비트 운영체제 전용)</param>
+    /// <param name="renderOption">렌더러 옵션</param>
     /// <exception cref="JyunrcaeaFrameworkException">초기화 실패시</exception>
-    public static void Init(string title, uint width, uint height, int? x = null, int? y = null, WindowOption? option = null, RenderOption? render_option = null, AudioOption audio_option = default,bool KeepRenderingWhenResize = true)
+    public static void Init(string title, uint width, uint height, int? x = null, int? y = null, WindowOption? option = null, RenderOption? renderOption = null, AudioOption audioOption = default,bool keepRenderingWhenResize = true)
     {
         #region 값 검사
-        if (audio_option.ch > 8) throw new JyunrcaeaFrameworkException("지원하지 않는 스테레오 ( AudioOption.Channls > 8)");
+        if (audioOption.ch > 8) throw new JyunrcaeaFrameworkException("지원하지 않는 스테레오 ( AudioOption.Channls > 8)");
         #endregion
         #region SDL 라이브러리 초기화
         if (SDL.SDL_Init(SDL.SDL_INIT_EVERYTHING) != 0)
@@ -59,13 +59,13 @@ public static class Framework
         {
             throw new JyunrcaeaFrameworkException($"창 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
         }
-        renderer = SDL.SDL_CreateRenderer(window, -1, render_option is null ? SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED : ((RenderOption)render_option).option);
+        renderer = SDL.SDL_CreateRenderer(window, -1, renderOption is null ? SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED : ((RenderOption)renderOption).option);
         if (renderer == IntPtr.Zero)
         {
             SDL.SDL_DestroyWindow(window);
             throw new JyunrcaeaFrameworkException($"렌더 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
         }
-        if (render_option is null || ((RenderOption)render_option).anti_alising)
+        if (renderOption is null || ((RenderOption)renderOption).anti_alising)
         {
             if (SDL.SDL_SetHint(SDL.SDL_HINT_RENDER_SCALE_QUALITY, "2") == 0)
             {
@@ -99,9 +99,9 @@ public static class Framework
         }
         bool setting = true;
         while (setting) {
-            if (SDL_mixer.Mix_OpenAudio(audio_option.hz, SDL_mixer.MIX_DEFAULT_FORMAT, audio_option.ch, audio_option.cs) != 0)
+            if (SDL_mixer.Mix_OpenAudio(audioOption.hz, SDL_mixer.MIX_DEFAULT_FORMAT, audioOption.ch, audioOption.cs) != 0)
             {
-                if (!audio_option.trylow || audio_option.ch == 1)
+                if (!audioOption.trylow || audioOption.ch == 1)
                 {
                     SDL.SDL_DestroyWindow(window);
                     SDL.SDL_DestroyRenderer(renderer);
@@ -110,13 +110,13 @@ public static class Framework
                     SDL_mixer.Mix_Quit();
                     throw new JyunrcaeaFrameworkException($"SDL mixer 오디오를 여는데 실패하였습니다. SDL mixer Error : {SDL_mixer.Mix_GetError()}");
                 }
-                audio_option.ch = (audio_option.ch == 7) ? 6 : audio_option.ch--;
+                audioOption.ch = (audioOption.ch == 7) ? 6 : audioOption.ch--;
             }
             else setting = false;
         }
         #endregion
         //만약 32bit 일경우 계속 렌더링 불가능
-        if (IntPtr.Size != 4 && (Display.KeepRenderingWhenResize = KeepRenderingWhenResize))
+        if (IntPtr.Size != 4 && (Display.KeepRenderingWhenResize = keepRenderingWhenResize))
         {
             SDL.SDL_SetEventFilter((_, eventPtr) =>
                 {
@@ -227,6 +227,7 @@ public static class Framework
         }
     }
 
+    [Obsolete("I think this is unstable and causing bottleneck.")]
     static async void AsyncEventProcess(SDL.SDL_Event e)
     {
         await Task.Run(() => EventProcess(e));
