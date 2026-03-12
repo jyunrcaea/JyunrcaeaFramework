@@ -20,6 +20,7 @@ TestApp/*.*
 *.userosscache
 *.sln.docstates
 .dotnet
+.idea
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
