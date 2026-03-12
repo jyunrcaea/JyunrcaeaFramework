@@ -1,4 +1,4 @@
-﻿#define WINDOWS
+#define WINDOWS
 using SDL2;
 
 namespace JyunrcaeaFramework
@@ -211,7 +211,7 @@ namespace JyunrcaeaFramework
                         SDL_mixer.Mix_Quit();
                         throw new JyunrcaeaFrameworkException($"SDL mixer 오디오를 여는데 실패하였습니다. SDL mixer Error : {SDL_mixer.Mix_GetError()}");
                     }
-                    audio_option.ch = (audio_option.ch == 7) ? 6 : audio_option.ch--;
+                    audio_option.ch = (audio_option.ch == 7) ? 6 : --audio_option.ch;
                 }
                 else setting = false;
             }
@@ -616,7 +616,7 @@ namespace JyunrcaeaFramework
         {
             base.Update(ms);
             int i = 0;
-            while (this.Objects[i] is not ZeneretyDrawableObject || this.Objects[i] is not DynamicGroup)
+            while (this.Objects[i] is not ZeneretyDrawableObject && this.Objects[i] is not DynamicGroup)
             {
                 // 그릴수 있는 객체가 없는경우
                 if (i++ >= this.Objects.Count)
@@ -1423,20 +1423,20 @@ namespace JyunrcaeaFramework
             if (Framework.Running)
             foreach(var obj in this)
             {
-                if (obj is Group)
+                if (obj is Group group)
                 {
-                    ((Group)obj).Release();
-                    return;
+                    group.Release();
+                    continue;
                 }
-                if (obj is Image)
+                if (obj is Image image)
                 {
-                    ((Image)obj).Texture.Free();
-                    return;
+                    image.Texture.Free();
+                    continue;
                 }
-                if (obj is Text)
+                if (obj is Text text)
                 {
-                    ((Text)obj).TFT.Free();
-                    return;
+                    text.TFT.Free();
+                    continue;
                 }  
             }
         }
