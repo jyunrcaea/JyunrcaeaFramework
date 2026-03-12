@@ -7,9 +7,11 @@
 FunctionTest
 Jyunrcaea
 Zenerety
+TestApp
 FunctionTest/*.*
 Jyunrcaea/*.*
 Zenerety/*.*
+TestApp/*.*
 
 # User-specific files
 *.rsuser
@@ -17,6 +19,7 @@ Zenerety/*.*
 *.user
 *.userosscache
 *.sln.docstates
+.dotnet
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
