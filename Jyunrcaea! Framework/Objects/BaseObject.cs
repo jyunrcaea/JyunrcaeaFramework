@@ -1,3 +1,6 @@
+using JyunrcaeaFramework.Collections;
+using JyunrcaeaFramework.Core;
+
 namespace JyunrcaeaFramework.Objects;
 
 /// <summary>
@@ -62,4 +65,9 @@ public class BaseObject
     internal virtual void Render(IntPtr renderer) { }
 
     internal virtual void UpdatePosition(int parentX, int parentY) { }
+
+    /// <summary>
+    /// 객체의 메모리 및 리소스를 정리합니다.
+    /// </summary>
+    public virtual void Destroy() { }
 }

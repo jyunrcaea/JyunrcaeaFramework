@@ -1,34 +1,52 @@
+﻿using JyunrcaeaFramework.Core;
 using SDL2;
 
 namespace JyunrcaeaFramework.Graphics;
 
+/// <summary>
+/// Texture loaded from XPM text data stored in memory.
+/// </summary>
 public class TextureFromStringForXPM : Texture
 {
+    /// <summary>
+    /// Raw XPM lines used to create this texture.
+    /// </summary>
+    public string[] StringForXPM = null!;
+
+    /// <summary>
+    /// Creates a texture from an in-memory XPM string array.
+    /// </summary>
     public TextureFromStringForXPM(string[] xpmdata)
     {
-        this.StringForXPM = xpmdata;
+        StringForXPM = xpmdata;
+
         IntPtr surface = SDL_image.IMG_ReadXPMFromArray(StringForXPM);
         if (surface == IntPtr.Zero)
-            throw new JyunrcaeaFrameworkException($"불러올수 없는 XPM 문자열 SDL Error: {SDL.SDL_GetError()}");
-        this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer , surface);
-        SDL.SDL_FreeSurface(surface);
-        if (this.texture == IntPtr.Zero)
-            throw new JyunrcaeaFrameworkException($"텍스쳐로 변환 실패함 SDL Error: {SDL.SDL_GetError()}");
-        this.needresettexture = true;
-        SDL.SDL_QueryTexture(this.texture , out _ , out _ , out this.absolutesrc.x , out this.absolutesrc.y);
-        if (!this.FixedRenderRange)
         {
-            this.src.w = this.absolutesrc.x;
-            this.src.h = this.absolutesrc.y;
+            throw new JyunrcaeaFrameworkException($"Failed to load XPM string data. SDL Error: {SDL.SDL_GetError()}");
         }
+
+        texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer, surface);
+        SDL.SDL_FreeSurface(surface);
+
+        if (texture == IntPtr.Zero)
+        {
+            throw new JyunrcaeaFrameworkException($"Failed to create texture from XPM. SDL Error: {SDL.SDL_GetError()}");
+        }
+
+        needresettexture = true;
+        SDL.SDL_QueryTexture(texture, out _, out _, out absolutesrc.x, out absolutesrc.y);
+        if (!FixedRenderRange)
+        {
+            src.w = absolutesrc.x;
+            src.h = absolutesrc.y;
+        }
+
         Ready();
     }
 
-    public string[] StringForXPM = null!;
-
     public override void Dispose()
     {
-        SDL.SDL_DestroyTexture(this.texture);
-        this.texture = IntPtr.Zero;
+        base.Dispose();
     }
 }

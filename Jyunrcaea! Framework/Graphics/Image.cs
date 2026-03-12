@@ -1,19 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using JyunrcaeaFramework.Core;
+using JyunrcaeaFramework.EventSystem;
+using JyunrcaeaFramework.Objects;
+using SDL2;
 
 namespace JyunrcaeaFramework.Graphics;
-/// <summary>
-/// ???? ???? ?????.
-/// </summary>
 public class Image : ExtendDrawableObject, Animation.Available.Opacity
 {
-    /// <summary>
-    /// Image ??? ?????.
-    /// </summary>
-    /// <param name="Texture">???</param>
     public Image(Texture? Texture = null)
     {
         if (Texture is null)
@@ -42,7 +34,11 @@ public class Image : ExtendDrawableObject, Animation.Available.Opacity
 
     internal override void Render(IntPtr renderer)
     {
-        SDL.SDL_RenderCopyEx(renderer, this.Texture.texture, ref this.Texture.src, ref this.renderPosition, this.Rotation, IntPtr.Zero, SDL.SDL_RendererFlip.SDL_FLIP_NONE);
+        _ = SDL.SDL_RenderCopyEx(renderer, this.Texture.texture, ref this.Texture.src, ref this.renderPosition, this.Rotation, IntPtr.Zero, SDL.SDL_RendererFlip.SDL_FLIP_NONE);
+    }
+
+    public override void Destroy()
+    {
+        this.Texture?.Dispose();
     }
 }
-

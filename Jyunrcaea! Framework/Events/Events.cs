@@ -1,3 +1,5 @@
+using JyunrcaeaFramework.Structs;
+
 namespace JyunrcaeaFramework.EventSystem;
 
 /// <summary>
@@ -10,9 +12,9 @@ public class Events
     {
         public void Prepare();
     }
-    public interface IRelease
+    public interface IDestroy
     {
-        public void Release();
+        public void Destroy();
     }
 
     /// <summary>
@@ -191,7 +193,7 @@ public interface IAllEventInterface :
     Events.IMouseFocusOut,
     Events.IInputText,
     Events.IPrepare,
-    Events.IRelease
+    Events.IDestroy
 {
 
 }

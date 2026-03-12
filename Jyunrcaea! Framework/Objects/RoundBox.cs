@@ -1,3 +1,6 @@
+using JyunrcaeaFramework.Graphics;
+using SDL2;
+
 namespace JyunrcaeaFramework.Objects;
 
 /// <summary>
@@ -17,7 +20,7 @@ public class RoundBox : Box
 
     internal override void Render(IntPtr renderer)
     {
-        SDL_gfx.roundedBoxRGBA(
+        _ = SDL_gfx.roundedBoxRGBA(
             renderer,
             (short)this.renderPosition.x,
             (short)this.renderPosition.y,

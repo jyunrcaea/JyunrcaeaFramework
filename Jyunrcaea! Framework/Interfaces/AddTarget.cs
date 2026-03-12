@@ -1,3 +1,5 @@
+using JyunrcaeaFramework.Objects;
+
 namespace JyunrcaeaFramework.Interfaces;
 
 class AddTarget

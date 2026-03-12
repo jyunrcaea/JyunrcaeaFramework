@@ -1,3 +1,5 @@
+using JyunrcaeaFramework.Core;
+using JyunrcaeaFramework.Objects;
 using SDL2;
 
 namespace JyunrcaeaFramework.Utils;

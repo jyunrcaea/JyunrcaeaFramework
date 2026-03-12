@@ -1,3 +1,6 @@
+using JyunrcaeaFramework.Core;
+using JyunrcaeaFramework.Structs;
+
 namespace JyunrcaeaFramework.Objects;
 
 /// <summary>

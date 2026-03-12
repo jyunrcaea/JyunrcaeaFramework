@@ -1,3 +1,9 @@
+using JyunrcaeaFramework.Collections;
+using JyunrcaeaFramework.Core;
+using JyunrcaeaFramework.Objects;
+using JyunrcaeaFramework.Structs;
+using JyunrcaeaFramework.Utils;
+
 namespace JyunrcaeaFramework.EventSystem;
 
 /// <summary>
@@ -167,7 +173,8 @@ public static class Animation
             /// <param name="FunctionWhenFinished">완료되었을때 실행할 함수 (null 일경우 아무것도 하지 않음)</param>
             /// <param name="TimeClaculator">애니메이션 계산기 (null 일경우 기본)</param>
             /// <param name="RepeatCount">반복 횟수, 0일경우 무한</param>
-            public Movement(BaseObject Target,int? X = null,int? Y = null,double? StartTime = null, double AnimationTime = 1000,uint RepeatCount = 1, FunctionForAnimation? TimeClaculator = null, Action<BaseObject>? FunctionWhenFinished = null) : base(Target,StartTime,AnimationTime,RepeatCount,FunctionWhenFinished,TimeClaculator) {
+            public Movement(BaseObject Target,int? X = null,int? Y = null,double? StartTime = null, double AnimationTime = 1000,uint RepeatCount = 1, FunctionForAnimation? TimeClaculator = null, Action<BaseObject>? FunctionWhenFinished = null)
+                : base(Target,StartTime,AnimationTime,RepeatCount,FunctionWhenFinished,TimeClaculator) {
                 BX = Target.X;
                 BY = Target.Y;
                 if (X is null)
@@ -192,7 +199,8 @@ public static class Animation
             }
 
             bool MX, MY;
-            int BX, BY, AX, AY, LX, LY;
+            readonly int BX, BY;
+            int AX, AY, LX, LY;
             internal override void Update()
             {
                 if (CheckTime()) return;

@@ -1,10 +1,9 @@
+using JyunrcaeaFramework.Core;
+using JyunrcaeaFramework.Structs;
 using SDL2;
 
 namespace JyunrcaeaFramework.Graphics;
 
-/// <summary>
-/// ??? ??? ?? ??????.
-/// </summary>
 public class Texture : IDisposable
 {
     internal Texture() { }
@@ -13,7 +12,7 @@ public class Texture : IDisposable
         this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer , pointer);
         if (this.texture == IntPtr.Zero)
         {
-            throw new JyunrcaeaFrameworkException("???? ????? ???????.");
+            throw new JyunrcaeaFrameworkException($"텍스쳐를 불러오지 못했습니다. SDL Error: {SDL.SDL_GetError()}");
         }
         SDL.SDL_QueryTexture(this.texture , out _ , out _ , out this.absolutesrc.x , out this.absolutesrc.y);
         this.needresettexture = true;
@@ -53,10 +52,6 @@ public class Texture : IDisposable
 
     public int Height => absolutesrc.y;
 
-    /// <summary>
-    /// ?? ??? ??? ?? ???? ???? ?? ?????.
-    /// RenderRange? null ??? ?? ?? ?? ? ??? false? ???.
-    /// </summary>
     public bool AutoRange { get; internal set; } = true;
 
     internal byte alpha = 255;
@@ -103,7 +98,7 @@ public class Texture : IDisposable
         if (this.texture == IntPtr.Zero)
             return;
         if (SDL.SDL_SetTextureBlendMode(this.texture , SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) < 0)
-            throw new JyunrcaeaFrameworkException($"???? ??? ?? ??? ???????. SDL Error: {SDL.SDL_GetError()}");
+            throw new JyunrcaeaFrameworkException($"SDL Error: {SDL.SDL_GetError()}");
         if (alpha != 255)
             SDL.SDL_SetTextureAlphaMod(texture , alpha);
     }

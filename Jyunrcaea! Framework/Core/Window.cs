@@ -1,3 +1,4 @@
+using JyunrcaeaFramework.Graphics;
 using SDL2;
 
 namespace JyunrcaeaFramework.Core;

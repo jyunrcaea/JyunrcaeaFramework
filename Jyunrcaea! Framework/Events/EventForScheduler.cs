@@ -1,3 +1,5 @@
+using JyunrcaeaFramework.Core;
+
 namespace JyunrcaeaFramework.EventSystem;
 
 public class EventForScheduler

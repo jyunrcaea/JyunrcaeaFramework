@@ -1,3 +1,9 @@
+using JyunrcaeaFramework.Core;
+using JyunrcaeaFramework.EventSystem;
+using JyunrcaeaFramework.Graphics;
+using JyunrcaeaFramework.Structs;
+using SDL2;
+
 namespace JyunrcaeaFramework.Objects;
 
 /// <summary>
@@ -28,7 +34,7 @@ public class Box : DrawableObject, Animation.Available.Opacity, Animation.Availa
 
     internal override void Render(IntPtr renderer)
     {
-        SDL.SDL_SetRenderDrawColor(renderer, this.Color.colorbase.r, this.Color.colorbase.g, this.Color.colorbase.b, this.Color.colorbase.a);
-        SDL.SDL_RenderFillRect(renderer, ref this.renderPosition);
+        _ = SDL.SDL_SetRenderDrawColor(renderer, this.Color.colorbase.r, this.Color.colorbase.g, this.Color.colorbase.b, this.Color.colorbase.a);
+        _ = SDL.SDL_RenderFillRect(renderer, ref this.renderPosition);
     }
 }

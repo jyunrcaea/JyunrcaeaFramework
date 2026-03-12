@@ -1,3 +1,7 @@
+using JyunrcaeaFramework.Collections;
+using JyunrcaeaFramework.Core;
+using JyunrcaeaFramework.Objects;
+
 namespace JyunrcaeaFramework.Interfaces;
 
 /// <summary>

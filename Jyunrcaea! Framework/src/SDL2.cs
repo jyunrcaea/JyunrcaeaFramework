@@ -63,7 +63,7 @@ namespace SDL2
 		internal static T PtrToStructure<T>(IntPtr ptr) {
 #endif
 #if NETSTANDARD2_0_OR_GREATER || NET6_0_OR_GREATER
-			return Marshal.PtrToStructure<T>(ptr);
+			return Marshal.PtrToStructure<T>(ptr)!;
 #else
 			return (T)Marshal.PtrToStructure(ptr, typeof(T));
 #endif
@@ -136,7 +136,7 @@ namespace SDL2
 		{
 			if (s == IntPtr.Zero)
 			{
-				return null;
+				return string.Empty;
 			}
 
 			/* We get to do strlen ourselves! */
@@ -1192,7 +1192,7 @@ namespace SDL2
 			}
 			else
 			{
-				callback = null;
+				callback = null!;
 			}
 		}
 
@@ -5569,7 +5569,7 @@ namespace SDL2
 			}
 			else
 			{
-                filter = null;
+                filter = null!;
 			}
 			return retval;
 		}

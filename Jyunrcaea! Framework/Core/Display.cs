@@ -1,3 +1,4 @@
+using JyunrcaeaFramework.Collections;
 using SDL2;
 
 namespace JyunrcaeaFramework.Core;
@@ -11,12 +12,14 @@ public static class Display
     /// <summary>
     /// Zenerety 렌더링 방식에 사용되는 장면 탐색기입니다.
     /// </summary>
-    public static TopGroup Target {
+    public static TopGroup Target
+    {
         get => _target;
-        set {
+        set
+        {
             if (Framework.Running)
             {
-                _target.Release();
+                _target.Destroy();
                 value.Prepare();
             }
             _target = value;
@@ -46,10 +49,13 @@ public static class Display
     /// 무한 프레임을 하고 싶다면 적당히 큰 수를 넣으면 됩니다.
     /// (주의) 프레임워크를 초기화 한뒤 사용해야합니다.
     /// </summary>
-    public static float FrameLateLimit {
+    public static float FrameLateLimit
+    {
         get => fps;
-        set {
-            if ((fps = value) == 0) {
+        set
+        {
+            if ((fps = value) == 0)
+            {
                 if (dm.refresh_rate == 0) throw new JyunrcaeaFrameworkException("알수없는 디스플레이 정보");
                 fps = dm.refresh_rate;
             }

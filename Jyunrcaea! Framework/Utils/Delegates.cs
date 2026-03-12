@@ -1,3 +1,5 @@
+using JyunrcaeaFramework.Structs;
+
 namespace JyunrcaeaFramework.Utils;
 
 public delegate void NormalEvent();

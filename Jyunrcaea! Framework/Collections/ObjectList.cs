@@ -1,3 +1,7 @@
+using JyunrcaeaFramework.Core;
+using JyunrcaeaFramework.Interfaces;
+using JyunrcaeaFramework.Objects;
+
 namespace JyunrcaeaFramework.Collections;
 
 /// <summary>
@@ -29,12 +33,28 @@ public class ObjectList : List<BaseObject>, IDisposable
             var target = AddList.Dequeue();
             if (target.index == -1) base.Add(target.target);
             else base.Insert(target.index, target.target);
-            if (target.target is Text)
-            {
-                Console.WriteLine(((Text)target.target).TFT.ResourceReady);
-            }
-            //AddProcedure(target);
         }
+    }
+
+    bool RemoveFromPendingQueue(BaseObject obj)
+    {
+        if (AddList.Count == 0) return false;
+
+        bool removed = false;
+        Queue<AddTarget> newQueue = new(AddList.Count);
+        while (AddList.Count != 0)
+        {
+            var target = AddList.Dequeue();
+            if (!removed && ReferenceEquals(target.target, obj))
+            {
+                removed = true;
+                continue;
+            }
+            newQueue.Enqueue(target);
+        }
+
+        AddList = newQueue;
+        return removed;
     }
 
     void AddProcedure(BaseObject obj)
@@ -66,7 +86,7 @@ public class ObjectList : List<BaseObject>, IDisposable
 
     public new void AddRange(IEnumerable<BaseObject> objs)
     {
-        foreach(var a in objs)
+        foreach (var a in objs)
         {
             Add(a);
         }
@@ -74,13 +94,13 @@ public class ObjectList : List<BaseObject>, IDisposable
 
     public void AddRange(params BaseObject[] objs)
     {
-        for (int i =0;i < objs.Length;i++)
+        for (int i = 0; i < objs.Length; i++)
         {
             this.Add(objs[i]);
         }
     }
 
-    public void AddRange(int index = 0,params BaseObject[] objs)
+    public void AddRange(int index = 0, params BaseObject[] objs)
     {
         for (int i = 0; i < objs.Length; i++)
         {
@@ -88,11 +108,12 @@ public class ObjectList : List<BaseObject>, IDisposable
         }
     }
 
-    public new void Insert(int index,BaseObject zo)
+    public new void Insert(int index, BaseObject zo)
     {
         if (zo.Parent is not null) throw new JyunrcaeaFrameworkException("이미 다른 부모 객체에게 상속된 객체입니다.");
         zo.Parent = this.Parent;
-        if (this.Parent.ResourceReady) {
+        if (this.Parent.ResourceReady)
+        {
             AddProcedure(zo);
             this.AddList.Enqueue(new(zo, index));
         }
@@ -100,14 +121,15 @@ public class ObjectList : List<BaseObject>, IDisposable
     }
 
 
-    public bool Switch(BaseObject target,int index = -1)
+    public bool Switch(BaseObject target, int index = -1)
     {
         if (!base.Remove(target)) return false;
 
         if (index == -1)
         {
             base.Add(target);
-        } else
+        }
+        else
         {
             base.Insert(index, target);
         }
@@ -120,46 +142,42 @@ public class ObjectList : List<BaseObject>, IDisposable
     /// <param name="obj">객체</param>
     public new bool Remove(BaseObject obj)
     {
-        if(base.Remove(obj) is false) return false;
+        bool removed = base.Remove(obj);
+        if (!removed)
+        {
+            removed = RemoveFromPendingQueue(obj);
+        }
+        if (!removed) return false;
+
+        obj.Destroy();
+        this.Ancestor?.EventManager.Remove(obj);
         obj.Parent = null;
-        if (obj is Group)
-        {
-            ((Group)obj).Release();
-            return true;
-        }
-        if (obj is Image)
-        {
-            ((Image)obj).Texture.Dispose();
-            return true;
-        }
-        if (obj is Text)
-        {
-            ((Text)obj).TFT.Dispose();
-            return true;
-        }
         return true;
+    }
+
+    public new void RemoveAt(int index)
+    {
+        Remove(this[index]);
+    }
+
+    public new void Clear()
+    {
+        while (this.Count != 0)
+        {
+            RemoveAt(this.Count - 1);
+        }
+
+        while (AddList.Count != 0)
+        {
+            var target = AddList.Dequeue().target;
+            target.Destroy();
+            this.Ancestor?.EventManager.Remove(target);
+            target.Parent = null;
+        }
     }
 
     public void Dispose()
     {
-        if (Framework.Running)
-            foreach(var obj in this)
-            {
-                if (obj is Group)
-                {
-                    ((Group)obj).Release();
-                    return;
-                }
-                if (obj is Image)
-                {
-                    ((Image)obj).Texture.Dispose();
-                    return;
-                }
-                if (obj is Text)
-                {
-                    ((Text)obj).TFT.Dispose();
-                    return;
-                }  
-            }
+        Clear();
     }
 }

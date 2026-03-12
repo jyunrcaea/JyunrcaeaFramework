@@ -1,27 +1,53 @@
+﻿using JyunrcaeaFramework.Core;
 using SDL2;
 
 namespace JyunrcaeaFramework.Graphics;
 
+/// <summary>
+/// Texture loaded from a text file containing XPM data.
+/// </summary>
 public class TextureFromTextFileForXPM : Texture
 {
-    public TextureFromTextFileForXPM(string FilePath)
+    /// <summary>
+    /// Path of the XPM source file.
+    /// </summary>
+    public string FilePath = string.Empty;
+
+    /// <summary>
+    /// Creates a texture by reading an XPM text file from disk.
+    /// </summary>
+    public TextureFromTextFileForXPM(string filePath)
     {
-        this.FilePath = FilePath;
-        string[] data = File.ReadAllLines(FilePath);
+        FilePath = filePath;
+
+        string[] data = File.ReadAllLines(filePath);
         IntPtr surface = SDL_image.IMG_ReadXPMFromArray(data);
         if (surface == IntPtr.Zero)
-            throw new JyunrcaeaFrameworkException($"불러올수 없는 XPM 문자열 SDL Error: {SDL.SDL_GetError()}");
-        this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer , surface);
+        {
+            throw new JyunrcaeaFrameworkException($"Failed to load XPM text file. SDL Error: {SDL.SDL_GetError()}");
+        }
+
+        texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer, surface);
         SDL.SDL_FreeSurface(surface);
-        if (this.texture == IntPtr.Zero)
-            throw new JyunrcaeaFrameworkException($"텍스쳐로 변환 실패함 SDL Error: {SDL.SDL_GetError()}");
+
+        if (texture == IntPtr.Zero)
+        {
+            throw new JyunrcaeaFrameworkException($"Failed to create texture from XPM file. SDL Error: {SDL.SDL_GetError()}");
+        }
+
+        needresettexture = true;
+        SDL.SDL_QueryTexture(texture, out _, out _, out absolutesrc.x, out absolutesrc.y);
+        if (!FixedRenderRange)
+        {
+            src.w = absolutesrc.x;
+            src.h = absolutesrc.y;
+        }
+
         Ready();
     }
 
-    public string FilePath = string.Empty;
-
     public override void Dispose()
     {
-        SDL.SDL_DestroyTexture(this.texture);
+        base.Dispose();
     }
 }

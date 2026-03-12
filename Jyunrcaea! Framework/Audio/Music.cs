@@ -1,9 +1,5 @@
+using JyunrcaeaFramework.Core;
 using SDL2;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace JyunrcaeaFramework.Audio;
 
@@ -13,31 +9,40 @@ public class Music : PlayableSound
     {
         this.sound = SDL_mixer.Mix_LoadMUS(FileName);
         if (this.sound == IntPtr.Zero)
-            throw new JyunrcaeaFrameworkException($"??? ????? ???????. SDL mixer Error: {SDL_mixer.Mix_GetError()}");
+            throw new JyunrcaeaFrameworkException($"음악 파일을 불러오는데 실패했습니다. SDL mixer Error: {SDL_mixer.Mix_GetError()}");
     }
 
     public override void Dispose()
     {
+        if (this.sound == IntPtr.Zero)
+        {
+            return;
+        }
+
         SDL_mixer.Mix_FreeMusic(this.sound);
+        this.sound = IntPtr.Zero;
         GC.SuppressFinalize(this);
     }
+
     /// <summary>
-    /// ??? ?????.
+    /// 음악을 재생합니다.
     /// </summary>
-    /// <param name="music">??</param>
-    /// <returns>??? true</returns>
+    /// <param name="music">음악</param>
+    /// <returns>성공시 true</returns>
     public static bool Play(Music music)
     {
-        playingmusic = music;
-        if (SDL_mixer.Mix_PlayMusic(music.sound , 1) == -1)
+        if (SDL_mixer.Mix_PlayMusic(music.sound, 0) == -1)
             return false;
+
+        playingmusic = music;
         return true;
     }
+
     public bool Play() => Music.Play(this);
 
     public static bool Resume()
     {
-        if (SDL_mixer.Mix_PlayingMusic() != 0)
+        if (SDL_mixer.Mix_PlayingMusic() == 0)
             return false;
         SDL_mixer.Mix_ResumeMusic();
         return true;
@@ -47,9 +52,11 @@ public class Music : PlayableSound
     public static Music? NowPlaying => playingmusic;
 
     /// <summary>
-    /// ?? ??? ?????. (??? ?? ????.)
-    /// 'PlayReady' ? ?????, ? ??? ???? ?? ? ? ??? ???? ????.
+    /// 음악 제목을 반환합니다. (지원하지 않을 수 있음)
     /// </summary>
+    /// <remarks>
+    /// PlayReady 를 사용해야, 이 속성이 올바른 값을 반환할 수 있는 파일인지 확인할 수 있습니다.
+    /// </remarks>
     public string Title => SDL_mixer.Mix_GetMusicTitle(this.sound);
 
     public static void Skip()
@@ -65,24 +72,35 @@ public class Music : PlayableSound
     }
 
     /// <summary>
-    /// ??? ???? ?????.
+    /// 현재 음악의 위치를 가져오거나 설정합니다.
     /// </summary>
-    public static double NowTime {
+    public static double NowTime
+    {
         get { return NowPlaying == null ? -1 : SDL_mixer.Mix_GetMusicPosition(NowPlaying.sound); }
-        set {
+        set
+        {
             if (SDL_mixer.Mix_SetMusicPosition(value) == -1)
-                throw new JyunrcaeaFrameworkException("??? ??");
+                throw new JyunrcaeaFrameworkException("음악 이동 실패");
         }
     }
 
     internal static void Finished()
     {
-        if (SDL_mixer.Mix_PlayingMusic() == 0)
+        var finishedMusic = playingmusic;
+        playingmusic = null;
+
+        finishedMusic?.Dispose();
+
+        if (MusicFinished is null)
+        {
             return;
-        if (NowPlaying != null)
-            NowPlaying.Dispose();
-        if (MusicFinished != null)
-            MusicFinished();
+        }
+
+        var nextMusic = MusicFinished();
+        if (nextMusic is not null)
+        {
+            Play(nextMusic);
+        }
     }
 
     public static FunctionWhenMusicFinished? MusicFinished = null;

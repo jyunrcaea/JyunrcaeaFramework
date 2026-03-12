@@ -1,3 +1,8 @@
+using JyunrcaeaFramework.Core;
+using JyunrcaeaFramework.EventSystem;
+using JyunrcaeaFramework.Graphics;
+using SDL2;
+
 namespace JyunrcaeaFramework.Objects;
 
 /// <summary>
@@ -17,11 +22,14 @@ public class Circle : DrawableObject, Animation.Available.Opacity
 
     public override byte Opacity { get => Color.Alpha; set => Color.Alpha = value; }
 
-    internal override int RealWidth => (int)(Radius * 2 * (RelativeSize ? Window.AppropriateSize : 1));
-    internal override int RealHeight => (int)(Radius * 2 * (RelativeSize ? Window.AppropriateSize : 1));
+    internal override int RealWidth => (int)(Radius * 2 * scale.X * (RelativeSize ? Window.AppropriateSize : 1));
+    internal override int RealHeight => (int)(Radius * 2 * scale.Y * (RelativeSize ? Window.AppropriateSize : 1));
 
     internal override void Render(IntPtr renderer)
     {
-        SDL_gfx.filledCircleRGBA(renderer, (short)this.renderPosition.x, (short)this.renderPosition.y, this.Radius, this.Color.colorbase.r, this.Color.colorbase.g, this.Color.colorbase.b, this.Color.colorbase.a);
+        short drawRadius = (short)Math.Max(0, Math.Min(this.renderPosition.w, this.renderPosition.h) / 2);
+        short centerX = (short)(this.renderPosition.x + this.renderPosition.w / 2);
+        short centerY = (short)(this.renderPosition.y + this.renderPosition.h / 2);
+        _ = SDL_gfx.filledCircleRGBA(renderer, centerX, centerY, drawRadius, this.Color.colorbase.r, this.Color.colorbase.g, this.Color.colorbase.b, this.Color.colorbase.a);
     }
 }

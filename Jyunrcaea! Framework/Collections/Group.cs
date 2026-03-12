@@ -1,3 +1,8 @@
+using JyunrcaeaFramework.Core;
+using JyunrcaeaFramework.EventSystem;
+using JyunrcaeaFramework.Objects;
+using JyunrcaeaFramework.Structs;
+
 namespace JyunrcaeaFramework.Collections;
 
 /// <summary>
@@ -57,18 +62,17 @@ public class Group : BaseObject, Events.IUpdate, Events.IResize, Events.IPrepare
     }
 
     /// <summary>
-    /// 하위 객체들의 리소스를 해제하는 함수입니다. (override 할 경우 base.Release() 가 한번 실행되어야 합니다.)
+    /// 하위 객체들의 리소스를 해제하는 함수입니다.
     /// </summary>
-    public virtual void Release()
+    public override void Destroy()
     {
         this.ResourceReady = false;
         for (int i = 0; i < this.Objects.Count; i++)
         {
-            if (this.Objects[i] is Group)
-            {
-                ((Group)this.Objects[i]).Release();
-                continue;
-            }
+            var target = this.Objects[i];
+            target.Destroy();
+            this.Ancestor?.EventManager.Remove(target);
+            target.Parent = null;
         }
     }
 
