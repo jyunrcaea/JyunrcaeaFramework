@@ -59,19 +59,9 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
-		  <Pack>True</Pack>
-		  <PackagePath>\</PackagePath>
-	  </Content>
-		<Pack>True</Pack>
-		<PackagePath>\</PackagePath>
-	</Content>
   </ItemGroup>
 
   <ItemGroup>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="libfreetype-6.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -85,12 +75,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="libwebp-7.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="test.png">
