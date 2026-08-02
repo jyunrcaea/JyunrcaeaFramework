@@ -70,7 +70,7 @@ namespace JyunrcaeaFramework
 
         internal static void ObjectRangeDraw(Color c,ref SDL.FRect r)
         {
-            SDL.SDL_SetRenderDrawColor(Framework.renderer, c.colorbase.r, c.colorbase.g, c.colorbase.b, c.colorbase.a);
+            SDL.SDL_SetRenderDrawColor(Framework.renderer, c.colorbase.R, c.colorbase.G, c.colorbase.B, c.colorbase.A);
             SDL.SDL_RenderDrawRect(Framework.renderer, ref r);
         }
 
@@ -241,8 +241,8 @@ namespace JyunrcaeaFramework
                             case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED:
                                 return 1;
                             case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
-                                Window.position.x = e.window.data1;
-                                Window.position.y = e.window.data2;
+                                Window.position.X = e.window.data1;
+                                Window.position.Y = e.window.data2;
                                 Framework.Function.WindowMove();
                                 Framework.Function.Draw();
                                 return 0;
@@ -306,7 +306,7 @@ namespace JyunrcaeaFramework
             FrameworkFunction.updatetime = 0;
             FrameworkFunction.endtime = Display.framelatelimit;
             frametimer.Start();
-            SDL.SDL_SetRenderDrawColor(renderer, Window.BackgroundColor.colorbase.r, Window.BackgroundColor.colorbase.g, Window.BackgroundColor.colorbase.b, Window.BackgroundColor.colorbase.a);
+            SDL.SDL_SetRenderDrawColor(renderer, Window.BackgroundColor.colorbase.R, Window.BackgroundColor.colorbase.G, Window.BackgroundColor.colorbase.B, Window.BackgroundColor.colorbase.A);
             SDL.SDL_RenderClear(renderer);
             if (ShowWindow) SDL.SDL_ShowWindow(Framework.window);
             RunningLoop();
@@ -485,19 +485,19 @@ namespace JyunrcaeaFramework
                         SDL.FRect r = ((ZeneretyDrawableObject)group.Objects[i]).renderposition;
                         GFX.roundedBoxRGBA(
                             Framework.renderer,
-                            (short)r.x,
-                            (short)r.y,
-                            (short)(r.x + r.w),
-                            (short)(r.y + r.h),
+                            (short)r.X,
+                            (short)r.Y,
+                            (short)(r.X + r.W),
+                            (short)(r.Y + r.H),
                             ((RoundBox)group.Objects[i]).Radius,
-                            ((Box)group.Objects[i]).Color.colorbase.r,
-                            ((Box)group.Objects[i]).Color.colorbase.g,
-                            ((Box)group.Objects[i]).Color.colorbase.b,
-                            ((Box)group.Objects[i]).Color.colorbase.a
+                            ((Box)group.Objects[i]).Color.colorbase.R,
+                            ((Box)group.Objects[i]).Color.colorbase.G,
+                            ((Box)group.Objects[i]).Color.colorbase.B,
+                            ((Box)group.Objects[i]).Color.colorbase.A
                         );
                         continue;
                     }
-                    SDL.SDL_SetRenderDrawColor(Framework.renderer, ((Box)group.Objects[i]).Color.colorbase.r, ((Box)group.Objects[i]).Color.colorbase.g, ((Box)group.Objects[i]).Color.colorbase.b, ((Box)group.Objects[i]).Color.colorbase.a);
+                    SDL.SDL_SetRenderDrawColor(Framework.renderer, ((Box)group.Objects[i]).Color.colorbase.R, ((Box)group.Objects[i]).Color.colorbase.G, ((Box)group.Objects[i]).Color.colorbase.B, ((Box)group.Objects[i]).Color.colorbase.A);
                     SDL.SDL_RenderFillRect(Framework.renderer, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition);
                     continue;
                 }
@@ -516,7 +516,7 @@ namespace JyunrcaeaFramework
 
                 if (group.Objects[i] is Circle)
                 {
-                    GFX.filledCircleRGBA(Framework.renderer, (short)((Circle)group.Objects[i]).renderposition.x, (short)((Circle)group.Objects[i]).renderposition.y, ((Circle)group.Objects[i]).Radius, ((Circle)group.Objects[i]).Color.colorbase.r, ((Circle)group.Objects[i]).Color.colorbase.g, ((Circle)group.Objects[i]).Color.colorbase.b, ((Circle)group.Objects[i]).Color.colorbase.a);
+                    GFX.filledCircleRGBA(Framework.renderer, (short)((Circle)group.Objects[i]).renderposition.X, (short)((Circle)group.Objects[i]).renderposition.Y, ((Circle)group.Objects[i]).Radius, ((Circle)group.Objects[i]).Color.colorbase.R, ((Circle)group.Objects[i]).Color.colorbase.G, ((Circle)group.Objects[i]).Color.colorbase.B, ((Circle)group.Objects[i]).Color.colorbase.A);
                     continue;
                 }
             }
@@ -567,10 +567,10 @@ namespace JyunrcaeaFramework
                     DrawPos.y += zdo.Ry;
                     if (zdo.DrawX != HorizontalPositionType.Right) DrawPos.x -= zdo.DrawX == HorizontalPositionType.Middle ? (int)(DrawPos.w * 0.5f) : DrawPos.w;
                     if (zdo.DrawY != VerticalPositionType.Bottom) DrawPos.y -= zdo.DrawY == VerticalPositionType.Middle ? (int)(DrawPos.h * 0.5f) : DrawPos.h;
-                    zdo.renderposition.w = DrawPos.w;
-                    zdo.renderposition.h = DrawPos.h;
-                    zdo.renderposition.x = DrawPos.x;
-                    zdo.renderposition.y = DrawPos.y;
+                    zdo.renderposition.W = DrawPos.w;
+                    zdo.renderposition.H = DrawPos.h;
+                    zdo.renderposition.X = DrawPos.x;
+                    zdo.renderposition.Y = DrawPos.y;
                     continue;
                 }
 
@@ -628,24 +628,24 @@ namespace JyunrcaeaFramework
                     return;
                 }
             }
-            int left = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.x, right = left + ((ZeneretyDrawableObject)this.Objects[i]).renderposition.w;
-            int top = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.y, bottom = top + ((ZeneretyDrawableObject)this.Objects[i]).renderposition.h;
+            int left = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.X, right = left + ((ZeneretyDrawableObject)this.Objects[i]).renderposition.W;
+            int top = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.Y, bottom = top + ((ZeneretyDrawableObject)this.Objects[i]).renderposition.H;
             int ww, hh;
             for (;i<this.Objects.Count;i++)
             {
                 if (this.Objects[i] is ZeneretyDrawableObject)
                 {
                     // 왼쪽
-                    ww = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.x;
+                    ww = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.X;
                     if (ww < left) left = ww;
                     // 오른쪽
-                    ww += ((ZeneretyDrawableObject)this.Objects[i]).renderposition.w;
+                    ww += ((ZeneretyDrawableObject)this.Objects[i]).renderposition.W;
                     if (ww > right) right = ww;
                     //위
-                    hh = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.y;
+                    hh = ((ZeneretyDrawableObject)this.Objects[i]).renderposition.Y;
                     if (hh < top) top = hh;
                     //아레
-                    hh += ((ZeneretyDrawableObject)this.Objects[i]).renderposition.h;
+                    hh += ((ZeneretyDrawableObject)this.Objects[i]).renderposition.H;
                     if (hh > bottom) bottom = hh;
                 }
                 if (this.Objects[i] is DynamicGroup)
@@ -1555,11 +1555,11 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 창의 수평 위치
         /// </summary>
-        public static int X => position.x;
+        public static int X => position.X;
         /// <summary>
         /// 창의 수직 위치
         /// </summary>
-        public static int Y => position.y;
+        public static int Y => position.Y;
 
         public static uint UWidth => (uint)size.w;
         public static uint UHeight => (uint)size.h;
@@ -1708,7 +1708,7 @@ namespace JyunrcaeaFramework
         public static void Move(int? x = null, int? y = null)
         {
             SDL.SDL_SetWindowPosition(Framework.window, x ?? SDL.SDL_WINDOWPOS_CENTERED, y ?? SDL.SDL_WINDOWPOS_CENTERED);
-            SDL.SDL_GetWindowPosition(Framework.window, out Window.position.x, out Window.position.y);
+            SDL.SDL_GetWindowPosition(Framework.window, out Window.position.X, out Window.position.Y);
             Framework.Function.WindowMove();
         }
         /// <summary>
@@ -2191,7 +2191,7 @@ namespace JyunrcaeaFramework
         /// </summary>
         public virtual void MouseMove()
         {
-            SDL.SDL_GetMouseState(out Input.Mouse.position.x, out Input.Mouse.position.y);
+            SDL.SDL_GetMouseState(out Input.Mouse.position.X, out Input.Mouse.position.Y);
             if (Framework.NewRenderingSolution)
             {
                 int len = Display.Target.EventManager.mouseMoves.Count;
@@ -3535,27 +3535,27 @@ namespace JyunrcaeaFramework
     {
         public Rectangle() { }
 
-        public int Width { get => dst.w; set {
-                dst.w = value;
+        public int Width { get => dst.W; set {
+                dst.W = value;
                 needresetsize = true;
             }
         }
-        public int Height { get => dst.h; set {
-                dst.h = value;
-                needresetsize = true;
-            }
-        }
-
-        public uint UWidth { get => (uint)dst.w; set
-            {
-                dst.w = (int)value;
+        public int Height { get => dst.H; set {
+                dst.H = value;
                 needresetsize = true;
             }
         }
 
-        public uint UHeight { get => (uint)dst.h; set
+        public uint UWidth { get => (uint)dst.W; set
             {
-                dst.h = (int)value;
+                dst.W = (int)value;
+                needresetsize = true;
+            }
+        }
+
+        public uint UHeight { get => (uint)dst.H; set
+            {
+                dst.H = (int)value;
                 needresetsize = true;
             }
         }
@@ -3570,22 +3570,22 @@ namespace JyunrcaeaFramework
 
         public Rectangle(uint Width, uint Height)
         {
-            this.dst.w = (int)Width;
-            this.dst.h = (int)Height;
+            this.dst.W = (int)Width;
+            this.dst.H = (int)Height;
             needresetsize = true;
         }
 
         public Rectangle(int Width, int Height)
         {
-            this.dst.w = Width;
-            this.dst.h = Height;
+            this.dst.W = Width;
+            this.dst.H = Height;
             needresetsize = true;
         }
 
         internal override void ResetDrawPosition()
         {
-            this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
-            this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
+            this.dst.X = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
+            this.dst.Y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
             needresetdrawposition = false;
         }
 
@@ -3601,7 +3601,7 @@ namespace JyunrcaeaFramework
             }
             else
             {
-                if (GFX.roundedBoxRGBA(Framework.renderer, (short)dst.x, (short)dst.y, (short)(dst.x+dst.w), (short)(dst.y+dst.h),this.Radius,this.Color.Red,this.Color.Green,this.Color.Blue,this.Color.Alpha) != 0) throw new JyunrcaeaFrameworkException("둥근 직사각형 렌더링에 실패하였습니다. ()");
+                if (GFX.roundedBoxRGBA(Framework.renderer, (short)dst.X, (short)dst.Y, (short)(dst.X+dst.W), (short)(dst.Y+dst.H),this.Radius,this.Color.Red,this.Color.Green,this.Color.Blue,this.Color.Alpha) != 0) throw new JyunrcaeaFrameworkException("둥근 직사각형 렌더링에 실패하였습니다. ()");
             }
         }
 
@@ -3614,10 +3614,10 @@ namespace JyunrcaeaFramework
 
         private void ResetSize()
         {
-            if (this.dx != HorizontalPositionType.Right) this.px = (int)(this.dst.w * (this.dx == HorizontalPositionType.Middle ? -0.5f : -1f));
+            if (this.dx != HorizontalPositionType.Right) this.px = (int)(this.dst.W * (this.dx == HorizontalPositionType.Middle ? -0.5f : -1f));
             else
                 this.px = 0;
-            if (this.dy != VerticalPositionType.Bottom) this.py = (int)(this.dst.h * (this.dy == VerticalPositionType.Middle ? -0.5f : -1f));
+            if (this.dy != VerticalPositionType.Bottom) this.py = (int)(this.dst.H * (this.dy == VerticalPositionType.Middle ? -0.5f : -1f));
             else
                 this.py = 0;
             this.needresetsize = false;
@@ -3663,45 +3663,45 @@ namespace JyunrcaeaFramework
 
         public int Width
         {
-            get => dst.w; set
+            get => dst.W; set
             {
-                dst.w = value;
+                dst.W = value;
                 needresetsize = true;
             }
         }
         public int Height
         {
-            get => dst.h; set
+            get => dst.H; set
             {
-                dst.h = value;
+                dst.H = value;
                 needresetsize = true;
             }
         }
 
         public uint UWidth
         {
-            get => (uint)dst.w; set
+            get => (uint)dst.W; set
             {
-                dst.w = (int)value;
+                dst.W = (int)value;
                 needresetsize = true;
             }
         }
 
         public uint UHeight
         {
-            get => (uint)dst.h; set
+            get => (uint)dst.H; set
             {
-                dst.h = (int)value;
+                dst.H = (int)value;
                 needresetsize = true;
             }
         }
 
         private void ResetSize()
         {
-            if (this.dx != HorizontalPositionType.Right) this.px = (int)(this.dst.w * (this.dx == HorizontalPositionType.Middle ? -0.5f : -1f));
+            if (this.dx != HorizontalPositionType.Right) this.px = (int)(this.dst.W * (this.dx == HorizontalPositionType.Middle ? -0.5f : -1f));
             else
                 this.px = 0;
-            if (this.dy != VerticalPositionType.Bottom) this.py = (int)(this.dst.h * (this.dy == VerticalPositionType.Middle ? -0.5f : -1f));
+            if (this.dy != VerticalPositionType.Bottom) this.py = (int)(this.dst.H * (this.dy == VerticalPositionType.Middle ? -0.5f : -1f));
             else
                 this.py = 0;
             this.needresetsize = false;
@@ -3720,8 +3720,8 @@ namespace JyunrcaeaFramework
             if (needresetsize) ResetSize();
             if (needresetdrawposition)
             {
-                this.dst.x = this.px + this.originpos.x + this.mx;
-                this.dst.y = this.py + this.originpos.y + this.my;
+                this.dst.X = this.px + this.originpos.x + this.mx;
+                this.dst.Y = this.py + this.originpos.y + this.my;
                 this.needresetdrawposition = false;
             }
         }
@@ -3824,8 +3824,8 @@ namespace JyunrcaeaFramework
             if (needresetposition) ResetPosition();
             if (needresetdrawposition)
             {
-                this.dst.x = this.originpos.x + this.mx;
-                this.dst.y = this.originpos.y + this.my;
+                this.dst.X = this.originpos.x + this.mx;
+                this.dst.Y = this.originpos.y + this.my;
                 this.needresetdrawposition = false;
             }
             for (d = 0;d<sprites.Count;d++)
@@ -3908,8 +3908,8 @@ namespace JyunrcaeaFramework
                 {
                     this.targettexture.Free();
                     (targettexture = value).Ready();
-                    dst.w = (int)(targettexture.src.w * this.sz);
-                    dst.h = (int)(targettexture.src.h * this.sz);
+                    dst.W = (int)(targettexture.src.W * this.sz);
+                    dst.H = (int)(targettexture.src.H * this.sz);
                     this.ResetPosition();
                     this.ResetSize();
                 }
@@ -3933,13 +3933,13 @@ namespace JyunrcaeaFramework
         /// (설정시 Size가 -1로 초기화됩니다.)
         /// (설정한 이후, 그 길이가 계속 고정됩니다. 해제할려면 Size 값을 수정하세요.)
         /// </summary>
-        public int Width { get => dst.w; set { dst.w = value; sz = -1; this.targettexture.needresettexture = true; } }
+        public int Width { get => dst.W; set { dst.W = value; sz = -1; this.targettexture.needresettexture = true; } }
         /// <summary>
         /// 해당 객체의 높이
         /// (설정시 Size가 -1로 초기화됩니다.)
         /// (설정한 이후, 그 길이가 계속 고정됩니다. 해제할려면 Size 값을 수정하세요.)
         /// </summary>
-        public int Height { get => dst.h; set { dst.h = value; sz = -1; this.targettexture.needresettexture = true; } }
+        public int Height { get => dst.H; set { dst.H = value; sz = -1; this.targettexture.needresettexture = true; } }
 
         double sz = 1;
         /// <summary>
@@ -3951,8 +3951,8 @@ namespace JyunrcaeaFramework
             get => sz; set
             {
                 sz = value;
-                dst.w = (int)(targettexture.src.w * value);
-                dst.h = (int)(targettexture.src.h * value);
+                dst.W = (int)(targettexture.src.W * value);
+                dst.H = (int)(targettexture.src.H * value);
                 needresetsize = true;
             }
         }
@@ -3977,8 +3977,8 @@ namespace JyunrcaeaFramework
         public override void Start()
         {
             this.targettexture.Ready();
-            dst.w = (int)( targettexture.src.w * this.sz);
-            dst.h = (int)(targettexture.src.h * this.sz);
+            dst.W = (int)( targettexture.src.W * this.sz);
+            dst.H = (int)(targettexture.src.H * this.sz);
             this.ResetPosition();
             this.ResetSize();
         }
@@ -3995,9 +3995,9 @@ namespace JyunrcaeaFramework
 
         void ResetSize()
         {
-            if (this.dx != HorizontalPositionType.Right) this.px = (int)(this.dst.w * (this.dx == HorizontalPositionType.Middle ? -0.5f : -1f));
+            if (this.dx != HorizontalPositionType.Right) this.px = (int)(this.dst.W * (this.dx == HorizontalPositionType.Middle ? -0.5f : -1f));
             else this.px = 0;
-            if (this.dy != VerticalPositionType.Bottom) this.py = (int)(this.dst.h * (this.dy == VerticalPositionType.Middle ? -0.5f : -1f));
+            if (this.dy != VerticalPositionType.Bottom) this.py = (int)(this.dst.H * (this.dy == VerticalPositionType.Middle ? -0.5f : -1f));
             else this.py = 0;
             needresetsize = false;
             needresetdrawposition = true;
@@ -4015,8 +4015,8 @@ namespace JyunrcaeaFramework
 
         internal override void ResetDrawPosition()
         {
-            this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
-            this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
+            this.dst.X = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
+            this.dst.Y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
             this.needresetdrawposition = false;
         }
 
@@ -4026,8 +4026,8 @@ namespace JyunrcaeaFramework
             {
                 if (this.Size != -1)
                 {
-                    dst.w = (int)(targettexture.src.w * this.sz);
-                    dst.h = (int)(targettexture.src.h * this.sz);
+                    dst.W = (int)(targettexture.src.W * this.sz);
+                    dst.H = (int)(targettexture.src.H * this.sz);
                 }
                 needresetsize =true;
                 this.targettexture.needresettexture = false;
@@ -4464,7 +4464,7 @@ namespace JyunrcaeaFramework
             {
                 if (rerender) TextRender();
                 if (needresetsize) Reset();
-                return this.dst.h;
+                return this.dst.H;
             }
         }
 
@@ -4474,7 +4474,7 @@ namespace JyunrcaeaFramework
             {
                 if (rerender) TextRender();
                 if (needresetsize) Reset();
-                return this.dst.w;
+                return this.dst.W;
             }
         }
 
@@ -4490,8 +4490,8 @@ namespace JyunrcaeaFramework
             set
             {
                 sz = value;
-                dst.w = (int)(src.w * value);
-                dst.h = (int)(src.h * value);
+                dst.W = (int)(src.W * value);
+                dst.H = (int)(src.H * value);
                 needresetsize = true;
             }
         }
@@ -4571,17 +4571,17 @@ namespace JyunrcaeaFramework
         public void Reset()
         {
             needresetsize = false;
-            if (this.dx != HorizontalPositionType.Right) this.px = (int)(this.dst.w * (this.dx == HorizontalPositionType.Middle ? -0.5f : -1f));
+            if (this.dx != HorizontalPositionType.Right) this.px = (int)(this.dst.W * (this.dx == HorizontalPositionType.Middle ? -0.5f : -1f));
             else this.px = 0;
-            if (this.dy != VerticalPositionType.Bottom) this.py = (int)(this.dst.h * (this.dy == VerticalPositionType.Middle ? -0.5f : -1f));
+            if (this.dy != VerticalPositionType.Bottom) this.py = (int)(this.dst.H * (this.dy == VerticalPositionType.Middle ? -0.5f : -1f));
             else this.py = 0;
             needresetdrawposition = true;
         }
 
         internal override void ResetDrawPosition()
         {
-            this.dst.x = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
-            this.dst.y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
+            this.dst.X = this.px + this.originpos.x + this.mx + ((DefaultObjectPositionInterface)this.inheritobj!).X;
+            this.dst.Y = this.py + this.originpos.y + this.my + ((DefaultObjectPositionInterface)this.inheritobj!).Y;
             needresetdrawposition = false;
         }
 
@@ -4619,7 +4619,7 @@ namespace JyunrcaeaFramework
             }
             if (this.txt == string.Empty)
             {
-                src.w = src.h = 0;
+                src.W = src.H = 0;
                 this.tt = IntPtr.Zero;
                 return;
             }
@@ -4634,9 +4634,9 @@ namespace JyunrcaeaFramework
 #if DEBUG
             Debug.TextRenderCount++;
 #endif
-            SDL.SDL_QueryTexture(this.tt, out _, out _, out src.w, out src.h);
-            dst.w = (int)(src.w * this.sz);
-            dst.h = (int)(src.h * this.sz);
+            SDL.SDL_QueryTexture(this.tt, out _, out _, out src.W, out src.H);
+            dst.W = (int)(src.W * this.sz);
+            dst.H = (int)(src.H * this.sz);
         }
 
         public override void Stop()
@@ -4676,13 +4676,13 @@ namespace JyunrcaeaFramework
             };
         }
 
-        public byte Red { get => this.colorbase.r; set => this.colorbase.r = value; }
+        public byte Red { get => this.colorbase.R; set => this.colorbase.R = value; }
 
-        public byte Green { get => this.colorbase.g; set => this.colorbase.g = value; }
+        public byte Green { get => this.colorbase.G; set => this.colorbase.G = value; }
 
-        public byte Blue { get => this.colorbase.b; set => this.colorbase.b = value; }
+        public byte Blue { get => this.colorbase.B; set => this.colorbase.B = value; }
 
-        public byte Alpha { get => this.colorbase.a; set => this.colorbase.a = value; }
+        public byte Alpha { get => this.colorbase.A; set => this.colorbase.A = value; }
 
         public Color Copy => new(this.Red, this.Green, this.Blue, this.Alpha);
 
@@ -4751,9 +4751,9 @@ namespace JyunrcaeaFramework
 
             internal static SDL.FPoint position = new();
 
-            public static int X => position.x;
+            public static int X => position.X;
 
-            public static int Y => position.y;
+            public static int Y => position.Y;
 
             static bool cursorhide = false;
             
@@ -5171,7 +5171,7 @@ namespace JyunrcaeaFramework
         public static RectSize? OverlapPart(DrawableObject sp1,DrawableObject sp2)
         {
             if (SDL.SDL_IntersectRect(ref sp1.dst, ref sp2.dst, out var r) == SDL.SDL_false) return null;
-            return new(r.x, r.y, r.w, r.h);
+            return new(r.X, r.Y, r.W, r.H);
         }
         /// <summary>
         /// 마우스가 객체에 닿았는지 판단합니다.
@@ -5190,10 +5190,10 @@ namespace JyunrcaeaFramework
                 return SDL.SDL_PointInRect(ref Input.Mouse.position, ref Sprite.dst) == SDL.SDL_true;
             SDL.FRect part = new()
             {
-                w = Sprite.dst.w,
-                h = Sprite.dst.h,
-                x = ((SceneInterface)Sprite.InheritedObject!).RenderRange!.size.x + Sprite.dst.x,
-                y = ((SceneInterface)Sprite.InheritedObject!).RenderRange!.size.y + Sprite.dst.y
+                w = Sprite.dst.W,
+                h = Sprite.dst.H,
+                x = ((SceneInterface)Sprite.InheritedObject!).RenderRange!.size.x + Sprite.dst.X,
+                y = ((SceneInterface)Sprite.InheritedObject!).RenderRange!.size.y + Sprite.dst.Y
             };
             return SDL.SDL_PointInRect(ref Input.Mouse.position, ref part) == SDL.SDL_true;
         }
@@ -5903,22 +5903,22 @@ namespace JyunrcaeaFramework
 
         public void SetRenderRange(int x,int y,int width,int height)
         {
-            src.x = x; src.y = y; src.w = width; src.h = height;
+            src.X = x; src.Y = y; src.W = width; src.H = height;
             needresettexture = true;
         }
 
         public RectSize? RenderRange
         {
-            get { if (AutoRange) return null; return new(src.x, src.y, src.w, src.h); }
+            get { if (AutoRange) return null; return new(src.X, src.Y, src.W, src.H); }
             set
             {
                     needresettexture = true;
                 if (value == null)
                 {
                     AutoRange = true;
-                    src.x = src.y = 0;
-                    src.w = absolutesrc.x;
-                    src.h = absolutesrc.y;
+                    src.X = src.Y = 0;
+                    src.W = absolutesrc.x;
+                    src.H = absolutesrc.y;
                     return;
                 }
                 AutoRange = false;
@@ -5966,7 +5966,7 @@ namespace JyunrcaeaFramework
         {
             key.Free();
             this.texture = IntPtr.Zero;
-            this.src.w = this.src.h = 0;
+            this.src.W = this.src.H = 0;
         }
     }
 
@@ -6097,7 +6097,7 @@ namespace JyunrcaeaFramework
 
         public unsafe void Point(int x,int y,Color color)
         {
-            Point(x, y, color.colorbase.r, color.colorbase.g, color.colorbase.b, color.colorbase.a);
+            Point(x, y, color.colorbase.R, color.colorbase.G, color.colorbase.B, color.colorbase.A);
         }
 
         public unsafe void Point(int x, int y, byte r,byte g,byte b,byte a)
@@ -6115,7 +6115,7 @@ namespace JyunrcaeaFramework
         {
             uint key = *(UInt32*)((byte*)sur.pixels + y * sur.pitch + x * format.BytesPerPixel);
             Color color = new();
-            SDL.SDL_GetRGBA(key, sur.format, out color.colorbase.r, out color.colorbase.g, out color.colorbase.b, out color.colorbase.a);
+            SDL.SDL_GetRGBA(key, sur.format, out color.colorbase.R, out color.colorbase.G, out color.colorbase.B, out color.colorbase.A);
             return color;
         }
 
@@ -6156,7 +6156,7 @@ namespace JyunrcaeaFramework
             surface_ptr = address;
             if (surface_ptr == IntPtr.Zero) throw new JyunrcaeaFrameworkException("이미지를 불러오는데 실패하였습니다.");
             surface = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.Surface>(surface_ptr);
-            format = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.PixelFormatDetails>(surface.format);
+            format = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.PixelFormatDetails>(surface.Format);
             bpp = format.BytesPerPixel;
             unsafe
             {
@@ -6195,7 +6195,7 @@ namespace JyunrcaeaFramework
 
         }
 
-        public int Width => surface.w; public int Height => surface.h;
+        public int Width => surface.Width; public int Height => surface.Height;
 
         Process.PixelProcesser pp = null!;
 
@@ -6204,19 +6204,19 @@ namespace JyunrcaeaFramework
 
         public unsafe UInt32 GetPixel(int x,int y)
         {
-            return pp((byte*)surface.pixels + y * surface.pitch + x * bpp);
+            return pp((byte*)surface.Pixels + y * surface.Pitch + x * bpp);
         }
 
         public void GetRGBA(int x,int y,out byte r,out byte g,out byte b,out byte a)
         {
             uint p = GetPixel(x, y);
-            SDL.SDL_GetRGBA(p, surface.format, out r, out g, out b, out a);
+            SDL.SDL_GetRGBA(p, surface.Format, out r, out g, out b, out a);
         }
 
         public ImageOnMemory GetResizedImage(int width,int height)
         {
             IntPtr result = SDL.SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL.SDL_PIXELFORMAT_ARGB8888);
-            SDL.FRect origin = new() { x = 0, y = 0, w = surface.w, h = surface.h };
+            SDL.FRect origin = new() { x = 0, y = 0, w = surface.Width, h = surface.Height };
             SDL.FRect targetsize = new() { x = 0, y = 0, w = width, h = height };
             SDL.SDL_LowerBlitScaled(surface_ptr, ref origin, result,ref targetsize);
             if (result == IntPtr.Zero) throw new JyunrcaeaFrameworkException("크기 조정에 실패하였습니다.");
@@ -6305,8 +6305,8 @@ namespace JyunrcaeaFramework
             this.needresettexture = true;
             if (!this.FixedRenderRange)
             {
-                this.src.w = this.absolutesrc.x;
-                this.src.h = this.absolutesrc.y;
+                this.src.W = this.absolutesrc.x;
+                this.src.H = this.absolutesrc.y;
             }
             base.Ready();
         }
@@ -6342,8 +6342,8 @@ namespace JyunrcaeaFramework
             this.needresettexture = true;
             if (!this.FixedRenderRange)
             {
-                this.src.w = this.absolutesrc.x;
-                this.src.h = this.absolutesrc.y;
+                this.src.W = this.absolutesrc.x;
+                this.src.H = this.absolutesrc.y;
             }
             base.Ready();
         }
@@ -6379,8 +6379,8 @@ namespace JyunrcaeaFramework
             SDL.SDL_QueryTexture(this.texture, out _, out _, out this.absolutesrc.x, out this.absolutesrc.y);
             if (!this.FixedRenderRange)
             {
-                this.src.w = this.absolutesrc.x;
-                this.src.h = this.absolutesrc.y;
+                this.src.W = this.absolutesrc.x;
+                this.src.H = this.absolutesrc.y;
             }
             base.Ready();
         }
@@ -6466,16 +6466,16 @@ namespace JyunrcaeaFramework
                 throw new JyunrcaeaFrameworkException($"텍스쳐를 렌더링 하는데 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
             }
             surface = SDL.PtrToStructure<SDL.Surface>(buffer);
-            this.absolutesrc.x = surface.w;
-            this.absolutesrc.y = surface.h;
+            this.absolutesrc.x = surface.Width;
+            this.absolutesrc.y = surface.Height;
             this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer, buffer);
             SDL.SDL_FreeSurface(buffer);
             if (this.texture == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"렌더링 된 텍스트를 텍스쳐로 변환하는데 실패하였습니다. {SDL.SDL_GetError()}");
             this.needresettexture = true;
             if (!this.FixedRenderRange)
             {
-                this.src.w = this.absolutesrc.x;
-                this.src.h = this.absolutesrc.y;
+                this.src.W = this.absolutesrc.x;
+                this.src.H = this.absolutesrc.y;
             }
         }
 
@@ -6603,7 +6603,7 @@ namespace JyunrcaeaFramework
         /// <returns>가로 길이</returns>
         public static int DrawWidth(DrawableObject obj)
         {
-            return obj.dst.w;
+            return obj.dst.W;
         }   
 
         public static int DrawWidth(ZeneretyDrawableObject obj)
@@ -6618,7 +6618,7 @@ namespace JyunrcaeaFramework
         /// <returns>세로 길이</returns>
         public static int DrawHeight(DrawableObject obj)
         {
-            return obj.dst.h;
+            return obj.dst.H;
         }
 
         public static int DrawHeight(ZeneretyDrawableObject obj)
@@ -6642,8 +6642,8 @@ namespace JyunrcaeaFramework
             {
                 obj.ResetDrawPosition();
             }
-            x = obj.dst.x;
-            y = obj.dst.y;
+            x = obj.dst.X;
+            y = obj.dst.Y;
         }
 
         /// <summary>
