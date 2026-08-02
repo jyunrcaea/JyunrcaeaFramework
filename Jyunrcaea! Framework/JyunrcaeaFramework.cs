@@ -1,5 +1,5 @@
 #define WINDOWS
-using SDL2;
+using SDL3;
 
 namespace JyunrcaeaFramework
 {
@@ -68,7 +68,7 @@ namespace JyunrcaeaFramework
             public static Color StaticGroup = new(200, 255, 200);
         }
 
-        internal static void ObjectRangeDraw(Color c,ref SDL.SDL_Rect r)
+        internal static void ObjectRangeDraw(Color c,ref SDL.FRect r)
         {
             SDL.SDL_SetRenderDrawColor(Framework.renderer, c.colorbase.r, c.colorbase.g, c.colorbase.b, c.colorbase.a);
             SDL.SDL_RenderDrawRect(Framework.renderer, ref r);
@@ -154,13 +154,13 @@ namespace JyunrcaeaFramework
             {
                 throw new JyunrcaeaFrameworkException($"SDL2 라이브러리 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             }
-            SDL.SDL_WindowFlags winflg = option is null ? SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN | SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL : ((WindowOption)option).option;
+            SDL.WindowFlags winflg = option is null ? SDL.WindowFlags.SDL_WINDOW_RESIZABLE | SDL.WindowFlags.SDL_WINDOW_HIDDEN | SDL.WindowFlags.SDL_WINDOW_OPENGL : ((WindowOption)option).option;
             window = SDL.SDL_CreateWindow(title, x ?? SDL.SDL_WINDOWPOS_CENTERED, y ?? SDL.SDL_WINDOWPOS_CENTERED, (int)width, (int)height, winflg);
             if (window == IntPtr.Zero)
             {
                 throw new JyunrcaeaFrameworkException($"창 초기화에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             }
-            renderer = SDL.SDL_CreateRenderer(window, -1, render_option is null ? SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED : ((RenderOption)render_option).option);
+            renderer = SDL.SDL_CreateRenderer(window, -1, render_option is null ? uint.SDL_RENDERER_ACCELERATED : ((RenderOption)render_option).option);
             if (renderer == IntPtr.Zero)
             {
                 SDL.SDL_DestroyWindow(window);
@@ -173,43 +173,43 @@ namespace JyunrcaeaFramework
                     SDL.SDL_SetHint(SDL.SDL_HINT_RENDER_SCALE_QUALITY, "1");
                 }
             }
-            if (SDL.SDL_SetRenderDrawBlendMode(renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) != 0) throw new JyunrcaeaFrameworkException($"렌더러의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
-            //if (SDL.SDL_SetRenderDrawBlendMode(renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_MOD) != 0) throw new JyunrcaeaFrameworkException("SDL Error: " + SDL.SDL_GetError());
-            if (SDL_image.IMG_Init(SDL_image.IMG_InitFlags.IMG_INIT_JPG | SDL_image.IMG_InitFlags.IMG_INIT_WEBP | SDL_image.IMG_InitFlags.IMG_INIT_TIF | SDL_image.IMG_InitFlags.IMG_INIT_PNG) == 0)
+            if (SDL.SDL_SetRenderDrawBlendMode(renderer, SDL.BlendMode.SDL_BLENDMODE_BLEND) != 0) throw new JyunrcaeaFrameworkException($"렌더러의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
+            //if (SDL.SDL_SetRenderDrawBlendMode(renderer, SDL.BlendMode.SDL_BLENDMODE_MOD) != 0) throw new JyunrcaeaFrameworkException("SDL Error: " + SDL.SDL_GetError());
+            if (SDL3.Image.IMG_Init(SDL3.Image.IMG_InitFlags.IMG_INIT_JPG | SDL3.Image.IMG_InitFlags.IMG_INIT_WEBP | SDL3.Image.IMG_InitFlags.IMG_INIT_TIF | SDL3.Image.IMG_InitFlags.IMG_INIT_PNG) == 0)
             {
                 SDL.SDL_DestroyWindow(window);
                 SDL.SDL_DestroyRenderer(renderer);
                 SDL.SDL_Quit();
-                throw new JyunrcaeaFrameworkException($"SDL2 image 라이브러리 초기화에 실패하였습니다. SDL image Error : {SDL_image.IMG_GetError()}");
+                throw new JyunrcaeaFrameworkException($"SDL2 image 라이브러리 초기화에 실패하였습니다. SDL image Error : {SDL3.Image.IMG_GetError()}");
             }
-            if (SDL_ttf.TTF_Init() == -1)
+            if (SDL3.TTF.TTF_Init() == -1)
             {
                 SDL.SDL_DestroyWindow(window);
                 SDL.SDL_DestroyRenderer(renderer);
                 SDL.SDL_Quit();
-                SDL_image.IMG_Quit();
-                throw new JyunrcaeaFrameworkException($"SDL2 ttf 라이브러리 초기화에 실패하였습니다. SDL ttf Error : {SDL_ttf.TTF_GetError()}");
+                SDL3.Image.IMG_Quit();
+                throw new JyunrcaeaFrameworkException($"SDL2 ttf 라이브러리 초기화에 실패하였습니다. SDL ttf Error : {SDL3.TTF.TTF_GetError()}");
             }
-            if (SDL_mixer.Mix_Init(SDL_mixer.MIX_InitFlags.MIX_INIT_MP3 | SDL_mixer.MIX_InitFlags.MIX_INIT_OGG | SDL_mixer.MIX_InitFlags.MIX_INIT_MID | SDL_mixer.MIX_InitFlags.MIX_INIT_FLAC | SDL_mixer.MIX_InitFlags.MIX_INIT_OPUS | SDL_mixer.MIX_InitFlags.MIX_INIT_MOD) == 0)
+            if (SDL3.Mixer.Mix_Init(SDL3.Mixer.MIX_InitFlags.MIX_INIT_MP3 | SDL3.Mixer.MIX_InitFlags.MIX_INIT_OGG | SDL3.Mixer.MIX_InitFlags.MIX_INIT_MID | SDL3.Mixer.MIX_InitFlags.MIX_INIT_FLAC | SDL3.Mixer.MIX_InitFlags.MIX_INIT_OPUS | SDL3.Mixer.MIX_InitFlags.MIX_INIT_MOD) == 0)
             {
                 SDL.SDL_DestroyWindow(window);
                 SDL.SDL_DestroyRenderer(renderer);
                 SDL.SDL_Quit();
-                SDL_image.IMG_Quit();
-                throw new JyunrcaeaFrameworkException($"SDL mixer 라이브러리 초기화에 실패하였습니다. SDL mixer Error : {SDL_mixer.Mix_GetError()}");
+                SDL3.Image.IMG_Quit();
+                throw new JyunrcaeaFrameworkException($"SDL mixer 라이브러리 초기화에 실패하였습니다. SDL mixer Error : {SDL3.Mixer.Mix_GetError()}");
             }
             bool setting = true;
             while (setting) {
-                if (SDL_mixer.Mix_OpenAudio(audio_option.hz, SDL_mixer.MIX_DEFAULT_FORMAT, audio_option.ch, audio_option.cs) != 0)
+                if (SDL3.Mixer.Mix_OpenAudio(audio_option.hz, SDL3.Mixer.MIX_DEFAULT_FORMAT, audio_option.ch, audio_option.cs) != 0)
                 {
                     if (!audio_option.trylow || audio_option.ch == 1)
                     {
                         SDL.SDL_DestroyWindow(window);
                         SDL.SDL_DestroyRenderer(renderer);
                         SDL.SDL_Quit();
-                        SDL_image.IMG_Quit();
-                        SDL_mixer.Mix_Quit();
-                        throw new JyunrcaeaFrameworkException($"SDL mixer 오디오를 여는데 실패하였습니다. SDL mixer Error : {SDL_mixer.Mix_GetError()}");
+                        SDL3.Image.IMG_Quit();
+                        SDL3.Mixer.Mix_Quit();
+                        throw new JyunrcaeaFrameworkException($"SDL mixer 오디오를 여는데 실패하였습니다. SDL mixer Error : {SDL3.Mixer.Mix_GetError()}");
                     }
                     audio_option.ch = (audio_option.ch == 7) ? 6 : --audio_option.ch;
                 }
@@ -221,10 +221,10 @@ namespace JyunrcaeaFramework
             {
                 SDL.SDL_SetEventFilter((_, eventPtr) =>
                     {
-                        var e = (SDL.SDL_Event)System.Runtime.InteropServices.Marshal.PtrToStructure(eventPtr, typeof(SDL.SDL_Event))!;
-                        //if (e.type == SDL.SDL_EventType.SDL_KEYDOWN && Input.TextInput.Enable && e.key.keysym.sym == SDL.SDL_Keycode.SDLK_BACKSPACE)
+                        var e = (SDL.Event)System.Runtime.InteropServices.Marshal.PtrToStructure(eventPtr, typeof(SDL.Event))!;
+                        //if (e.type == SDL.EventType.SDL_KEYDOWN && Input.TextInput.Enable && e.key.keysym.sym == SDL.Keycode.SDLK_BACKSPACE)
                         if (e.key.repeat != 0) return Input.Text.ti ? 1 : 0;
-                        if (e.type != SDL.SDL_EventType.SDL_WINDOWEVENT) return 1;
+                        if (e.type != SDL.EventType.SDL_WINDOWEVENT) return 1;
                         switch (e.window.windowEvent)
                         {
                             case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
@@ -252,9 +252,9 @@ namespace JyunrcaeaFramework
                     }, IntPtr.Zero); 
             }
             #region 믹서, 윈플래그, 텍스쳐 쉐어링, 창 크기, 디스플레이 모드, 힌트
-            SDL_mixer.Mix_HookMusicFinished(Music.Finished);
-            if ((winflg & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) Window.fullscreenoption = true;
-            if ((winflg & SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) == SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) Window.windowborderless = true;
+            SDL3.Mixer.Mix_HookMusicFinished(Music.Finished);
+            if ((winflg & SDL.WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL.WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) Window.fullscreenoption = true;
+            if ((winflg & SDL.WindowFlags.SDL_WINDOW_BORDERLESS) == SDL.WindowFlags.SDL_WINDOW_BORDERLESS) Window.windowborderless = true;
             TextureSharing.resourcelist = new();
             Window.size = new() { w = Window.default_size.x = Window.beforewidth = (int)width, h = Window.default_size.y = Window.beforeheight = (int)height };
             Window.wh = width * 0.5f;
@@ -272,7 +272,7 @@ namespace JyunrcaeaFramework
             #endregion
         }
         public static bool Running { get; internal set; } = false;
-        //internal static SDL.SDL_Event sdle;
+        //internal static SDL.Event sdle;
         internal static System.Diagnostics.Stopwatch frametimer = new();
         /// <summary>
         /// 프레임워크가 지금까지 작동된 시간을 틱(tick)으로 반환합니다.
@@ -313,16 +313,16 @@ namespace JyunrcaeaFramework
             Framework.Function.Stop();
             SDL.SDL_DestroyRenderer(renderer);
             SDL.SDL_DestroyWindow(window);
-            SDL_mixer.Mix_Quit();
-            SDL_image.IMG_Quit();
-            SDL_ttf.TTF_Quit();
+            SDL3.Mixer.Mix_Quit();
+            SDL3.Image.IMG_Quit();
+            SDL3.TTF.TTF_Quit();
             SDL.SDL_Quit();
         }
 
 
         public static void RunningLoop()
         {
-            SDL.SDL_Event e;
+            SDL.Event e;
             while (Running)
             {
                 if (EventMultiThreading)
@@ -341,19 +341,19 @@ namespace JyunrcaeaFramework
 
         public static bool EventMultiThreading = false;
 
-        public static async void AsyncEventProcess(SDL.SDL_Event e)
+        public static async void AsyncEventProcess(SDL.Event e)
         {
             await Task.Run(() => EventProcess(e));
         }
 
-        public static void EventProcess(SDL.SDL_Event e)
+        public static void EventProcess(SDL.Event e)
         {
-            switch (e.type)
+            switch (e.Type)
             {
-                case SDL.SDL_EventType.SDL_QUIT:
+                case SDL.EventType.SDL_QUIT:
                     Framework.Function.WindowQuit();
                     break;
-                case SDL.SDL_EventType.SDL_WINDOWEVENT:
+                case SDL.EventType.SDL_WINDOWEVENT:
                     switch (e.window.windowEvent)
                     {
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED:
@@ -391,55 +391,55 @@ namespace JyunrcaeaFramework
                             Framework.Function.MouseFocusIn();
                             break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_DISPLAY_CHANGED:
-                            if (SDL.SDL_GetDisplayMode(e.display.data1, 0, out Display.dm) != 0) throw new JyunrcaeaFrameworkException("창이 이동된 모니터의 정보를 얻는데 실패했습니다.");
+                            if (SDL.SDL_GetDisplayMode(e.Display.data1, 0, out Display.dm) != 0) throw new JyunrcaeaFrameworkException("창이 이동된 모니터의 정보를 얻는데 실패했습니다.");
                             Framework.Function.DisplayChange();
                             break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
                             break;
                         case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
                             if (Display.KeepRenderingWhenResize) break;
-                            Window.size.w = e.window.data1;
-                            Window.size.h = e.window.data2;
+                            Window.size.w = e.window.Data1;
+                            Window.size.h = e.window.Data2;
                             Window.wh = Window.size.w * 0.5f;
                             Window.hh = Window.size.h * 0.5f;
                             Framework.Function.Resize();
                             break;
                     }
                     break;
-                case SDL.SDL_EventType.SDL_DROPFILE:
-                    Framework.Function.DropFile(SDL.UTF8_ToManaged(e.drop.file, true));
+                case SDL.EventType.SDL_DROPFILE:
+                    Framework.Function.DropFile(SDL.UTF8_ToManaged(e.Drop.file, true));
                     break;
-                case SDL.SDL_EventType.SDL_KEYDOWN:
-                    Framework.Function.KeyDown((Input.Keycode)e.key.keysym.sym);
-                    if((Input.Keycode)e.key.keysym.sym == Input.Keycode.BACKSPACE && Input.Text.InputedText.Length > 0)
+                case SDL.EventType.SDL_KEYDOWN:
+                    Framework.Function.KeyDown((Input.Keycode)e.Key.Keysym.sym);
+                    if((Input.Keycode)e.Key.Keysym.sym == Input.Keycode.BACKSPACE && Input.Text.InputedText.Length > 0)
                     {
                         Input.Text.InputedText = Input.Text.InputedText.Remove(Input.Text.InputedText.Length - 1);
                         Function.InputText();
                     }
                     break;
-                case SDL.SDL_EventType.SDL_MOUSEMOTION:
+                case SDL.EventType.SDL_MOUSEMOTION:
                     Framework.Function.MouseMove();
                     break;
-                case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                    Framework.Function.MouseKeyDown((Input.Mouse.Key)e.button.button);
+                case SDL.EventType.SDL_MOUSEBUTTONDOWN:
+                    Framework.Function.MouseKeyDown((Input.Mouse.Key)e.Button.Button);
                     break;
-                case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
-                    Framework.Function.MouseKeyUp((Input.Mouse.Key)e.button.button);
+                case SDL.EventType.SDL_MOUSEBUTTONUP:
+                    Framework.Function.MouseKeyUp((Input.Mouse.Key)e.Button.Button);
                     break;
-                case SDL.SDL_EventType.SDL_KEYUP:
-                    Framework.Function.KeyUp((Input.Keycode)e.key.keysym.sym);
+                case SDL.EventType.SDL_KEYUP:
+                    Framework.Function.KeyUp((Input.Keycode)e.Key.Keysym.sym);
                     break;
-                case SDL.SDL_EventType.SDL_TEXTINPUT:
+                case SDL.EventType.SDL_TEXTINPUT:
                     unsafe
                     {
-                        Input.Text.InputedText += new string((sbyte*)e.text.text);
+                        Input.Text.InputedText += new string((sbyte*)e.Text.Text);
                         Function.InputText();
                     }
                     break;
-                case SDL.SDL_EventType.SDL_TEXTEDITING:
+                case SDL.EventType.SDL_TEXTEDITING:
                     unsafe
                     {
-                        Console.WriteLine("Edit Text: {0}\nCursor Pos: {1}\nSelected Line {2}", new string((sbyte*)e.edit.text), e.edit.start, e.edit.length);
+                        Console.WriteLine("Edit Text: {0}\nCursor Pos: {1}\nSelected Line {2}", new string((sbyte*)e.Edit.text), e.Edit.start, e.Edit.length);
                     }
                     break;
             }
@@ -461,13 +461,13 @@ namespace JyunrcaeaFramework
 
         internal static Stack<ZeneretySize> DrawPosStack = new();
 
-        internal static SDL.SDL_Rect DrawPos = new() { x = 0, y = 0 };
+        internal static SDL.FRect DrawPos = new() { x = 0, y = 0 };
 
-        internal static SDL.SDL_Rect RenderRange = new();
+        internal static SDL.FRect RenderRange = new();
 
         internal static void Rendering(Group group)
         {
-            SDL.SDL_Rect? before = null;    
+            SDL.FRect? before = null;    
             for (int i = 0; i < group.Objects.Count; i++)
             {
                 if (group.Objects[i].Hide) continue;
@@ -482,8 +482,8 @@ namespace JyunrcaeaFramework
                 {
                     if (group.Objects[i] is RoundBox)
                     {
-                        SDL.SDL_Rect r = ((ZeneretyDrawableObject)group.Objects[i]).renderposition;
-                        SDL_gfx.roundedBoxRGBA(
+                        SDL.FRect r = ((ZeneretyDrawableObject)group.Objects[i]).renderposition;
+                        GFX.roundedBoxRGBA(
                             Framework.renderer,
                             (short)r.x,
                             (short)r.y,
@@ -504,25 +504,25 @@ namespace JyunrcaeaFramework
 
                 if (group.Objects[i] is Image)
                 {
-                    SDL.SDL_RenderCopyEx(Framework.renderer, ((Image)group.Objects[i]).Texture.texture, ref ((Image)group.Objects[i]).Texture.src, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition, ((Image)group.Objects[i]).Rotation, IntPtr.Zero, SDL.SDL_RendererFlip.SDL_FLIP_NONE);
+                    SDL.SDL_RenderCopyEx(Framework.renderer, ((Image)group.Objects[i]).Texture.texture, ref ((Image)group.Objects[i]).Texture.src, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition, ((Image)group.Objects[i]).Rotation, IntPtr.Zero, SDL.FlipMode.SDL_FLIP_NONE);
                     continue;
                 }
 
                 if (group.Objects[i] is Text)
                 {
-                    SDL.SDL_RenderCopyEx(Framework.renderer, ((Text)group.Objects[i]).TFT.texture, ref ((Text)group.Objects[i]).TFT.src, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition, ((Text)group.Objects[i]).Rotation, IntPtr.Zero, SDL.SDL_RendererFlip.SDL_FLIP_NONE);
+                    SDL.SDL_RenderCopyEx(Framework.renderer, ((Text)group.Objects[i]).TFT.texture, ref ((Text)group.Objects[i]).TFT.src, ref ((ZeneretyDrawableObject)group.Objects[i]).renderposition, ((Text)group.Objects[i]).Rotation, IntPtr.Zero, SDL.FlipMode.SDL_FLIP_NONE);
                     continue;
                 }
 
                 if (group.Objects[i] is Circle)
                 {
-                    SDL_gfx.filledCircleRGBA(Framework.renderer, (short)((Circle)group.Objects[i]).renderposition.x, (short)((Circle)group.Objects[i]).renderposition.y, ((Circle)group.Objects[i]).Radius, ((Circle)group.Objects[i]).Color.colorbase.r, ((Circle)group.Objects[i]).Color.colorbase.g, ((Circle)group.Objects[i]).Color.colorbase.b, ((Circle)group.Objects[i]).Color.colorbase.a);
+                    GFX.filledCircleRGBA(Framework.renderer, (short)((Circle)group.Objects[i]).renderposition.x, (short)((Circle)group.Objects[i]).renderposition.y, ((Circle)group.Objects[i]).Radius, ((Circle)group.Objects[i]).Color.colorbase.r, ((Circle)group.Objects[i]).Color.colorbase.g, ((Circle)group.Objects[i]).Color.colorbase.b, ((Circle)group.Objects[i]).Color.colorbase.a);
                     continue;
                 }
             }
             if (before is not null)
             {
-                RenderRange = (SDL.SDL_Rect)before;
+                RenderRange = (SDL.FRect)before;
                 SDL.SDL_RenderSetViewport(Framework.renderer,ref RenderRange);
             }
         }
@@ -532,7 +532,7 @@ namespace JyunrcaeaFramework
             DrawPosStack.Push(new() { Width = DrawPos.x, Height = DrawPos.y });
             int wx = DrawPos.x + group.Rx;
             int hy = DrawPos.y + group.Ry;
-            SDL.SDL_Rect? before = null;
+            SDL.FRect? before = null;
             //if (group.RenderRange is not null)
             //{
             //    before = RenderRange;
@@ -578,7 +578,7 @@ namespace JyunrcaeaFramework
 
             if (before is not null)
             {
-                RenderRange = (SDL.SDL_Rect)before;
+                RenderRange = (SDL.FRect)before;
             }
             var ret = DrawPosStack.Pop();
             DrawPos.x = ret.Width;
@@ -610,7 +610,7 @@ namespace JyunrcaeaFramework
         public int DisplayedWidth => contentrange.w;
         public int DisplayedHeight => contentrange.h;
 
-        internal SDL.SDL_Rect contentrange = new();
+        internal SDL.FRect contentrange = new();
 
         public override void Update(float ms)
         {
@@ -993,10 +993,10 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 실제 렌더링 범위
         /// </summary>
-        internal SDL.SDL_Rect renderposition = new();
+        internal SDL.FRect renderposition = new();
 
-        public bool MouseOver => SDL.SDL_PointInRect(ref Input.Mouse.position, ref this.renderposition) == SDL.SDL_bool.SDL_TRUE;
-        public bool OverLap(ZeneretyDrawableObject OtherTarget) => SDL.SDL_IntersectRect(ref this.renderposition, ref OtherTarget.renderposition, out _) == SDL.SDL_bool.SDL_TRUE;
+        public bool MouseOver => SDL.SDL_PointInRect(ref Input.Mouse.position, ref this.renderposition) == SDL.SDL_true;
+        public bool OverLap(ZeneretyDrawableObject OtherTarget) => SDL.SDL_IntersectRect(ref this.renderposition, ref OtherTarget.renderposition, out _) == SDL.SDL_true;
 
         public HorizontalPositionType DrawX = HorizontalPositionType.Middle;
         public VerticalPositionType DrawY = VerticalPositionType.Middle;
@@ -1453,7 +1453,7 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static TopGroup Target = new();
 
-        internal static SDL.SDL_DisplayMode dm;
+        internal static SDL.DisplayMode dm;
 
         internal static List<SceneInterface> scenes = new();
 
@@ -1530,9 +1530,9 @@ namespace JyunrcaeaFramework
     /// 창과 관련된 기능을 다룹니다.
     /// </summary>
     public static class Window {
-        internal static SDL.SDL_Rect size = new();
-        internal static SDL.SDL_Point position = new();
-        internal static SDL.SDL_Point default_size = new();
+        internal static SDL.FRect size = new();
+        internal static SDL.FPoint position = new();
+        internal static SDL.FPoint default_size = new();
         /// <summary>
         /// 기본 가로값
         /// </summary>
@@ -1634,7 +1634,7 @@ namespace JyunrcaeaFramework
         public static bool Borderless
         {
             get => windowborderless;
-            set => SDL.SDL_SetWindowBordered(Framework.window, (windowborderless = value) ? SDL.SDL_bool.SDL_FALSE : SDL.SDL_bool.SDL_TRUE);
+            set => SDL.SDL_SetWindowBordered(Framework.window, (windowborderless = value) ? SDL.SDL_false : SDL.SDL_true);
         }
 
         /// <summary>
@@ -1667,8 +1667,8 @@ namespace JyunrcaeaFramework
         /// <exception cref="JyunrcaeaFrameworkException">파일을 불러올수 없을때</exception>
         public static void Icon(string filename)
         {
-            IntPtr surface = SDL_image.IMG_Load(filename);
-            if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"파일을 불러올수 없습니다. (SDL image Error: {SDL_image.IMG_GetError()})");
+            IntPtr surface = SDL3.Image.IMG_Load(filename);
+            if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"파일을 불러올수 없습니다. (SDL image Error: {SDL3.Image.IMG_GetError()})");
             SDL.SDL_SetWindowIcon(Framework.window, surface);
             SDL.SDL_FreeSurface(surface);
         }
@@ -1682,12 +1682,12 @@ namespace JyunrcaeaFramework
             SDL.SDL_SetWindowSize(Framework.window, width, height);
             Window.size.w = width;
             Window.size.h = height;
-            SDL.SDL_Event e = new()
+            SDL.Event e = new()
             {
-                type = SDL.SDL_EventType.SDL_WINDOWEVENT,
+                type = SDL.EventType.SDL_WINDOWEVENT,
                 window = new()
                 {
-                    type = SDL.SDL_EventType.SDL_WINDOWEVENT,
+                    type = SDL.EventType.SDL_WINDOWEVENT,
                     windowEvent = SDL.SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED,
                     data1 = width,
                     data2 = height,
@@ -1754,7 +1754,7 @@ namespace JyunrcaeaFramework
         /// </summary>
         public static bool AlwaysOnTop
         {
-            set => SDL.SDL_SetWindowAlwaysOnTop(Framework.window, value ? SDL.SDL_bool.SDL_TRUE : SDL.SDL_bool.SDL_FALSE);
+            set => SDL.SDL_SetWindowAlwaysOnTop(Framework.window, value ? SDL.SDL_true : SDL.SDL_false);
         }
 
         /// <summary>
@@ -1784,7 +1784,7 @@ namespace JyunrcaeaFramework
         {
             set {
                 SDL.SDL_SetWindowResizable(Framework.window,
-                    value ? SDL.SDL_bool.SDL_TRUE : SDL.SDL_bool.SDL_FALSE
+                    value ? SDL.SDL_true : SDL.SDL_false
                 );
             }
         }
@@ -2054,8 +2054,8 @@ namespace JyunrcaeaFramework
             //{
             //    SDL.SDL_Delay(Input.Text.WaitTime);
             //    SDL.SDL_GetKeyboardState(out int r);
-            //    SDL.SDL_Keycode key = (SDL.SDL_Keycode)r;
-            //    if (key.HasFlag(SDL.SDL_Keycode.SDLK_BACKSPACE))
+            //    SDL.Keycode key = (SDL.Keycode)r;
+            //    if (key.HasFlag(SDL.Keycode.SDLK_BACKSPACE))
             //    {
             //        while(Input.Text.InputedText.Length > 0)
             //        {
@@ -2362,19 +2362,19 @@ namespace JyunrcaeaFramework
     /// </summary>
     public struct WindowOption
     {
-        internal SDL.SDL_WindowFlags option;
+        internal SDL.WindowFlags option;
 
-        //public WindowOption() { option = SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN; }
+        //public WindowOption() { option = SDL.WindowFlags.SDL_WINDOW_RESIZABLE | SDL.WindowFlags.SDL_WINDOW_HIDDEN; }
 
         public WindowOption(bool resize = true, bool borderless = false, bool fullscreen = false, bool hide = true)
         {
-            option = SDL.SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
-            if (resize) option |= SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
-            if (borderless) option |= SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
-            if (fullscreen) option |= SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP;
+            option = SDL.WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
+            if (resize) option |= SDL.WindowFlags.SDL_WINDOW_RESIZABLE;
+            if (borderless) option |= SDL.WindowFlags.SDL_WINDOW_BORDERLESS;
+            if (fullscreen) option |= SDL.WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP;
             // 보더리스 지원 포기
-            //if (fullscreen_desktop) option |= SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP;
-            if (hide) option |= SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN;
+            //if (fullscreen_desktop) option |= SDL.WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP;
+            if (hide) option |= SDL.WindowFlags.SDL_WINDOW_HIDDEN;
         }
     }
     /// <summary>
@@ -2382,15 +2382,15 @@ namespace JyunrcaeaFramework
     /// </summary>
     public struct RenderOption
     {
-        internal SDL.SDL_RendererFlags option = new();
+        internal uint option = new();
         public bool anti_alising = true;
 
         public RenderOption(bool sccelerated = true, bool software = true, bool vsync = false, bool anti_aliasing = true)
         {
-            if (sccelerated) option |= SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED;
-            if (software) option |= SDL.SDL_RendererFlags.SDL_RENDERER_SOFTWARE;
-            if (vsync) option |= SDL.SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC;
-            //option |= SDL.SDL_RendererFlags.SDL_RENDERER_TARGETTEXTURE;
+            if (sccelerated) option |= uint.SDL_RENDERER_ACCELERATED;
+            if (software) option |= uint.SDL_RENDERER_SOFTWARE;
+            if (vsync) option |= uint.SDL_RENDERER_PRESENTVSYNC;
+            //option |= uint.SDL_RENDERER_TARGETTEXTURE;
             this.anti_alising = anti_aliasing;
         }
     }
@@ -2472,27 +2472,27 @@ namespace JyunrcaeaFramework
 
         internal override void Ready()
         {
-            this.sound = SDL_mixer.Mix_LoadMUS(filename);
-            if (this.sound == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"음악을 불러오는데 실패하였습니다. SDL mixer Error: {SDL_mixer.Mix_GetError()}");
+            this.sound = SDL3.Mixer.Mix_LoadMUS(filename);
+            if (this.sound == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"음악을 불러오는데 실패하였습니다. SDL mixer Error: {SDL3.Mixer.Mix_GetError()}");
         }
 
         internal override void Free()
         {
-            SDL_mixer.Mix_FreeMusic(this.sound);
+            SDL3.Mixer.Mix_FreeMusic(this.sound);
         }
 
         public static bool Play(Music music)
         {
             if (music.sound == IntPtr.Zero) music.Ready();
             playingmusic = music;
-            if (SDL_mixer.Mix_PlayMusic(music.sound, 1) == -1) return false;
+            if (SDL3.Mixer.Mix_PlayMusic(music.sound, 1) == -1) return false;
             return true;
         }
 
         public static bool Resume()
         {
-            if (SDL_mixer.Mix_PlayingMusic() != 0) return false;
-            SDL_mixer.Mix_ResumeMusic();
+            if (SDL3.Mixer.Mix_PlayingMusic() != 0) return false;
+            SDL3.Mixer.Mix_ResumeMusic();
             return true;
         }
 
@@ -2506,41 +2506,41 @@ namespace JyunrcaeaFramework
         public string Title { get {
                 //ready 되지 않기 위해 따로 로드 (만약 quickplay 가 true라면 이미 this.sound가 intptr.zero 가 아닐것임)
                 if (this.sound == IntPtr.Zero) {
-                    IntPtr ptr = SDL_mixer.Mix_LoadMUS(this.filename);
+                    IntPtr ptr = SDL3.Mixer.Mix_LoadMUS(this.filename);
                     if (ptr == IntPtr.Zero) throw new JyunrcaeaFrameworkException("음악 파일 로드에 실패했습니다.");
-                    string tt = SDL_mixer.Mix_GetMusicTitle(ptr);
-                    SDL_mixer.Mix_FreeMusic(ptr);
+                    string tt = SDL3.Mixer.Mix_GetMusicTitle(ptr);
+                    SDL3.Mixer.Mix_FreeMusic(ptr);
                     return tt;
                 }
-                return SDL_mixer.Mix_GetMusicTitle(this.sound);
+                return SDL3.Mixer.Mix_GetMusicTitle(this.sound);
             }
         }
 
         public static void Skip()
         {
-            SDL_mixer.Mix_HaltMusic();
+            SDL3.Mixer.Mix_HaltMusic();
         }
 
-        public static bool Paused => SDL_mixer.Mix_PausedMusic() == 1;
+        public static bool Paused => SDL3.Mixer.Mix_PausedMusic() == 1;
 
         public static void Pause()
         {
-            SDL_mixer.Mix_PauseMusic();
+            SDL3.Mixer.Mix_PauseMusic();
         }
 
         /// <summary>
         /// 원하는 시간대로 이동합니다.
         /// </summary>
-        public static double NowTime { get { return NowPlaying == null ? -1 : SDL_mixer.Mix_GetMusicPosition(NowPlaying.sound); }
+        public static double NowTime { get { return NowPlaying == null ? -1 : SDL3.Mixer.Mix_GetMusicPosition(NowPlaying.sound); }
             set
             {
-                if (SDL_mixer.Mix_SetMusicPosition(value) == -1) throw new JyunrcaeaFrameworkException("잘못된 위치");
+                if (SDL3.Mixer.Mix_SetMusicPosition(value) == -1) throw new JyunrcaeaFrameworkException("잘못된 위치");
             }
         }
 
         internal static void Finished()
         {
-            if (SDL_mixer.Mix_PlayingMusic() == 0) return;
+            if (SDL3.Mixer.Mix_PlayingMusic() == 0) return;
             if (NowPlaying != null) NowPlaying.Free();
             if (MusicFinished != null) MusicFinished();
         }
@@ -2640,7 +2640,7 @@ namespace JyunrcaeaFramework
 
         //internal int addx=0, dddy=0;
 
-        internal SDL.SDL_Rect dst = new();
+        internal SDL.FRect dst = new();
 
         //internal RenderPositionForScene scenepos = null!;
 
@@ -2686,7 +2686,7 @@ namespace JyunrcaeaFramework
 
         public int AbsoluteY => this.originpos.y + my;
 
-        internal SDL.SDL_Point originpos = new();
+        internal SDL.FPoint originpos = new();
 
         internal bool needresetposition = false;
 
@@ -3321,11 +3321,11 @@ namespace JyunrcaeaFramework
         {
             public enum BlendType
             {
-                None = SDL.SDL_BlendMode.SDL_BLENDMODE_NONE,
-                Blend = SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND,
-                Add = SDL.SDL_BlendMode.SDL_BLENDMODE_ADD,
-                Mul = SDL.SDL_BlendMode.SDL_BLENDMODE_MUL,
-                Invalid = SDL.SDL_BlendMode.SDL_BLENDMODE_INVALID
+                None = SDL.BlendMode.SDL_BLENDMODE_NONE,
+                Blend = SDL.BlendMode.SDL_BLENDMODE_BLEND,
+                Add = SDL.BlendMode.SDL_BLENDMODE_ADD,
+                Mul = SDL.BlendMode.SDL_BLENDMODE_MUL,
+                Invalid = SDL.BlendMode.SDL_BLENDMODE_INVALID
             }
 
             public static bool Rectangle(RectSize size, Color color)
@@ -3337,23 +3337,23 @@ namespace JyunrcaeaFramework
             public static bool Rectangle(int width, int height, int x, int y, byte red, byte green, byte blue, byte alpha)
             {
                 SDL.SDL_SetRenderDrawColor(Framework.renderer, red, green, blue, alpha);
-                SDL.SDL_Rect rt = new() { w = width, h = height, x = x, y = y };
+                SDL.FRect rt = new() { w = width, h = height, x = x, y = y };
                 return SDL.SDL_RenderFillRect(Framework.renderer, ref rt) == 0;
             }
 
             public static bool RoundedRectangle(short X, short Y,short Width, short Height,  short Radius, byte Red=255, byte Green=255, byte Blue =255, byte Alpha = 255)
             {
-                return SDL_gfx.roundedBoxRGBA(Framework.renderer,X,Y, (short)(X + Width), (short)(Y+Height),Radius,Red,Green,Blue,Alpha) == 0;
+                return GFX.roundedBoxRGBA(Framework.renderer,X,Y, (short)(X + Width), (short)(Y+Height),Radius,Red,Green,Blue,Alpha) == 0;
             }
 
             public static bool RoundedRectangle(RectSize Size = default!, short Radius = 0, Color Color = default!)
             {
-                return SDL_gfx.roundedBoxRGBA(Framework.renderer, (short)Size.size.x, (short)Size.size.y, (short)(Size.size.x + Size.size.w), (short)(Size.size.y + Size.size.h), Radius, Color.Red, Color.Green, Color.Blue, Color.Alpha) == 0;
+                return GFX.roundedBoxRGBA(Framework.renderer, (short)Size.size.x, (short)Size.size.y, (short)(Size.size.x + Size.size.w), (short)(Size.size.y + Size.size.h), Radius, Color.Red, Color.Green, Color.Blue, Color.Alpha) == 0;
             }
 
             public static bool RoundedRectangleLine(short width, short height, short x, short y, short radius, byte red, byte green, byte blue, byte alpha)
             {
-                return SDL_gfx.roundedRectangleRGBA(Framework.renderer, x, y, (short)(x + width), (short)(y + height), radius, red, green, blue, alpha) == 0;
+                return GFX.roundedRectangleRGBA(Framework.renderer, x, y, (short)(x + width), (short)(y + height), radius, red, green, blue, alpha) == 0;
             }
 
             public static bool Texture(DrawableTexture texture, RectSize size)
@@ -3363,7 +3363,7 @@ namespace JyunrcaeaFramework
 
             public static bool BlendMode(BlendType blendType)
             {
-                return SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, (SDL.SDL_BlendMode)blendType) == 0;
+                return SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, (SDL.BlendMode)blendType) == 0;
             }
 
             /// <summary>
@@ -3379,7 +3379,7 @@ namespace JyunrcaeaFramework
             /// <returns>성공 여부</returns>
             public static bool Circle(short X,short Y,short Radius,byte Red,byte Green,byte Blue,byte Alpha)
             {
-                return SDL_gfx.filledCircleRGBA(Framework.renderer, X, Y, Radius, Red, Green, Blue, Alpha) == 0;
+                return GFX.filledCircleRGBA(Framework.renderer, X, Y, Radius, Red, Green, Blue, Alpha) == 0;
             }
 
             /// <summary>
@@ -3395,7 +3395,7 @@ namespace JyunrcaeaFramework
             /// <returns>성공 여부</returns>
             public static bool CircleLine(short X, short Y, short Radius, byte Red, byte Green, byte Blue, byte Alpha)
             {
-                return SDL_gfx.circleRGBA(Framework.renderer, X, Y, Radius, Red, Green, Blue, Alpha) == 0;
+                return GFX.circleRGBA(Framework.renderer, X, Y, Radius, Red, Green, Blue, Alpha) == 0;
             }
 
             /// <summary>
@@ -3414,7 +3414,7 @@ namespace JyunrcaeaFramework
             /// <returns></returns>
             public static bool Triangle(short AX, short AY, short BX, short BY, short CX, short CY,byte Red, byte Green, byte Blue, byte Alpha)
             {
-                return SDL_gfx.filledTrigonRGBA(Framework.renderer, AX, AY, BX, BY, CX, CY, Red, Green, Blue, Alpha) == 0;
+                return GFX.filledTrigonRGBA(Framework.renderer, AX, AY, BX, BY, CX, CY, Red, Green, Blue, Alpha) == 0;
             }
         }
 
@@ -3425,7 +3425,7 @@ namespace JyunrcaeaFramework
             if (this.RenderRange == null) SDL.SDL_RenderDrawRect(Framework.renderer, ref Window.size);
             else SDL.SDL_RenderDrawRect(Framework.renderer, ref this.RenderRange.size);
             Render();
-            SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
+            SDL.SDL_SetRenderDrawBlendMode(Framework.renderer, SDL.BlendMode.SDL_BLENDMODE_BLEND);
         }
 
         public override void DropFile(string filename)
@@ -3566,7 +3566,7 @@ namespace JyunrcaeaFramework
 
         public Color Color = new();
 
-        //internal SDL.SDL_Rect dst = new() {  w = 0, h = 0, x = 0, y = 0 };
+        //internal SDL.FRect dst = new() {  w = 0, h = 0, x = 0, y = 0 };
 
         public Rectangle(uint Width, uint Height)
         {
@@ -3601,7 +3601,7 @@ namespace JyunrcaeaFramework
             }
             else
             {
-                if (SDL_gfx.roundedBoxRGBA(Framework.renderer, (short)dst.x, (short)dst.y, (short)(dst.x+dst.w), (short)(dst.y+dst.h),this.Radius,this.Color.Red,this.Color.Green,this.Color.Blue,this.Color.Alpha) != 0) throw new JyunrcaeaFrameworkException("둥근 직사각형 렌더링에 실패하였습니다. ()");
+                if (GFX.roundedBoxRGBA(Framework.renderer, (short)dst.x, (short)dst.y, (short)(dst.x+dst.w), (short)(dst.y+dst.h),this.Radius,this.Color.Red,this.Color.Green,this.Color.Blue,this.Color.Alpha) != 0) throw new JyunrcaeaFrameworkException("둥근 직사각형 렌더링에 실패하였습니다. ()");
             }
         }
 
@@ -3817,7 +3817,7 @@ namespace JyunrcaeaFramework
 
         int d,r;
 
-        //SDL.SDL_Rect drawrect=new();
+        //SDL.FRect drawrect=new();
 
         internal override void Draw()
         {
@@ -3961,13 +3961,13 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 좌우로 뒤집을지 결정합니다.
         /// </summary>
-        public bool FlipHorizontal { get => fh; set => flip = ((fh = value) ? SDL.SDL_RendererFlip.SDL_FLIP_HORIZONTAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE) | (fv ? SDL.SDL_RendererFlip.SDL_FLIP_VERTICAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE); }
+        public bool FlipHorizontal { get => fh; set => flip = ((fh = value) ? SDL.FlipMode.SDL_FLIP_HORIZONTAL : SDL.FlipMode.SDL_FLIP_NONE) | (fv ? SDL.FlipMode.SDL_FLIP_VERTICAL : SDL.FlipMode.SDL_FLIP_NONE); }
         /// <summary>
         /// 상하로 뒤집을지 결정합니다.
         /// </summary>
-        public bool FlipVertical { get => fv; set => flip = (fh ? SDL.SDL_RendererFlip.SDL_FLIP_HORIZONTAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE) | ((fv = value) ? SDL.SDL_RendererFlip.SDL_FLIP_VERTICAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE); }
+        public bool FlipVertical { get => fv; set => flip = (fh ? SDL.FlipMode.SDL_FLIP_HORIZONTAL : SDL.FlipMode.SDL_FLIP_NONE) | ((fv = value) ? SDL.FlipMode.SDL_FLIP_VERTICAL : SDL.FlipMode.SDL_FLIP_NONE); }
 
-        SDL.SDL_RendererFlip flip = SDL.SDL_RendererFlip.SDL_FLIP_NONE;
+        SDL.FlipMode flip = SDL.FlipMode.SDL_FLIP_NONE;
 
         /// <summary>
         /// 이미지를 불러옵니다.
@@ -4433,14 +4433,14 @@ namespace JyunrcaeaFramework
             {
                 fs = value;
                 if (fontsource == IntPtr.Zero) return;
-                SDL_ttf.TTF_SetFontStyle(this.fontsource, (int)fs);
+                SDL3.TTF.TTF_SetFontStyle(this.fontsource, (int)fs);
                 
             }
         }
 
-        //SDL.SDL_Rect dst = new();
+        //SDL.FRect dst = new();
 
-        SDL.SDL_Rect src = new();
+        SDL.FRect src = new();
 
         public bool blend = true;
 
@@ -4507,7 +4507,7 @@ namespace JyunrcaeaFramework
             {
                 fontsize = value;
                 if (this.fontsource == IntPtr.Zero) return;
-                if (SDL_ttf.TTF_SetFontSize(this.fontsource,fontsize) == -1) throw new JyunrcaeaFrameworkException($"글꼴 크기 조정에 실패하였습니다. (SDL ttf Error: {SDL_ttf.TTF_GetError()}, font size: {fontsize}, source: {this.fontsource.ToString()})");
+                if (SDL3.TTF.TTF_SetFontSize(this.fontsource,fontsize) == -1) throw new JyunrcaeaFrameworkException($"글꼴 크기 조정에 실패하였습니다. (SDL ttf Error: {SDL3.TTF.TTF_GetError()}, font size: {fontsize}, source: {this.fontsource.ToString()})");
                 rerender = true;
             }
         }
@@ -4550,12 +4550,12 @@ namespace JyunrcaeaFramework
         /// <summary>
         /// 가로로 뒤집기 여부
         /// </summary>
-        public bool FlipHorizontal { get => fh; set => flip = ((fh = value) ? SDL.SDL_RendererFlip.SDL_FLIP_HORIZONTAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE) | (fv ? SDL.SDL_RendererFlip.SDL_FLIP_VERTICAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE); }
+        public bool FlipHorizontal { get => fh; set => flip = ((fh = value) ? SDL.FlipMode.SDL_FLIP_HORIZONTAL : SDL.FlipMode.SDL_FLIP_NONE) | (fv ? SDL.FlipMode.SDL_FLIP_VERTICAL : SDL.FlipMode.SDL_FLIP_NONE); }
         /// <summary>
         /// 세로로 뒤집기 여부
         /// </summary>
-        public bool FlipVertical { get => fv; set => flip = (fh ? SDL.SDL_RendererFlip.SDL_FLIP_HORIZONTAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE) | ((fv = value) ? SDL.SDL_RendererFlip.SDL_FLIP_VERTICAL : SDL.SDL_RendererFlip.SDL_FLIP_NONE); }
-        SDL.SDL_RendererFlip flip = SDL.SDL_RendererFlip.SDL_FLIP_NONE;
+        public bool FlipVertical { get => fv; set => flip = (fh ? SDL.FlipMode.SDL_FLIP_HORIZONTAL : SDL.FlipMode.SDL_FLIP_NONE) | ((fv = value) ? SDL.FlipMode.SDL_FLIP_VERTICAL : SDL.FlipMode.SDL_FLIP_NONE); }
+        SDL.FlipMode flip = SDL.FlipMode.SDL_FLIP_NONE;
         IntPtr tt = IntPtr.Zero;
         /// <summary>
         /// 
@@ -4624,12 +4624,12 @@ namespace JyunrcaeaFramework
                 return;
             }
             IntPtr surface = (this.bc == null) ?
-              (Blended ? SDL_ttf.TTF_RenderUTF8_Blended_Wrapped(this.fontsource, this.txt, fc.colorbase,wraplenght) : SDL_ttf.TTF_RenderUTF8_Solid_Wrapped(this.fontsource, this.txt, fc.colorbase,wraplenght)) : SDL_ttf.TTF_RenderUTF8_Shaded_Wrapped(this.fontsource, this.txt, fc.colorbase, this.bc.colorbase,wraplenght);
-            if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스트 렌더링에 실패하였습니다. SDL ttf Error : {SDL_ttf.TTF_GetError()}");
+              (Blended ? SDL3.TTF.TTF_RenderUTF8_Blended_Wrapped(this.fontsource, this.txt, fc.colorbase,wraplenght) : SDL3.TTF.TTF_RenderUTF8_Solid_Wrapped(this.fontsource, this.txt, fc.colorbase,wraplenght)) : SDL3.TTF.TTF_RenderUTF8_Shaded_Wrapped(this.fontsource, this.txt, fc.colorbase, this.bc.colorbase,wraplenght);
+            if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스트 렌더링에 실패하였습니다. SDL ttf Error : {SDL3.TTF.TTF_GetError()}");
             this.tt = SDL.SDL_CreateTextureFromSurface(Framework.renderer, surface);
             SDL.SDL_FreeSurface(surface);
             if (this.tt == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"텍스쳐로 변환하는데 실패했습니다. SDL Error : {SDL.SDL_GetError()}");
-            if (SDL.SDL_SetTextureBlendMode(this.tt, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) < 0) throw new JyunrcaeaFrameworkException($"텍스쳐의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
+            if (SDL.SDL_SetTextureBlendMode(this.tt, SDL.BlendMode.SDL_BLENDMODE_BLEND) < 0) throw new JyunrcaeaFrameworkException($"텍스쳐의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             if (alpha != 255) SDL.SDL_SetTextureAlphaMod(tt, alpha);
 #if DEBUG
             Debug.TextRenderCount++;
@@ -4641,17 +4641,17 @@ namespace JyunrcaeaFramework
 
         public override void Stop()
         {
-            SDL_ttf.TTF_CloseFont(this.fontsource);
+            SDL3.TTF.TTF_CloseFont(this.fontsource);
             if (this.tt != IntPtr.Zero) { SDL.SDL_DestroyTexture(this.tt); this.tt = IntPtr.Zero; }
         }
 
         public override void Start()
         {
-            this.fontsource = SDL_ttf.TTF_OpenFont(this.FontfileName, this.fontsize);
+            this.fontsource = SDL3.TTF.TTF_OpenFont(this.FontfileName, this.fontsize);
             if (this.fontsource == IntPtr.Zero) throw new JyunrcaeaFrameworkException(
-                $"글꼴 파일을 불러오는데 실패하였습니다. 파일 경로: '{this.FontfileName}', SDL_ttf Error: {SDL_ttf.TTF_GetError()}"
+                $"글꼴 파일을 불러오는데 실패하였습니다. 파일 경로: '{this.FontfileName}', SDL3.TTF Error: {SDL3.TTF.TTF_GetError()}"
                 );
-            SDL_ttf.TTF_SetFontStyle(this.fontsource, (int)fs);
+            SDL3.TTF.TTF_SetFontStyle(this.fontsource, (int)fs);
             this.Scale = this.sz;
             this.rerender = true;
             this.needresetposition = true;
@@ -4686,7 +4686,7 @@ namespace JyunrcaeaFramework
 
         public Color Copy => new(this.Red, this.Green, this.Blue, this.Alpha);
 
-        internal SDL.SDL_Color colorbase = new();
+        internal SDL.Color colorbase = new();
 
         //흑백 계열
         public static Color White => new(255, 255, 255);
@@ -4749,7 +4749,7 @@ namespace JyunrcaeaFramework
                 set => SDL.SDL_SetHint(SDL.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, value ? "1":"0");
             }
 
-            internal static SDL.SDL_Point position = new();
+            internal static SDL.FPoint position = new();
 
             public static int X => position.x;
 
@@ -4765,9 +4765,9 @@ namespace JyunrcaeaFramework
             {
                 set
                 {
-                    SDL.SDL_SetWindowMouseGrab(Framework.window, value ? SDL.SDL_bool.SDL_TRUE: SDL.SDL_bool.SDL_FALSE);
+                    SDL.SDL_SetWindowMouseGrab(Framework.window, value ? SDL.SDL_true: SDL.SDL_false);
                 }
-                get => SDL.SDL_GetWindowMouseGrab(Framework.window) == SDL.SDL_bool.SDL_TRUE;
+                get => SDL.SDL_GetWindowMouseGrab(Framework.window) == SDL.SDL_true;
             }
 
             /// <summary>
@@ -4951,55 +4951,55 @@ namespace JyunrcaeaFramework
             y = 'y',
             z = 'z',
 
-            CAPSLOCK = SDL.SDL_Keycode.SDLK_CAPSLOCK,
+            CAPSLOCK = SDL.Keycode.SDLK_CAPSLOCK,
 
-            F1 = SDL.SDL_Keycode.SDLK_F1,
-            F2 = SDL.SDL_Keycode.SDLK_F2,
-            F3 = SDL.SDL_Keycode.SDLK_F3,
-            F4 = SDL.SDL_Keycode.SDLK_F4,
-            F5 = SDL.SDL_Keycode.SDLK_F5,
-            F6 = SDL.SDL_Keycode.SDLK_F6,
-            F7 = SDL.SDL_Keycode.SDLK_F7,
-            F8 = SDL.SDL_Keycode.SDLK_F8,
-            F9 = SDL.SDL_Keycode.SDLK_F9,
-            F10 = SDL.SDL_Keycode.SDLK_F10,
-            F11 = SDL.SDL_Keycode.SDLK_F11,
-            F12 = SDL.SDL_Keycode.SDLK_F12,
+            F1 = SDL.Keycode.SDLK_F1,
+            F2 = SDL.Keycode.SDLK_F2,
+            F3 = SDL.Keycode.SDLK_F3,
+            F4 = SDL.Keycode.SDLK_F4,
+            F5 = SDL.Keycode.SDLK_F5,
+            F6 = SDL.Keycode.SDLK_F6,
+            F7 = SDL.Keycode.SDLK_F7,
+            F8 = SDL.Keycode.SDLK_F8,
+            F9 = SDL.Keycode.SDLK_F9,
+            F10 = SDL.Keycode.SDLK_F10,
+            F11 = SDL.Keycode.SDLK_F11,
+            F12 = SDL.Keycode.SDLK_F12,
 
-            PRINTSCREEN = SDL.SDL_Keycode.SDLK_PRINTSCREEN,
-            SCROLLLOCK = SDL.SDL_Keycode.SDLK_SCROLLLOCK,
-            PAUSE = SDL.SDL_Keycode.SDLK_PAUSE,
-            INSERT = SDL.SDL_Keycode.SDLK_INSERT,
-            HOME = SDL.SDL_Keycode.SDLK_HOME,
-            PAGEUP = SDL.SDL_Keycode.SDLK_PAGEUP,
+            PRINTSCREEN = SDL.Keycode.SDLK_PRINTSCREEN,
+            SCROLLLOCK = SDL.Keycode.SDLK_SCROLLLOCK,
+            PAUSE = SDL.Keycode.SDLK_PAUSE,
+            INSERT = SDL.Keycode.SDLK_INSERT,
+            HOME = SDL.Keycode.SDLK_HOME,
+            PAGEUP = SDL.Keycode.SDLK_PAGEUP,
             DELETE = 127,
-            END = SDL.SDL_Keycode.SDLK_END,
-            PAGEDOWN = SDL.SDL_Keycode.SDLK_PAGEDOWN,
-            RIGHT = SDL.SDL_Keycode.SDLK_RIGHT,
-            LEFT = SDL.SDL_Keycode.SDLK_LEFT,
-            DOWN = SDL.SDL_Keycode.SDLK_DOWN,
-            UP = SDL.SDL_Keycode.SDLK_UP,
+            END = SDL.Keycode.SDLK_END,
+            PAGEDOWN = SDL.Keycode.SDLK_PAGEDOWN,
+            RIGHT = SDL.Keycode.SDLK_RIGHT,
+            LEFT = SDL.Keycode.SDLK_LEFT,
+            DOWN = SDL.Keycode.SDLK_DOWN,
+            UP = SDL.Keycode.SDLK_UP,
 
-            NUMLOCKCLEAR = SDL.SDL_Keycode.SDLK_NUMLOCKCLEAR,
+            NUMLOCKCLEAR = SDL.Keycode.SDLK_NUMLOCKCLEAR,
             // KP_DIVIDE = (int)SDL_Scancode.SDL_SCANCODE_KP_DIVIDE |  SCANCODE_MASK,
             // KP_MULTIPLY = (int)SDL_Scancode.SDL_SCANCODE_KP_MULTIPLY |  SCANCODE_MASK,
             // KP_MINUS = (int)SDL_Scancode.SDL_SCANCODE_KP_MINUS |  SCANCODE_MASK,
-            KP_PLUS = SDL.SDL_Keycode.SDLK_KP_PLUS,
-            NUM_ENTER = SDL.SDL_Keycode.SDLK_KP_ENTER,
-            NUM_1 = SDL.SDL_Keycode.SDLK_KP_1,
-            NUM_2 = SDL.SDL_Keycode.SDLK_KP_2,
-            NUM_3 = SDL.SDL_Keycode.SDLK_KP_3,
-            NUM_4 = SDL.SDL_Keycode.SDLK_KP_4,
-            NUM_5 = SDL.SDL_Keycode.SDLK_KP_5,
-            NUM_6 = SDL.SDL_Keycode.SDLK_KP_6,
-            NUM_7 = SDL.SDL_Keycode.SDLK_KP_7,
-            NUM_8 = SDL.SDL_Keycode.SDLK_KP_8,
-            NUM_9 = SDL.SDL_Keycode.SDLK_KP_9,
-            NUM_0 = SDL.SDL_Keycode.SDLK_KP_0,
+            KP_PLUS = SDL.Keycode.SDLK_KP_PLUS,
+            NUM_ENTER = SDL.Keycode.SDLK_KP_ENTER,
+            NUM_1 = SDL.Keycode.SDLK_KP_1,
+            NUM_2 = SDL.Keycode.SDLK_KP_2,
+            NUM_3 = SDL.Keycode.SDLK_KP_3,
+            NUM_4 = SDL.Keycode.SDLK_KP_4,
+            NUM_5 = SDL.Keycode.SDLK_KP_5,
+            NUM_6 = SDL.Keycode.SDLK_KP_6,
+            NUM_7 = SDL.Keycode.SDLK_KP_7,
+            NUM_8 = SDL.Keycode.SDLK_KP_8,
+            NUM_9 = SDL.Keycode.SDLK_KP_9,
+            NUM_0 = SDL.Keycode.SDLK_KP_0,
             // KP_PERIOD = (int)SDL_Scancode.SDL_SCANCODE_KP_PERIOD |  SCANCODE_MASK,
 
             // APPLICATION = (int)SDL_Scancode.SDL_SCANCODE_APPLICATION |  SCANCODE_MASK,
-            POWER = SDL.SDL_Keycode.SDLK_POWER,
+            POWER = SDL.Keycode.SDLK_POWER,
             // KP_EQUALS = (int)SDL_Scancode.SDL_SCANCODE_KP_EQUALS |  SCANCODE_MASK,
             // F13 = (int)SDL_Scancode.SDL_SCANCODE_F13 |  SCANCODE_MASK,
             // F14 = (int)SDL_Scancode.SDL_SCANCODE_F14 |  SCANCODE_MASK,
@@ -5100,14 +5100,14 @@ namespace JyunrcaeaFramework
             // KP_HEXADECIMAL =
             //(int)SDL_Scancode.SDL_SCANCODE_KP_HEXADECIMAL |  SCANCODE_MASK,
 
-            LCTRL = SDL.SDL_Keycode.SDLK_LCTRL,
-            LSHIFT = SDL.SDL_Keycode.SDLK_LSHIFT,
-            LALT = SDL.SDL_Keycode.SDLK_LALT,
-            LGUI = SDL.SDL_Keycode.SDLK_LGUI,
-            RCTRL = SDL.SDL_Keycode.SDLK_RCTRL,
-            RSHIFT = SDL.SDL_Keycode.SDLK_RSHIFT,
-            RALT = SDL.SDL_Keycode.SDLK_RALT,
-            RGUI = SDL.SDL_Keycode.SDLK_RGUI,
+            LCTRL = SDL.Keycode.SDLK_LCTRL,
+            LSHIFT = SDL.Keycode.SDLK_LSHIFT,
+            LALT = SDL.Keycode.SDLK_LALT,
+            LGUI = SDL.Keycode.SDLK_LGUI,
+            RCTRL = SDL.Keycode.SDLK_RCTRL,
+            RSHIFT = SDL.Keycode.SDLK_RSHIFT,
+            RALT = SDL.Keycode.SDLK_RALT,
+            RGUI = SDL.Keycode.SDLK_RGUI,
 
             // MODE = (int)SDL_Scancode.SDL_SCANCODE_MODE |  SCANCODE_MASK,
 
@@ -5129,8 +5129,8 @@ namespace JyunrcaeaFramework
             // AC_REFRESH = (int)SDL_Scancode.SDL_SCANCODE_AC_REFRESH |  SCANCODE_MASK,
             // AC_BOOKMARKS = (int)SDL_Scancode.SDL_SCANCODE_AC_BOOKMARKS |  SCANCODE_MASK,
 
-            BrightnessDown = SDL.SDL_Keycode.SDLK_BRIGHTNESSDOWN,
-            BrightnessUp = SDL.SDL_Keycode.SDLK_BRIGHTNESSUP,
+            BrightnessDown = SDL.Keycode.SDLK_BRIGHTNESSDOWN,
+            BrightnessUp = SDL.Keycode.SDLK_BRIGHTNESSUP,
             // DISPLAYSWITCH = (int)SDL_Scancode.SDL_SCANCODE_DISPLAYSWITCH |  SCANCODE_MASK,
             // KBDILLUMTOGGLE =
             //(int)SDL_Scancode.SDL_SCANCODE_KBDILLUMTOGGLE |  SCANCODE_MASK,
@@ -5160,7 +5160,7 @@ namespace JyunrcaeaFramework
         /// <returns>겹친 부분이 있을경우 True 를 반환합니다.</returns>
         public static bool Overlap(DrawableObject sp1,DrawableObject sp2)
         {
-            return SDL.SDL_IntersectRect(ref sp1.dst, ref sp2.dst, out _) == SDL.SDL_bool.SDL_TRUE;
+            return SDL.SDL_IntersectRect(ref sp1.dst, ref sp2.dst, out _) == SDL.SDL_true;
         }
         /// <summary>
         /// 두 객체가 서로 겹쳐진 부분을 알아냅니다. (직사각형 기준)
@@ -5170,7 +5170,7 @@ namespace JyunrcaeaFramework
         /// <returns>겹쳐진 부분을 반환합니다. 만약 겹쳐진 부분이 없으면 null을 반환합니다.</returns>
         public static RectSize? OverlapPart(DrawableObject sp1,DrawableObject sp2)
         {
-            if (SDL.SDL_IntersectRect(ref sp1.dst, ref sp2.dst, out var r) == SDL.SDL_bool.SDL_FALSE) return null;
+            if (SDL.SDL_IntersectRect(ref sp1.dst, ref sp2.dst, out var r) == SDL.SDL_false) return null;
             return new(r.x, r.y, r.w, r.h);
         }
         /// <summary>
@@ -5187,15 +5187,15 @@ namespace JyunrcaeaFramework
                     ((GroupObject)Sprite.inheritobj).InheritedScene!.RenderRange == null :
                     ((SceneInterface)Sprite.InheritedObject!).RenderRange == null )
                 )
-                return SDL.SDL_PointInRect(ref Input.Mouse.position, ref Sprite.dst) == SDL.SDL_bool.SDL_TRUE;
-            SDL.SDL_Rect part = new()
+                return SDL.SDL_PointInRect(ref Input.Mouse.position, ref Sprite.dst) == SDL.SDL_true;
+            SDL.FRect part = new()
             {
                 w = Sprite.dst.w,
                 h = Sprite.dst.h,
                 x = ((SceneInterface)Sprite.InheritedObject!).RenderRange!.size.x + Sprite.dst.x,
                 y = ((SceneInterface)Sprite.InheritedObject!).RenderRange!.size.y + Sprite.dst.y
             };
-            return SDL.SDL_PointInRect(ref Input.Mouse.position, ref part) == SDL.SDL_bool.SDL_TRUE;
+            return SDL.SDL_PointInRect(ref Input.Mouse.position, ref part) == SDL.SDL_true;
         }
 
         public static bool MouseOver(ZeneretyDrawableObject Target)
@@ -5204,7 +5204,7 @@ namespace JyunrcaeaFramework
             {
                 return Math.Sqrt(Math.Pow((Target.Rx - Input.Mouse.X), 2) + Math.Pow((Target.Ry - Input.Mouse.Y), 2)) <= ((Circle)Target).Radius;
             }
-            return SDL.SDL_PointInRect(ref Input.Mouse.position, ref Target.renderposition) == SDL.SDL_bool.SDL_TRUE;
+            return SDL.SDL_PointInRect(ref Input.Mouse.position, ref Target.renderposition) == SDL.SDL_true;
         }
 
         /// <summary>
@@ -5801,13 +5801,13 @@ namespace JyunrcaeaFramework
 
         internal IntPtr texture => source.texture;
 
-        internal SDL.SDL_Rect size => source.src;
+        internal SDL.FRect size => source.src;
     }
 
 
     public class RectSize
     {
-        internal SDL.SDL_Rect size;
+        internal SDL.FRect size;
         public int X { get => size.x; set => size.x = value; }
         public int Y { get => size.y; set => size.y = value; }
         public int Width { get => size.w; set => size.w = value; }
@@ -5872,9 +5872,9 @@ namespace JyunrcaeaFramework
 
         internal IntPtr texture;
 
-        internal SDL.SDL_Rect src = new();
+        internal SDL.FRect src = new();
 
-        internal SDL.SDL_Point absolutesrc = new();
+        internal SDL.FPoint absolutesrc = new();
 
         public int Width => absolutesrc.x;
 
@@ -5929,7 +5929,7 @@ namespace JyunrcaeaFramework
         internal virtual void Ready()
         {
             if (this.texture == IntPtr.Zero) return;
-            if (SDL.SDL_SetTextureBlendMode(this.texture, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND) < 0) throw new JyunrcaeaFrameworkException($"텍스쳐의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
+            if (SDL.SDL_SetTextureBlendMode(this.texture, SDL.BlendMode.SDL_BLENDMODE_BLEND) < 0) throw new JyunrcaeaFrameworkException($"텍스쳐의 블랜더 모드 설정에 실패하였습니다. SDL Error: {SDL.SDL_GetError()}");
             if (alpha != 255) SDL.SDL_SetTextureAlphaMod(texture, alpha);
             
         }
@@ -6082,17 +6082,17 @@ namespace JyunrcaeaFramework
     public class PaintOnMemory : IDisposable
     {
         IntPtr surface;
-        SDL.SDL_Surface sur;
-        SDL.SDL_PixelFormat format;
+        SDL.Surface sur;
+        SDL.PixelFormatDetails format;
 
         internal IntPtr Address => surface;
 
         public PaintOnMemory(int width = 0,int height = 0)
         {
             surface = SDL.SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL.SDL_PIXELFORMAT_ARGB8888);
-            sur = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.SDL_Surface>(surface);
-            format = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.SDL_PixelFormat>(sur.format);
-            SDL.SDL_SetSurfaceBlendMode(surface, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
+            sur = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.Surface>(surface);
+            format = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.PixelFormatDetails>(sur.format);
+            SDL.SDL_SetSurfaceBlendMode(surface, SDL.BlendMode.SDL_BLENDMODE_BLEND);
         }
 
         public unsafe void Point(int x,int y,Color color)
@@ -6143,7 +6143,7 @@ namespace JyunrcaeaFramework
 
     public class ImageOnMemory : IDisposable
     {
-        SDL.SDL_Surface surface;
+        SDL.Surface surface;
         IntPtr surface_ptr;
 
         public ImageOnMemory(IntPtr address)
@@ -6155,8 +6155,8 @@ namespace JyunrcaeaFramework
         {
             surface_ptr = address;
             if (surface_ptr == IntPtr.Zero) throw new JyunrcaeaFrameworkException("이미지를 불러오는데 실패하였습니다.");
-            surface = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.SDL_Surface>(surface_ptr);
-            format = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.SDL_PixelFormat>(surface.format);
+            surface = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.Surface>(surface_ptr);
+            format = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.PixelFormatDetails>(surface.format);
             bpp = format.BytesPerPixel;
             unsafe
             {
@@ -6190,7 +6190,7 @@ namespace JyunrcaeaFramework
             this.bpp = me.bpp;
         }
 
-        public ImageOnMemory(string path) : this(SDL_image.IMG_Load(path))
+        public ImageOnMemory(string path) : this(SDL3.Image.IMG_Load(path))
         {
 
         }
@@ -6199,7 +6199,7 @@ namespace JyunrcaeaFramework
 
         Process.PixelProcesser pp = null!;
 
-        SDL.SDL_PixelFormat format;
+        SDL.PixelFormatDetails format;
         int bpp;
 
         public unsafe UInt32 GetPixel(int x,int y)
@@ -6216,8 +6216,8 @@ namespace JyunrcaeaFramework
         public ImageOnMemory GetResizedImage(int width,int height)
         {
             IntPtr result = SDL.SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL.SDL_PIXELFORMAT_ARGB8888);
-            SDL.SDL_Rect origin = new() { x = 0, y = 0, w = surface.w, h = surface.h };
-            SDL.SDL_Rect targetsize = new() { x = 0, y = 0, w = width, h = height };
+            SDL.FRect origin = new() { x = 0, y = 0, w = surface.w, h = surface.h };
+            SDL.FRect targetsize = new() { x = 0, y = 0, w = width, h = height };
             SDL.SDL_LowerBlitScaled(surface_ptr, ref origin, result,ref targetsize);
             if (result == IntPtr.Zero) throw new JyunrcaeaFrameworkException("크기 조정에 실패하였습니다.");
             return new(result);
@@ -6337,7 +6337,7 @@ namespace JyunrcaeaFramework
 
         internal override void Ready()
         {
-            if ((this.texture = SDL_image.IMG_LoadTexture(Framework.renderer, filename)) == IntPtr.Zero) throw new JyunrcaeaFrameworkException("SDL image Error: " + SDL.SDL_GetError());
+            if ((this.texture = SDL3.Image.IMG_LoadTexture(Framework.renderer, filename)) == IntPtr.Zero) throw new JyunrcaeaFrameworkException("SDL image Error: " + SDL.SDL_GetError());
             SDL.SDL_QueryTexture(this.texture, out _, out _, out this.absolutesrc.x, out this.absolutesrc.y);
             this.needresettexture = true;
             if (!this.FixedRenderRange)
@@ -6370,7 +6370,7 @@ namespace JyunrcaeaFramework
 
         internal override void Ready()
         {
-            IntPtr surface = SDL_image.IMG_ReadXPMFromArray(StringForXPM);
+            IntPtr surface = SDL3.Image.IMG_ReadXPMFromArray(StringForXPM);
             if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"불러올수 없는 XPM 문자열 SDL Error: {SDL.SDL_GetError()}");
             this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer,surface);
             SDL.SDL_FreeSurface(surface);
@@ -6420,18 +6420,18 @@ namespace JyunrcaeaFramework
         public void Resize(int size)
         {
             if (this.Size == size) return;
-            if (SDL_ttf.TTF_SetFontSize(fontsource,this.Size = size) != 0) throw new JyunrcaeaFrameworkException($"글꼴 크기를 조정하는데 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
+            if (SDL3.TTF.TTF_SetFontSize(fontsource,this.Size = size) != 0) throw new JyunrcaeaFrameworkException($"글꼴 크기를 조정하는데 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
         }
 
-        SDL.SDL_Surface surface;
+        SDL.Surface surface;
         IntPtr buffer;
         IntPtr fontsource;
 
         internal override void Ready()
         {
-            fontsource = SDL_ttf.TTF_OpenFont(Fontfile, Size);
+            fontsource = SDL3.TTF.TTF_OpenFont(Fontfile, Size);
             if (fontsource == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"불러올수 없는 글꼴 파일 SDL Error: {SDL.SDL_GetError()}");
-            //SDL_ttf.TTF_SetFontHinting(fontsource, SDL_ttf.TTF_HINTING_MONO);
+            //SDL3.TTF.TTF_SetFontHinting(fontsource, SDL3.TTF.TTF_HINTING_MONO);
             Rendering();
             base.Ready();
         }
@@ -6450,22 +6450,22 @@ namespace JyunrcaeaFramework
             {
                 if (Blended)
                 {
-                    buffer = SDL_ttf.TTF_RenderUTF8_Blended_Wrapped(fontsource, Text, Color.colorbase,this.WarpLength);
+                    buffer = SDL3.TTF.TTF_RenderUTF8_Blended_Wrapped(fontsource, Text, Color.colorbase,this.WarpLength);
                 }
                 else
                 {
-                    buffer = SDL_ttf.TTF_RenderUTF8_Solid_Wrapped(fontsource, Text, Color.colorbase, this.WarpLength);
+                    buffer = SDL3.TTF.TTF_RenderUTF8_Solid_Wrapped(fontsource, Text, Color.colorbase, this.WarpLength);
                 }
             }
             else
             {
-                buffer = SDL_ttf.TTF_RenderUTF8_Shaded_Wrapped(fontsource, Text, Color.colorbase, BackgroundColor.colorbase, this.WarpLength);
+                buffer = SDL3.TTF.TTF_RenderUTF8_Shaded_Wrapped(fontsource, Text, Color.colorbase, BackgroundColor.colorbase, this.WarpLength);
             }
             if (buffer == IntPtr.Zero)
             {
                 throw new JyunrcaeaFrameworkException($"텍스쳐를 렌더링 하는데 실패하였습니다. (SDL Error: {SDL.SDL_GetError()})");
             }
-            surface = SDL.PtrToStructure<SDL.SDL_Surface>(buffer);
+            surface = SDL.PtrToStructure<SDL.Surface>(buffer);
             this.absolutesrc.x = surface.w;
             this.absolutesrc.y = surface.h;
             this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer, buffer);
@@ -6487,7 +6487,7 @@ namespace JyunrcaeaFramework
 
         public void Dispose()
         {
-            SDL_ttf.TTF_CloseFont(fontsource);
+            SDL3.TTF.TTF_CloseFont(fontsource);
             if (this.texture != IntPtr.Zero) Free();
         }
     }
@@ -6508,7 +6508,7 @@ namespace JyunrcaeaFramework
             string[] data = File.ReadAllLines(FilePath);
             //Array.Resize(ref data, data.Length + 1);
             //data[data.Length - 1] = null!;
-            IntPtr surface = SDL_image.IMG_ReadXPMFromArray(data);
+            IntPtr surface = SDL3.Image.IMG_ReadXPMFromArray(data);
             if (surface == IntPtr.Zero) throw new JyunrcaeaFrameworkException($"불러올수 없는 XPM 문자열 SDL Error: {SDL.SDL_GetError()}");
             this.texture = SDL.SDL_CreateTextureFromSurface(Framework.renderer, surface);
             SDL.SDL_FreeSurface(surface);
@@ -6538,7 +6538,7 @@ namespace JyunrcaeaFramework
         /// 글꼴의 크기입니다.
         /// </summary>
         public int Size { get => sz; set {
-                if (SDL_ttf.TTF_SetFontSize(this.fontsource, this.sz = value) == -1) throw new JyunrcaeaFrameworkException($"폰트 로드에 실패했습니다. SDL_TTF Error: {SDL_ttf.TTF_GetError()}");
+                if (SDL3.TTF.TTF_SetFontSize(this.fontsource, this.sz = value) == -1) throw new JyunrcaeaFrameworkException($"폰트 로드에 실패했습니다. SDL_TTF Error: {SDL3.TTF.TTF_GetError()}");
             }
         }
 
@@ -6549,14 +6549,14 @@ namespace JyunrcaeaFramework
         /// <param name="size">글자 크기 (높이 기준)</param>
         public Font(string filename,int size)
         {
-            this.fontsource = SDL_ttf.TTF_OpenFont(filename, this.sz = size);
+            this.fontsource = SDL3.TTF.TTF_OpenFont(filename, this.sz = size);
         }
 
         /// <summary>
         /// 불러온 글꼴을 메모리에서 해제합니다.
         /// </summary>
         public void Dispose() {
-            SDL_ttf.TTF_CloseFont(this.fontsource);
+            SDL3.TTF.TTF_CloseFont(this.fontsource);
         }
     }
 
@@ -6577,11 +6577,11 @@ namespace JyunrcaeaFramework
     [Flags]
     public enum FontStyle
     {
-        Normal = SDL_ttf.TTF_STYLE_NORMAL,
-        Bold = SDL_ttf.TTF_STYLE_BOLD,
-        Italic = SDL_ttf.TTF_STYLE_ITALIC,
-        Underline = SDL_ttf.TTF_STYLE_UNDERLINE,
-        Strikethrough = SDL_ttf.TTF_STYLE_STRIKETHROUGH
+        Normal = SDL3.TTF.TTF_STYLE_NORMAL,
+        Bold = SDL3.TTF.TTF_STYLE_BOLD,
+        Italic = SDL3.TTF.TTF_STYLE_ITALIC,
+        Underline = SDL3.TTF.TTF_STYLE_UNDERLINE,
+        Strikethrough = SDL3.TTF.TTF_STYLE_STRIKETHROUGH
     }
 
     /// <summary>
