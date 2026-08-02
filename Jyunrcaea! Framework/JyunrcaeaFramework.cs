@@ -1,5 +1,5 @@
 #define WINDOWS
-using SDL2;
+
 
 namespace JyunrcaeaFramework
 {
