@@ -1,6 +1,8 @@
 #define WINDOWS
 
 
+using SDL3;
+
 namespace JyunrcaeaFramework
 {
 #if DEBUG
